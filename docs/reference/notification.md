@@ -81,6 +81,11 @@ Auth Service의 JWT에서는 `sub` claim을 사용자 ID로 사용하며, API는
 회의에서 확정한다. 현재 이벤트 코드만 기준으로 관리하고, 미확정 필드명을 임의로
 Consumer에 고정하지 않는다.
 
+계약 확정 전 준비 작업으로 `DomainEventParser`가 공통 envelope의 JSON 역직렬화와
+필수값을 검증한다. 임시 수확 완료 JSON, 필수 필드 누락, 잘못된 `targetId`, 잘못된 JSON을
+테스트하지만, 아직 미확정인 이벤트 코드와 Producer별 payload 구조는 제한하지 않는다.
+RabbitMQ Listener와 실제 exchange·queue·routing key 연결은 계약 확정 후 추가한다.
+
 ## 외부 채널
 
 - Telegram: Bot API와 Chat ID 사용
