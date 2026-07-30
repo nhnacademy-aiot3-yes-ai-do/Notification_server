@@ -11,6 +11,9 @@ public interface NotificationSubscriptionRepository extends JpaRepository<Notifi
 
     Optional<NotificationSubscription> findByIdAndEndpoint_UserIdAndDeletedFalse(Long id, Long userId);
 
+    Optional<NotificationSubscription> findBySubscriptionType_IdAndEndpoint_IdAndTargetIdAndDeletedFalse(
+            Long subscriptionTypeId, Long endpointId, Long targetId);
+
     boolean existsBySubscriptionType_IdAndEndpoint_IdAndTargetIdAndEnabledTrueAndDeletedFalse(
             Long subscriptionTypeId, Long endpointId, Long targetId);
 }

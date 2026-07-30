@@ -1,8 +1,10 @@
 package com.ecosphere.notification.domain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
 import java.util.UUID;
@@ -39,7 +41,7 @@ class NotificationDeliveryTest {
     }
 
     @Test
-    void 발송_성공과_실패는_도메인_메서드로_상태를_변경한다() {
+    void 발송에_성공하면_성공상태와_외부메시지ID를_기록한다() {
         NotificationDelivery delivery = createDelivery();
 
         delivery.increaseAttemptCount();
@@ -49,10 +51,38 @@ class NotificationDeliveryTest {
         assertEquals(1, delivery.getAttemptCount());
         assertEquals("telegram-message-1", delivery.getProviderMessageId());
         assertNotNull(delivery.getSentAt());
+    }
+
+    @Test
+    void 최종_발송에_실패하면_실패상태와_원인을_기록한다() {
+        NotificationDelivery delivery = createDelivery();
 
         delivery.markFailed("provider timeout");
+
         assertEquals(DeliveryStatus.FAILED, delivery.getStatus());
         assertEquals("provider timeout", delivery.getError());
+    }
+
+    @Test
+    void 성공한_발송은_실패상태로_되돌릴_수_없다() {
+        NotificationDelivery delivery = createDelivery();
+        delivery.markSent("telegram-message-1");
+
+        assertThrows(InvalidDeliveryStateException.class,
+                () -> delivery.markFailed("late timeout"));
+    }
+
+    @Test
+    void 발송_시도는_최대_세번까지만_기록한다() {
+        NotificationDelivery delivery = createDelivery();
+
+        delivery.increaseAttemptCount();
+        delivery.increaseAttemptCount();
+        delivery.increaseAttemptCount();
+
+        assertEquals(3, delivery.getAttemptCount());
+        assertFalse(delivery.canRetry());
+        assertThrows(InvalidDeliveryStateException.class, delivery::increaseAttemptCount);
     }
 
     private NotificationDelivery createDelivery() {

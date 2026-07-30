@@ -18,6 +18,10 @@ Notification Service는 알림 원본, 수신 경로, 구독 설정, 채널별 �
 | `subscription_channel` | 구독 종류와 발송 채널 연결 |
 | `notification_template` | 이벤트·채널별 메시지 템플릿 |
 
+`notification_event_type.target_type`은 `subscription_target_type.id`를 참조하는 FK다.
+컬럼명은 기존 Migration과의 호환성을 위해 현재 `target_type`을 유지하며, 의미상
+`target_type_id`와 같은 역할이다.
+
 ## 핵심 관계
 
 ```text
@@ -42,6 +46,11 @@ Telegram과 Discord로 각각 발송될 경우 `notification_delivery`가 채널
 - Delivery `status`: `PENDING`, `SENT`, `FAILED`
 - 발송 실패는 최대 3회 재시도한 뒤 실패 이력을 저장
 
+Subscription의 `enabled=false`는 일시정지이므로 같은 조건의 새 행을 만들지 않는다.
+`is_deleted=false`인 구독 조합은 활성 여부와 관계없이 하나만 유지하며, 사용자가 다시
+구독하면 기존 행의 `enabled`를 `true`로 변경한다. 소프트 삭제된 과거 구독은 이력을
+보존하면서 같은 조건의 새 구독을 만들 수 있다.
+
 ## 기준 이벤트
 
 - `ENVIRONMENT_THRESHOLD_BREACHED`
@@ -59,6 +68,12 @@ Telegram과 Discord로 각각 발송될 경우 `notification_delivery`가 채널
 
 ## Migration·Seed
 
-현재 Migration은 `V1`부터 `V5`까지이며, 기준 Seed는 채널·이벤트·대상·구독 유형·템플릿을
-멱등적으로 삽입한다. 자세한 실행 결과는
-`docs/reference/2026-07-28_검증결과_및_회의준비.md`를 참고한다.
+현재 Migration은 `V1`부터 `V6`까지이며, 기준 Seed는 채널·이벤트·대상·구독 유형·템플릿을
+멱등적으로 삽입한다.
+
+V3 Migration 이후 Template FK는 `notification`이 아니라
+`notification_delivery.notification_template_id`에 둔다. 따라서 하나의 원본 알림이
+Telegram과 Discord로 발송될 때 각 Delivery가 자기 채널 Template을 선택한다.
+
+V6 Migration은 일시정지 구독의 재사용 정책을 보장한다. 이미 적용된 V5를 수정하지 않고
+비삭제 구독 조합에 대한 UNIQUE partial index를 새 버전에서 다시 정의했다.

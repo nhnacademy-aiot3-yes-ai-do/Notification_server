@@ -1,0 +1,10 @@
+name: Setup test env
+description: Notification Service CI 테스트용 PostgreSQL 환경변수 설정
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        echo "DB_URL=jdbc:postgresql://localhost:5432/testdb" >> "$GITHUB_ENV"
+        echo "DB_USERNAME=test" >> "$GITHUB_ENV"
+        echo "DB_PASSWORD=test1234" >> "$GITHUB_ENV"

@@ -2,316 +2,146 @@
 
 ## 역할
 
-Notification Service는 시스템에서 발생한 이벤트를 사용자에게 다양한 채널을 통해 실시간으로 전달하는 서비스입니다.
-
-RabbitMQ를 통해 이벤트를 수신하며,
-사용자가 설정한 알림 방식에 따라 Telegram 또는 Discord로 알림을 전송합니다.
-
-> ℹ️ **변경 이력**: 발송한 알림을 `notification` 테이블에 저장하고, 목록 조회/읽음 처리
-> REST API를 제공하도록 확장되었습니다. 기존에는 채널 발송만 하고 기록을 남기지 않아
-> 사용자가 지난 알림을 다시 볼 방법이 없었습니다. 이 변경으로 Notification Service가 처음으로
-> PostgreSQL DB를 갖게 되었습니다. (자세한 내용은
-> [notification-db.md](../03_Database/notification-db.md),
-> [notification-api.md](../02_API/notification-api.md) 참고)
-
-> ℹ️ **변경 이력**: 월간 AI 리포트 알림을 제거하고 "일일 피드백 알림"을 추가했습니다. 재배
-> 기간이 한 달을 넘지 않아 월간 리포트 자체가 폐기되었고, 대신 AI Service가 매일 발행하는
-> `DailyFeedbackCompletedEvent`를 구독합니다. (자세한 내용은 [ai.md](./ai.md),
-> [daily-feedback.md](../04_sequence/daily-feedback.md) 참고)
-
----
-
-# 책임
-
-- 실시간 알림 전송
-- Telegram 알림
-- Discord 알림
-- 알림 템플릿 관리
-- 알림 채널 관리
-
----
-
-# 주요 기능
-
-## 환경 이상 알림
-
-재배 환경이 목표 범위를 벗어난 경우 사용자에게 알림을 전송합니다.
-
-예시
-
-- 습도가 너무 낮습니다.
-- CO₂ 농도가 높습니다.
-- 온도가 권장 범위를 초과했습니다.
-
----
-
-## 자동 제어 알림
-
-Rule Engine이 자동으로 장치를 제어했을 경우 사용자에게 알려줍니다.
-
-예시
-
-- 가습기가 자동으로 실행되었습니다.
-- 환풍기가 자동으로 실행되었습니다.
-- LED가 자동으로 켜졌습니다.
-
----
-
-## 센서 오류 알림
-
-센서가 정상적으로 동작하지 않을 경우 사용자에게 알립니다.
-
-예시
-
-- 온도 센서 연결 실패
-- 습도 센서 응답 없음
-
----
-
-## 일일 피드백 알림
-
-Daily Scheduler가 매일 재배별로 생성하는 일일 피드백이 준비되면 사용자에게 알립니다.
-
-예시
-
-- 오늘의 재배 피드백이 도착했습니다.
-
----
-
-## 수확 완료 알림
-
-재배가 종료되고 수확 정보가 저장되면 사용자에게 알립니다.
-
-예시
-
-- 느타리 1호기 재배가 종료되었습니다. 수확량: 3.2kg
-
----
-
-## 알림 목록 조회
-
-로그인한 사용자가 받은 알림을 최신순으로 조회합니다. 읽지 않은 알림만 필터링할 수 있습니다.
-
----
-
-## 알림 읽음 처리
-
-특정 알림, 또는 전체 알림을 읽음 상태로 변경합니다.
-
----
-
-# API
-
-채널 발송(Telegram/Discord)은 RabbitMQ 이벤트 기반으로 동작하며 REST API가
-없지만, 알림 이력 조회/읽음 처리는 REST API로 제공합니다.
-
-## 알림 목록 조회
-
-GET /notifications
-
----
-
-## 알림 읽음 처리
-
-PATCH /notifications/{notificationId}/read
-
----
-
-## 전체 읽음 처리
-
-PATCH /notifications/read-all
-
----
-
-# Database
-
-Notification Service는 하나의 PostgreSQL Database를 사용합니다.
-
-### Table
-
-- notification (발송한 알림 이력)
-
-발송 자체는 여전히 RabbitMQ 이벤트 기반 비동기 처리이며, DB는 그 결과(이력)만 저장합니다.
-자세한 내용은 [notification-db.md](../03_Database/notification-db.md) 참고.
-
----
-
-# Redis
-
-사용하지 않습니다.
-
----
-
-# 다른 서비스와의 통신
-
-## 호출하는 서비스
-
-### Telegram Bot API
-
-Telegram 메시지 전송
-
----
-
-### Discord Webhook
-
-Discord 메시지 전송
-
----
-
-## 호출받는 서비스
-
-### RabbitMQ
-
-이벤트 수신
-
----
-
-### API Gateway
-
-알림 목록 조회/읽음 처리 REST API 요청
-
----
-
-# RabbitMQ
-
-## Subscribe Event
-
-### EnvironmentControlEvent
-
-자동 제어 결과
-
----
-
-### SensorErrorEvent
-
-센서 오류 / 연결 해제
-
----
-
-### HarvestCompletedEvent
-
-수확 완료
-
----
-
-### CultivationFinishedEvent
-
-재배 종료
-
----
-
-### DailyFeedbackCompletedEvent
-
-일일 피드백 생성 완료
-
----
-
-# Telegram
-
-사용자가 Telegram 연동을 활성화한 경우
-
-Telegram Bot을 통해 메시지를 전송합니다.
-
-예시
-
-```
-🍄 버섯 재배 알림
-
-습도가 낮아
-가습기를 자동으로 실행했습니다.
+Notification Service는 다른 서비스가 RabbitMQ로 발행한 이벤트를 받아 사용자의 구독과
+수신 경로를 확인한 뒤 Telegram 또는 Discord로 알림을 발송하고, 발송 결과를 PostgreSQL에
+저장하는 서비스다.
+
+Rule Engine·Cultivation·AI·Auth·Inquiry가 사건을 판단하거나 생성하고,
+Notification Service는 그 사건을 전달하는 역할을 맡는다. WebSocket은 지원하지 않는다.
+
+## 책임
+
+- Telegram·Discord 알림 발송
+- 사용자 Endpoint 등록·조회·수정·소프트 삭제
+- 사용자 Subscription 등록·조회·비활성화·소프트 삭제
+- 이벤트·대상·채널별 템플릿 선택과 메시지 렌더링
+- 발송 성공·실패·재시도 이력 저장
+
+## 이벤트
+
+현재 기준 이벤트는 다음 10개다.
+
+| 코드 | 의미 |
+|---|---|
+| `ENVIRONMENT_THRESHOLD_BREACHED` | 재배 환경값이 임계 범위를 벗어남 |
+| `ENVIRONMENT_RECOVERED` | 환경값이 정상 범위로 복구됨 |
+| `SENSOR_OFFLINE` | 센서 오프라인 |
+| `SENSOR_ERROR` | 센서 오류 |
+| `ACTUATOR_CONTROL_FAILED` | 자동 제어 실패 |
+| `HARVEST_COMPLETED` | 수확 완료 |
+| `CULTIVATION_FINISHED` | 재배 종료 |
+| `DAILY_FEEDBACK_COMPLETED` | AI 일일 피드백 완료 |
+| `LOGIN_SUCCEEDED` | 로그인 성공 |
+| `INQUIRY_ANSWERED` | 문의 답변 완료 |
+
+주간·월간 피드백 이벤트는 사용하지 않는다.
+
+## 처리 흐름
+
+```text
+Producer 서비스
+  → RabbitMQ 이벤트
+  → Notification Consumer
+  → source_event_id 중복 확인
+  → 활성 Subscription·Endpoint 조회
+  → 이벤트×채널 Template 선택
+  → notification 저장
+  → 채널별 notification_delivery 생성
+  → Telegram/Discord 발송
+  → PENDING → SENT 또는 FAILED
 ```
 
----
+구독자가 없으면 원본 `notification`만 남고 Delivery는 생성하지 않는다. 이는 오류가
+아니라 발송 대상이 없는 정상 상황이다.
 
-# Discord
+## API 초안
 
-사용자가 Discord 연동을 활성화한 경우
+최종 Base Path는 팀 계약에서 확정한다. 현재 문서의 경로는 초안이다.
 
-Webhook을 이용하여 메시지를 전송합니다.
+```text
+POST   /api/v1/notification-endpoints
+GET    /api/v1/notification-endpoints
+PATCH  /api/v1/notification-endpoints/{endpointId}
+PATCH  /api/v1/notification-endpoints/{endpointId}/enabled
+DELETE /api/v1/notification-endpoints/{endpointId}
 
-예시
-
+POST   /api/v1/notification-subscriptions
+GET    /api/v1/notification-subscriptions
+PATCH  /api/v1/notification-subscriptions/{subscriptionId}/enabled
+DELETE /api/v1/notification-subscriptions/{subscriptionId}
 ```
-🍄 Mushroom Notification
 
-Temperature High
+DELETE는 소프트 삭제다. `enabled=false`는 일시정지이고 `is_deleted=true`는 삭제 처리다.
+Auth Service의 JWT에서는 `sub` claim을 사용자 ID로 사용하며, API는 본인 소유 데이터만
+조회·수정해야 한다.
 
-Cooling Fan ON
-```
+## RabbitMQ 계약
 
----
+이벤트의 실제 exchange, queue, routing key, JSON payload는 Producer 담당자들과 공동
+회의에서 확정한다. 현재 이벤트 코드만 기준으로 관리하고, 미확정 필드명을 임의로
+Consumer에 고정하지 않는다.
 
-# Sequence
+## 외부 채널
 
-## 알림 발송
+- Telegram: Bot API와 Chat ID 사용
+- Discord: Webhook URL 사용
 
-Rule Engine
+공통 발송 흐름은 같지만 요청 JSON과 응답 형식이 달라 채널별 Provider로 분리한다.
 
-↓
+발송 상태는 도메인 메서드로만 변경한다. `SENT` 또는 `FAILED`로 확정된 Delivery를 다시
+변경하거나 3회 초과로 시도하지 못하게 `InvalidDeliveryStateException`으로 차단한다.
 
-RabbitMQ
+## Database
 
-↓
+자세한 테이블·FK·Migration 설명은 [notification-db.md](./notification-db.md)를 참고한다.
 
-Notification Service
+- `notification`: 수신한 원본 이벤트
+- `notification_delivery`: 채널별 발송 결과
+- `notification_endpoint`: 실제 Telegram/Discord 주소
+- `notification_subscription`: Endpoint가 받을 이벤트 설정
+- `notification_template`: 이벤트×채널별 메시지 양식
 
-↓
+## 아직 확정할 항목
 
-notification 저장 (PostgreSQL)
+- RabbitMQ exchange·queue·routing key·vhost
+- Producer별 실제 JSON payload
+- 최종 API Base Path
+- 공통 오류 응답 JSON
+- Telegram·Discord 테스트 계정과 Provider 세부 방식
 
-↓
+## CI/CD 현재 규칙
 
-알림 채널 확인
+현재 저장소에는 Maven Wrapper(`mvnw`)가 없으므로 GitHub Actions와 로컬 검증은 설치된
+Maven을 `mvn` 명령으로 실행한다. `./mvnw`로 변경하려면 Wrapper 파일을 먼저 저장소에
+추가하고 팀 표준으로 합의해야 한다.
 
-├── Telegram
+CI에서는 PostgreSQL 서비스 컨테이너를 실행한 뒤 통합 테스트 속성을 켜서 Migration과
+Repository 테스트까지 실행한다. 로컬 통합 테스트는 Docker PostgreSQL의 `55432` 포트를
+사용할 수 있다.
 
-└── Discord
+중앙 배포용 서비스명은 현재 `notification-server`를 임시 기준으로 사용하고 있다.
+Config 저장소의 allowlist와 Kubernetes manifest가 아직 Notification에 대해 등록되지
+않았으므로, 공식 repository·image·Deployment 이름은 인프라 담당자 등록 후 확정한다.
 
-↓
+## JWT 사용자 ID 추출 구현
 
-사용자
+Auth 서비스의 JWT 계약상 사용자 ID는 `sub` claim에 문자열로 들어온다. Notification에는
+`JwtUserIdExtractor` 컴포넌트를 추가해 Spring Security가 검증한 `Jwt`에서 `sub`를 양수
+`Long` 사용자 ID로 변환한다.
 
-채널 발송 성공/실패와 무관하게 이력 저장은 먼저 시도합니다.
+현재 컴포넌트는 다음을 검사한다.
 
----
+- 인증 객체가 존재하고 인증 상태인지
+- principal이 검증된 `Jwt`인지
+- `sub` claim이 존재하고 비어 있지 않은지
+- `sub`가 양수 숫자 사용자 ID인지
 
-## 알림 목록 조회
+아직 Controller에 보안 필터와 소유권 검증을 연결한 단계는 아니다. JWT 서명 알고리즘과
+Secret은 운영 설정으로 확정한 뒤 Resource Server 설정에 연결한다. 임의의 Secret을 코드에
+넣지 않는다.
 
-Client
+현재 Controller와 공통 오류 응답 계약은 아직 확정 전이다. API 구현 시 JWT 오류, 소유권
+오류, 중복 구독, 외부 발송 실패를 각각 HTTP 오류·재시도·Delivery 실패 기록으로 구분한다.
 
-↓
-
-API Gateway
-
-↓
-
-Notification Service
-
-↓
-
-notification 조회 (user_id, 최신순)
-
-↓
-
-Client
-
----
-
-# 예외 상황
-
-- Telegram 전송 실패
-- Discord Webhook 실패
-- RabbitMQ 연결 실패
-- notification 저장 실패 (PostgreSQL)
-- 존재하지 않는 알림 조회/읽음 처리 시도
-- 다른 사용자의 알림에 대한 읽음 처리 시도
-
----
-
-# 추후 개발 예정
-
-- Email 알림
-- Push Notification
-- Slack 연동
-- 알림 우선순위 설정
-- 알림 ON/OFF 설정
+예외가 발생하면 운영 로그에는 이벤트·알림·발송을 추적할 수 있는 식별자와 재시도 정보를
+남긴다. JWT·Webhook URL·Chat ID·토큰·민감한 payload 원문은 기록하지 않는다.

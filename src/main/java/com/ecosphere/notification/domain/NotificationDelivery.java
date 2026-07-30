@@ -22,6 +22,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NotificationDelivery extends AuditEntity {
 
+    private static final short MAX_ATTEMPT_COUNT = 3;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -70,21 +72,36 @@ public class NotificationDelivery extends AuditEntity {
 
     /** 외부 발송에 성공했을 때만 호출한다. */
     public void markSent(String providerMessageId) {
+        requirePending();
         this.status = DeliveryStatus.SENT;
         this.providerMessageId = providerMessageId;
         this.sentAt = LocalDateTime.now();
     }
 
-    /** 발송 실패 사유를 남긴다. */
+    /** 재시도를 모두 소진한 최종 실패일 때 호출한다. */
     public void markFailed(String error) {
+        requirePending();
         this.status = DeliveryStatus.FAILED;
         this.error = error;
     }
 
     /** 재시도 횟수를 도메인 메서드로만 증가시킨다. */
     public void increaseAttemptCount() {
-        if (attemptCount < 3) {
-            this.attemptCount++;
+        requirePending();
+        if (attemptCount >= MAX_ATTEMPT_COUNT) {
+            throw new InvalidDeliveryStateException("최대 발송 시도 횟수를 초과할 수 없습니다.");
+        }
+        this.attemptCount++;
+    }
+
+    public boolean canRetry() {
+        return status == DeliveryStatus.PENDING && attemptCount < MAX_ATTEMPT_COUNT;
+    }
+
+    private void requirePending() {
+        if (status != DeliveryStatus.PENDING) {
+            throw new InvalidDeliveryStateException(
+                    "대기 상태의 발송만 변경할 수 있습니다. 현재 상태: " + status);
         }
     }
 }
