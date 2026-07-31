@@ -54,9 +54,10 @@ Producer 서비스
 구독자가 없으면 원본 `notification`만 남고 Delivery는 생성하지 않는다. 이는 오류가
 아니라 발송 대상이 없는 정상 상황이다.
 
-## API 초안
+## REST API
 
-최종 Base Path는 팀 계약에서 확정한다. 현재 문서의 경로는 초안이다.
+현재 구현 경로는 다음과 같다. 최종 팀 계약에서 Base Path가 바뀌면 Gateway Route와 함께
+변경한다.
 
 ```text
 POST   /api/v1/notification-endpoints
@@ -69,22 +70,26 @@ POST   /api/v1/notification-subscriptions
 GET    /api/v1/notification-subscriptions
 PATCH  /api/v1/notification-subscriptions/{subscriptionId}/enabled
 DELETE /api/v1/notification-subscriptions/{subscriptionId}
+
+GET    /api/v1/notification-subscription-types
+GET    /api/v1/notifications
 ```
 
 DELETE는 소프트 삭제다. `enabled=false`는 일시정지이고 `is_deleted=true`는 삭제 처리다.
-Auth Service의 JWT에서는 `sub` claim을 사용자 ID로 사용하며, API는 본인 소유 데이터만
-조회·수정해야 한다.
+API Gateway가 JWT를 검증한 뒤 전달하는 `X-User-Id`를 사용자 ID로 사용하며, API는
+본인 소유 데이터만 조회·수정해야 한다.
 
 ## RabbitMQ 계약
 
 이벤트의 실제 exchange, queue, routing key, JSON payload는 Producer 담당자들과 공동
-회의에서 확정한다. 현재 이벤트 코드만 기준으로 관리하고, 미확정 필드명을 임의로
-Consumer에 고정하지 않는다.
+회의에서 확정한다. 현재 이름은 `application.yml`의 기본값이며 환경변수로 교체할 수 있다.
+미확정 Producer별 payload 필드명은 Consumer의 Java DTO로 고정하지 않는다.
 
 계약 확정 전 준비 작업으로 `DomainEventParser`가 공통 envelope의 JSON 역직렬화와
 필수값을 검증한다. 임시 수확 완료 JSON, 필수 필드 누락, 잘못된 `targetId`, 잘못된 JSON을
-테스트하지만, 아직 미확정인 이벤트 코드와 Producer별 payload 구조는 제한하지 않는다.
-RabbitMQ Listener와 실제 exchange·queue·routing key 연결은 계약 확정 후 추가한다.
+테스트하지만, 아직 미확정인 Producer별 payload 구조는 공통 Parser에서 제한하지 않는다.
+RabbitMQ Listener·Queue·DLX·DLQ는 구현했으며 실제 이름은 공동 계약 후 환경변수로
+주입한다.
 
 ## 외부 채널
 
@@ -124,29 +129,26 @@ CI에서는 PostgreSQL 서비스 컨테이너를 실행한 뒤 통합 테스트 
 Repository 테스트까지 실행한다. 로컬 통합 테스트는 Docker PostgreSQL의 `55432` 포트를
 사용할 수 있다.
 
-중앙 배포용 서비스명은 현재 `notification-server`를 임시 기준으로 사용하고 있다.
+중앙 배포용 서비스명과 Spring Application 이름은 `notification-server`로 사용한다.
 Config 저장소의 allowlist와 Kubernetes manifest가 아직 Notification에 대해 등록되지
-않았으므로, 공식 repository·image·Deployment 이름은 인프라 담당자 등록 후 확정한다.
+않았으므로, Deployment와 Service도 같은 이름으로 인프라 담당자가 등록해야 한다.
 
-## JWT 사용자 ID 추출 구현
+## Gateway 사용자 ID 전달
 
-Auth 서비스의 JWT 계약상 사용자 ID는 `sub` claim에 문자열로 들어온다. Notification에는
-`JwtUserIdExtractor` 컴포넌트를 추가해 Spring Security가 검증한 `Jwt`에서 `sub`를 양수
-`Long` 사용자 ID로 변환한다.
+Auth Service가 JWT의 `sub` claim에 사용자 ID를 넣고, API Gateway가 JWT 서명·만료를
+검증한다. 검증에 성공하면 Gateway가 사용자 ID를 `X-User-Id` 헤더로 Notification
+Service에 전달한다.
 
-현재 컴포넌트는 다음을 검사한다.
+Notification Service는 JWT를 다시 검증하거나 claim을 직접 해석하지 않는다. Controller는
+`X-User-Id`를 `Long`으로 받아 본인 소유 Endpoint·Subscription만 조회·변경한다.
 
-- 인증 객체가 존재하고 인증 상태인지
-- principal이 검증된 `Jwt`인지
-- `sub` claim이 존재하고 비어 있지 않은지
-- `sub`가 양수 숫자 사용자 ID인지
+이 구조가 안전하려면 Notification Service를 외부에 직접 노출하지 않고 사용자 요청이
+반드시 Gateway를 거치도록 해야 한다. 또한 Gateway는 클라이언트가 임의로 넣은
+`X-User-Id`를 신뢰하지 않고, 검증한 JWT의 `sub` 값으로 덮어써야 한다.
 
-아직 Controller에 보안 필터와 소유권 검증을 연결한 단계는 아니다. JWT 서명 알고리즘과
-Secret은 운영 설정으로 확정한 뒤 Resource Server 설정에 연결한다. 임의의 Secret을 코드에
-넣지 않는다.
-
-현재 Controller와 공통 오류 응답 계약은 아직 확정 전이다. API 구현 시 JWT 오류, 소유권
-오류, 중복 구독, 외부 발송 실패를 각각 HTTP 오류·재시도·Delivery 실패 기록으로 구분한다.
+Controller와 공통 `ErrorResponse`, `@RestControllerAdvice`가 구현되어 있다. 사용자 ID
+형식 오류, 소유 데이터 없음, 중복 리소스, 지원하지 않는 채널, 외부 Provider 실패를 서로
+다른 HTTP 상태와 오류 코드로 구분한다. 최종 팀 공통 오류 형식이 확정되면 필드명을 맞춘다.
 
 예외가 발생하면 운영 로그에는 이벤트·알림·발송을 추적할 수 있는 식별자와 재시도 정보를
 남긴다. JWT·Webhook URL·Chat ID·토큰·민감한 payload 원문은 기록하지 않는다.

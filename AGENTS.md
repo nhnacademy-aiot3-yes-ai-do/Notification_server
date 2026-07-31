@@ -20,10 +20,12 @@ Notification Service는 다른 서비스가 RabbitMQ로 발행한 이벤트를 �
 - 제어 성공은 발송하지 않고 제어 실패만 발송한다.
 - 발송은 최대 3회 시도하며 최종 결과는 `SENT` 또는 `FAILED`로 저장한다.
 - `notification.source_event_id`로 중복 이벤트를 방지한다.
-- JWT 사용자 ID는 검증된 토큰의 `sub` claim에서 읽는다.
+- Gateway가 JWT를 검증하고 전달한 `X-User-Id` 헤더를 사용자 ID로 사용한다.
 
 ## 코드 구조
 
+- 기본 Java 패키지는 `site.yesaido.notification_server`를 사용한다.
+- Spring Application과 중앙 배포 서비스명은 `notification-server`를 사용한다.
 - Controller는 HTTP 요청·응답과 입력 검증을 담당한다.
 - Service는 트랜잭션과 도메인 규칙을 담당한다.
 - Repository는 데이터 조회·저장에 집중한다.
@@ -43,7 +45,10 @@ Notification Service는 다른 서비스가 RabbitMQ로 발행한 이벤트를 �
 
 ## 보안과 예외
 
-- JWT를 직접 문자열 파싱하지 않고 Spring Security가 검증한 `Jwt`를 사용한다.
+- JWT 검증은 API Gateway가 담당하며 Notification Service는 JWT를 다시 해석하지 않는다.
+- Controller는 Gateway가 전달한 `X-User-Id`를 받아 본인 소유 Endpoint·Subscription만 처리한다.
+- 외부 요청이 Notification Service에 직접 접근하지 못하도록 배포 경계를 구성해야 한다.
+- Gateway는 클라이언트가 보낸 `X-User-Id`를 신뢰하지 않고, 검증한 JWT의 `sub` 값으로 덮어써야 한다.
 - 비밀번호, 토큰, Telegram Chat ID, Discord Webhook 전체 값을 로그에 남기지 않는다.
 - 도메인 규칙 위반은 의미가 드러나는 전용 예외로 표현한다.
 - Controller 구현 시 `@RestControllerAdvice`에서 공통 오류 응답으로 변환한다.
@@ -96,7 +101,7 @@ mvn \
 - RabbitMQ exchange, queue, routing key, vhost, ACK/NACK·DLQ 정책
 - Producer별 실제 이벤트 JSON payload
 - Config allowlist와 Kubernetes Deployment의 최종 서비스명
-- JWT 검증 알고리즘·issuer·키 전달 방식
+- Gateway의 `X-User-Id` 전달 및 외부 직접 접근 차단 방식
 - 최종 API Base Path와 공통 오류 응답 형식
 
 미확정 값을 운영 코드에 임의로 고정하지 않는다.

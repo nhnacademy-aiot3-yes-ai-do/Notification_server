@@ -11,11 +11,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.ecosphere</groupId>
-    <artifactId>notification-server</artifactId>
+    <groupId>site.yesaido</groupId>
+    <artifactId>notification_server</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>notification-service</name>
-    <description>EcoSphere Notification Service</description>
+    <name>notification_server</name>
+    <description>yes-ai-do notification server</description>
 
     <properties>
         <java.version>21</java.version>
@@ -38,6 +38,10 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-restclient</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         <dependency>
@@ -45,12 +49,12 @@
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-oauth2-jose</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
