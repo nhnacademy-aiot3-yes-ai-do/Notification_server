@@ -39,7 +39,6 @@ public record NotificationProperties(
     }
 
     public record Retry(
-            int maxAttempts,
             Duration backoff
     ) {
     }

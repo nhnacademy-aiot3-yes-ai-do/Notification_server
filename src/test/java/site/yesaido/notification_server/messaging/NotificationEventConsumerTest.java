@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.dao.DataIntegrityViolationException;
 import site.yesaido.notification_server.service.DeliveryDispatchService;
 import site.yesaido.notification_server.service.EventProcessingResult;
 import site.yesaido.notification_server.service.NotificationEventService;
@@ -42,6 +43,30 @@ class NotificationEventConsumerTest {
                 new InvalidDomainEventException("invalid"));
 
         assertThatThrownBy(() -> consumer.consume("invalid"))
+                .isInstanceOf(AmqpRejectAndDontRequeueException.class);
+    }
+
+    @Test
+    void treatsUniqueConstraintConflictAsDuplicateWhenEventWasPersisted() {
+        DomainEvent event = event();
+        when(parser.parse("duplicate")).thenReturn(event);
+        when(eventService.process(event)).thenThrow(new DataIntegrityViolationException("duplicate"));
+        when(eventService.isProcessed(event.eventId())).thenReturn(true);
+
+        consumer.consume("duplicate");
+
+        verify(eventService).isProcessed(event.eventId());
+        verify(dispatchService, org.mockito.Mockito.never()).dispatch(org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
+    void rejectsConstraintViolationWhenEventWasNotPersisted() {
+        DomainEvent event = event();
+        when(parser.parse("persistence-failure")).thenReturn(event);
+        when(eventService.process(event)).thenThrow(new DataIntegrityViolationException("failure"));
+        when(eventService.isProcessed(event.eventId())).thenReturn(false);
+
+        assertThatThrownBy(() -> consumer.consume("persistence-failure"))
                 .isInstanceOf(AmqpRejectAndDontRequeueException.class);
     }
 

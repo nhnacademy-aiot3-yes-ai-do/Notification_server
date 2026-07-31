@@ -52,7 +52,6 @@ notification:
     discord:
       allowed-hosts: ${DISCORD_ALLOWED_HOSTS:discord.com,discordapp.com}
   retry:
-    max-attempts: ${NOTIFICATION_MAX_ATTEMPTS:3}
     backoff: ${NOTIFICATION_RETRY_BACKOFF:1s}
 
 server:

@@ -18,8 +18,8 @@ Notification Service는 다른 서비스가 RabbitMQ로 발행한 이벤트를 �
 - `enabled=false`는 일시정지, `is_deleted=true`는 소프트 삭제다.
 - 삭제되지 않은 같은 구독 조합은 하나만 유지하고, 재구독 시 기존 구독을 활성화한다.
 - 제어 성공은 발송하지 않고 제어 실패만 발송한다.
-- 발송은 최대 3회 시도하며 최종 결과는 `SENT` 또는 `FAILED`로 저장한다.
-- `notification.source_event_id`로 중복 이벤트를 방지한다.
+- 발송은 `NotificationDelivery.MAX_ATTEMPT_COUNT` 기준으로 최대 3회 시도하며 최종 결과는 `SENT` 또는 `FAILED`로 저장한다. 환경 설정으로는 backoff만 조절한다.
+- `notification.source_event_id`로 중복 이벤트를 방지한다. 동시 Consumer의 UNIQUE 충돌은 이미 저장된 이벤트가 확인되면 정상 중복으로 처리한다.
 - Gateway가 JWT를 검증하고 전달한 `X-User-Id` 헤더를 사용자 ID로 사용한다.
 
 ## 코드 구조
@@ -60,6 +60,7 @@ Notification Service는 다른 서비스가 RabbitMQ로 발행한 이벤트를 �
 - 이벤트 처리 로그에는 `eventId`, `eventType`, `targetType`, `targetId`를 기록한다.
 - 발송 로그에는 `notificationId`, `deliveryId`, 채널, 시도 횟수, 재시도 여부와 실패 원인을 기록한다.
 - 중복 이벤트·구독 없음은 오류가 아닌 정상 분기이므로 `DEBUG` 또는 필요한 수준의 `INFO`로 남긴다.
+- Consumer 실패는 계약 오류, 템플릿·기준 설정 오류, 영속화 오류, 시스템 오류로 구분해 남긴다.
 - 외부 Provider 실패, 재시도, 최종 실패, DLQ 이동은 `WARN` 또는 `ERROR`로 남긴다.
 - JWT·비밀번호·Webhook URL·Chat ID·access token·refresh token·민감 payload 원문은 로그에 남기지 않는다.
 - stack trace가 필요한 경우 원인 예외를 함께 전달하되, 사용자 응답에는 내부 정보를 노출하지 않는다.

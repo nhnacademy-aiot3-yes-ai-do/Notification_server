@@ -73,6 +73,6 @@ class DeliveryDispatchServiceTest {
                 new NotificationProperties.Provider(
                         new NotificationProperties.Telegram("https://api.telegram.org", ""),
                         new NotificationProperties.Discord(List.of("discord.com"))),
-                new NotificationProperties.Retry(3, Duration.ofMillis(1)));
+                new NotificationProperties.Retry(Duration.ofMillis(1)));
     }
 }

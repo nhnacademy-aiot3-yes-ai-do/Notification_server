@@ -3,8 +3,12 @@ package site.yesaido.notification_server.messaging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import site.yesaido.notification_server.exception.EventContractException;
+import site.yesaido.notification_server.exception.NotificationNotFoundException;
+import site.yesaido.notification_server.exception.TemplateRenderingException;
 import site.yesaido.notification_server.service.DeliveryDispatchService;
 import site.yesaido.notification_server.service.EventProcessingResult;
 import site.yesaido.notification_server.service.NotificationEventService;
@@ -41,11 +45,38 @@ public class NotificationEventConsumer {
             log.info("Notification event accepted: eventId={}, eventType={}, deliveries={}",
                     event.eventId(), event.eventType(), result.deliveryIds().size());
             result.deliveryIds().forEach(dispatchService::dispatch);
+        } catch (DataIntegrityViolationException exception) {
+            if (event != null && eventService.isProcessed(event.eventId())) {
+                log.info("Duplicate notification event ignored after unique constraint: {}",
+                        eventMetadata(event));
+                return;
+            }
+            log.error("Notification event persistence failed: {}", eventMetadata(event), exception);
+            throw reject(exception);
+        } catch (InvalidDomainEventException | EventContractException exception) {
+            log.warn("Notification event contract rejected: {}", eventMetadata(event), exception);
+            throw reject(exception);
+        } catch (TemplateRenderingException | NotificationNotFoundException exception) {
+            log.error("Notification event configuration failed: {}", eventMetadata(event), exception);
+            throw reject(exception);
         } catch (RuntimeException exception) {
-            Object eventId = event == null ? "unknown" : event.eventId();
-            log.error("Notification event processing failed: eventId={}", eventId, exception);
-            throw new AmqpRejectAndDontRequeueException(
-                    "Notification event processing failed", exception);
+            log.error("Notification event system processing failed: {}", eventMetadata(event), exception);
+            throw reject(exception);
         }
+    }
+
+    private AmqpRejectAndDontRequeueException reject(RuntimeException exception) {
+        return new AmqpRejectAndDontRequeueException(
+                "Notification event processing failed", exception);
+    }
+
+    private String eventMetadata(DomainEvent event) {
+        if (event == null) {
+            return "eventId=unknown";
+        }
+        return "eventId=" + event.eventId()
+                + ", eventType=" + event.eventType()
+                + ", targetType=" + event.targetType()
+                + ", targetId=" + event.targetId();
     }
 }

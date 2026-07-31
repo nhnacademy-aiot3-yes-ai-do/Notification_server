@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.yesaido.notification_server.domain.Notification;
@@ -87,6 +88,12 @@ public class NotificationEventServiceImpl implements NotificationEventService {
             deliveryIds.add(delivery.getId());
         }
         return EventProcessingResult.created(deliveryIds);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isProcessed(UUID eventId) {
+        return notificationRepository.existsBySourceEventId(eventId);
     }
 
     private NotificationTemplate findTemplate(

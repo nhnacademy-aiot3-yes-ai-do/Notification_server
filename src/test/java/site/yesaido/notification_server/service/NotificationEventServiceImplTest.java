@@ -69,6 +69,16 @@ class NotificationEventServiceImplTest {
     }
 
     @Test
+    void reportsWhetherEventWasAlreadyPersisted() {
+        UUID eventId = UUID.randomUUID();
+        when(notificationRepository.existsBySourceEventId(eventId)).thenReturn(true);
+
+        boolean processed = service.isProcessed(eventId);
+
+        assertThat(processed).isTrue();
+    }
+
+    @Test
     void createsDeliveryForEachActiveSubscription() {
         DomainEvent event = event();
         SubscriptionTargetType targetType = mock(SubscriptionTargetType.class);

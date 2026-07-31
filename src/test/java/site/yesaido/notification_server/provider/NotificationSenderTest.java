@@ -45,6 +45,6 @@ class NotificationSenderTest {
                                 "https://api.telegram.org", telegramToken),
                         new NotificationProperties.Discord(
                                 List.of("discord.com", "discordapp.com"))),
-                new NotificationProperties.Retry(3, Duration.ZERO));
+                new NotificationProperties.Retry(Duration.ZERO));
     }
 }

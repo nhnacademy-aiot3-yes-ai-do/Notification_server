@@ -22,7 +22,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NotificationDelivery extends AuditEntity {
 
-    private static final short MAX_ATTEMPT_COUNT = 3;
+    /**
+     * 알림 서비스의 확정 발송 정책이다. Provider 장애가 지속될 때 무한 재시도를
+     * 막고, 최종 실패 이력과 DLQ를 남기기 위해 최대 3회만 시도한다.
+     */
+    public static final short MAX_ATTEMPT_COUNT = 3;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
