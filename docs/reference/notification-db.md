@@ -2,7 +2,7 @@
 
 ## 1. 문서 기준
 
-이 문서는 Notification Service의 실제 코드와 Flyway Migration `V1`~`V6`을 기준으로
+이 문서는 Notification Service의 실제 코드와 Flyway Migration `V1`~`V7`을 기준으로
 작성한 최신 DB 명세다. ERD의 과거 초안보다 실행되는 Migration과 Entity를 우선한다.
 
 - DBMS: PostgreSQL
@@ -12,6 +12,13 @@
 - 외부 서비스 ID: 실제 FK가 아닌 소프트 참조
 - 지원 채널: Telegram, Discord
 - WebSocket 알림: 지원하지 않음
+
+### SSOT 원칙
+
+최종 스키마의 SSOT(Single Source of Truth)는 Flyway `V1`~`V7`을 순서대로 적용한
+PostgreSQL 상태다. ERD는 테이블 관계를 설명하는 설계 문서이며, ERD와 문서가 실제
+Migration과 다르면 Flyway 최종 상태에 맞춰 갱신한다. 이미 적용된 Migration은 수정하지
+않고 다음 버전 파일로 변경한다.
 
 ## 2. 데이터 흐름
 
@@ -36,6 +43,19 @@ notification_delivery ───── 채널별 메시지·상태·재시도 결
 이벤트 원본은 `notification`에 한 번 저장한다. 같은 이벤트를 Telegram과 Discord로
 보내면 `notification_delivery`가 채널별로 생성된다. 따라서 한 채널만 실패해도 서로
 독립적으로 상태를 기록할 수 있다.
+
+### 핵심 DB 제약
+
+| 대상 | 실제 제약 | 목적 |
+|---|---|---|
+| `notification` | `source_event_id UNIQUE` | 같은 RabbitMQ 이벤트의 중복 저장·발송 방지 |
+| `notification_delivery` | `UNIQUE(notification_id, notification_subscription_id)` | 같은 원본 이벤트를 같은 구독으로 두 번 발송하지 않음 |
+| `notification_delivery` | `CHECK(status IN ('PENDING', 'SENT', 'FAILED'))` | 허용되지 않은 발송 상태 저장 방지 |
+| `notification_delivery` | `CHECK(attempt_count BETWEEN 0 AND 3)` | 확정된 최대 3회 발송 정책 강제 |
+| `notification_subscription` | partial UNIQUE, `WHERE is_deleted = FALSE` | 비삭제 상태의 같은 구독 조합은 하나만 유지 |
+
+`enabled=false`는 삭제가 아니라 일시정지다. 따라서 `enabled=false`인 구독도 위 partial
+UNIQUE 대상에 포함되며, 재구독 요청은 새 행 생성 대신 기존 구독을 다시 활성화한다.
 
 ## 3. 테이블 요약
 
@@ -164,6 +184,14 @@ notification_delivery ───── 채널별 메시지·상태·재시도 결
 `target_id`는 다른 MSA DB의 PK이므로 물리 FK를 만들지 않는다. 대상 의미는
 `notification_subscription_type.subscription_target_type_id`로 판단한다.
 
+`notification_event_type`에도 대상 유형이 있고 구독 유형에도 대상 유형이 있는 이유는
+역할이 다르기 때문이다. 전자는 이벤트 계약상 원래 대상이고, 후자는 사용자가 선택하는
+구독 카탈로그의 대상이다. 현재 Seed에서는 둘이 같은 값을 사용하며, 관리자 기능으로
+구독 유형을 추가하게 되면 두 대상 유형의 일치 여부를 검증해야 한다.
+
+`CULTIVATION`, `INQUIRY`의 `target_id` 존재 여부와 사용자의 소유권은 Notification DB만으로
+판단하지 않는다. 구독 생성 시 해당 서비스의 권한 확인 API 계약이 확정되면 연동한다.
+
 비삭제 구독에는 다음 partial UNIQUE index를 적용한다.
 
 ```sql
@@ -187,7 +215,9 @@ UNIQUE (
 | `event_payload` | JSONB | X | 이벤트 상세 데이터 |
 | `created_at` | TIMESTAMP | X | 생성 시각 |
 
-`source_event_id` UNIQUE가 RabbitMQ 재전송에 따른 중복 발송을 방지한다.
+`source_event_id` UNIQUE가 RabbitMQ 재전송에 따른 중복 발송을 방지한다. 동시에 같은
+이벤트가 들어와 UNIQUE 충돌이 나더라도, 이미 저장된 eventId가 확인되면 Consumer는 이를
+정상 중복 이벤트로 처리하고 DLQ로 보내지 않는다.
 사용자에게 실제로 발송된 문구는 `notification_delivery.rendered_message`에만 보관한다.
 
 ### 4.10 `notification_delivery`
@@ -210,6 +240,10 @@ UNIQUE (
 `(notification_id, notification_subscription_id)`는 UNIQUE다. 템플릿 FK는
 `notification`이 아니라 `notification_delivery`에 둔다. 한 원본 이벤트에서도
 Telegram·Discord가 서로 다른 템플릿을 선택하기 때문이다.
+
+`status`와 `attempt_count`는 애플리케이션 규칙일 뿐 아니라 DB CHECK 제약으로도 보호한다.
+따라서 잘못된 상태 문자열이나 0~3 범위를 벗어난 발송 시도 횟수는 PostgreSQL이 저장을
+거부한다.
 
 ## 5. 상태·발송 정책
 

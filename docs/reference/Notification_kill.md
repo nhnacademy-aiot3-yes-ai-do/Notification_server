@@ -192,13 +192,19 @@ PostgreSQL
 
 ## 13. 현재 프로젝트에서 이미 된 것과 남은 것
 
-현재 완료된 기반 작업은 Migration V1~V6, Notification 관련 Entity, Repository, 기준 Seed, Repository 통합 테스트, Docker PostgreSQL 검증, 예외·재시도 정책, JWT 사용자 ID 추출 보조 코드다.
+현재 완료된 작업은 Migration V1~V6, Notification 관련 Entity·Repository·Seed,
+Endpoint·Subscription API, 공통 예외 응답, RabbitMQ Consumer·Queue·DLQ,
+Notification·Delivery 생성 Service, Template Renderer, Telegram·Discord Sender,
+최대 3회 재시도와 최종 실패 처리, Gateway Route다. JWT는 Notification이 직접 해석하지
+않고 Gateway가 검증한 `X-User-Id`를 사용한다.
 
 공통 이벤트의 최소 역직렬화·검증 기반도 추가되어 있다. `DomainEventParser`는 RabbitMQ에서 받을 문자열 JSON을 `DomainEvent`로 변환하고, `eventId`, `eventType`, `producer`, `targetType`, `targetId`, `occurredAt`, `payload`의 필수 여부를 확인한다. 잘못된 JSON이나 양수가 아닌 `targetId`는 `InvalidDomainEventException`으로 거부한다.
 
 Parser 테스트는 임시 `HARVEST_COMPLETED` JSON을 정상 변환하는지와 필수값 누락·잘못된 JSON을 거부하는지를 확인한다. 아직 회의에서 확정하지 않은 이벤트 코드와 Producer별 payload 필드는 Parser에 고정하지 않았다. 따라서 이 코드는 Consumer 전체가 아니라 나중에 RabbitMQ Listener가 재사용할 수 있는 공통 입력 검증 단계다.
 
-아직 외부 계약 확정 전이라 본격적으로 만들지 않은 것은 RabbitMQ Consumer, 실제 Telegram/Discord Sender, Controller/API, Producer별 최종 payload 연결이다. 3일 회의에서 exchange·queue·routing key, payload, JWT claim, 권한 API를 확정한 뒤 구현한다.
+남은 핵심 작업은 실제 Producer별 payload와 RabbitMQ 이름을 공동 계약으로 확정하고,
+Telegram Bot·Discord Webhook 테스트 Secret을 주입해 실연동하는 것이다. Cultivation과
+Inquiry의 `targetId` 접근 권한 확인도 해당 서비스 내부 API 형식이 확정된 뒤 연결한다.
 
 ## 14. 개발 순서 요약
 
