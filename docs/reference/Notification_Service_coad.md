@@ -3953,3 +3953,71 @@ source_event_id 사전 확인
 - 실패 0개, 오류 0개, 건너뛴 테스트 0개
 
 이 테스트는 단순히 Java 객체만 검사한 것이 아니라 실제 PostgreSQL에 연결해 Migration과 Repository 쿼리를 함께 검증한 것이다.
+
+## 69. 2026-08-03 로컬 통합 실행 확인
+
+### 69.1 서비스별 로컬 포트
+
+프로젝트를 하나의 애플리케이션으로 실행하는 것이 아니라 여러 Spring Boot 서비스로 나누어 실행한다. 각 서비스는 서로 다른 포트를 사용한다.
+
+| 포트 | 서비스 | 역할 |
+|---:|---|---|
+| 9002 | Front Server | 사용자가 접속하는 웹 화면 |
+| 8000 | Gateway | 프론트 요청을 백엔드 서비스로 전달 |
+| 9003 | User Server | 회원가입·로그인·사용자 기능 |
+| 9001 | Cultivation Server | 재배·센서·사진 기능 |
+| 8080 | Notification Service | 알림 이벤트 수신·알림 저장·발송 |
+| 8761 | Eureka | 서비스 주소 등록 및 검색 |
+
+Front Server의 개발 설정은 `server.port: 9002`, Gateway는 `server.port: 8000`으로 되어 있다. 따라서 로컬 홈페이지는 다음 주소로 접속한다.
+
+```text
+http://localhost:9002
+```
+
+`localhost:9000`은 현재 어떤 서비스에도 지정되지 않은 포트이므로 접속하면 `ERR_CONNECTION_REFUSED`가 발생한다.
+
+### 69.2 회원가입 확인 흐름
+
+2026-08-03 로컬에서 홈페이지 접속과 회원가입을 확인했다.
+
+```text
+브라우저
+  → Front Server :9002
+  → Gateway :8000
+  → User Server :9003
+```
+
+이 흐름에는 Notification Service가 포함되지 않는다. 따라서 회원가입만 확인할 때는 Notification을 실행하지 않아도 된다.
+
+### 69.3 Notification을 실행해야 하는 시점
+
+Notification은 다음 통합 테스트를 진행할 때 실행한다.
+
+- RabbitMQ 이벤트를 실제로 수신할 때
+- 수신 이벤트를 `notification`과 `notification_delivery`에 저장할 때
+- Telegram·Discord 발송을 테스트할 때
+- 알림 목록 API를 Front와 연결할 때
+- 전체 서비스 간 통합 테스트를 수행할 때
+
+Notification을 실행하면 기본적으로 PostgreSQL과 RabbitMQ도 필요하다.
+
+```text
+PostgreSQL: localhost:5432/notification_db
+RabbitMQ:   localhost:5672
+Notification: localhost:8080
+```
+
+DB 또는 RabbitMQ가 준비되지 않은 상태에서 Notification만 실행하면 애플리케이션 시작 실패나 연결 오류가 발생할 수 있다. 따라서 실제 RabbitMQ Exchange·Queue·Routing Key와 최종 Producer payload를 회의에서 확정한 뒤 실행·연동 테스트를 진행한다.
+
+### 69.4 로컬 실행 판단 기준
+
+| 확인하려는 기능 | 필요한 서비스 |
+|---|---|
+| 홈페이지 화면 | Front Server |
+| 회원가입·로그인 | Front + Gateway + User + Eureka |
+| 재배·센서 화면 | Front + Gateway + Cultivation + Eureka |
+| 알림 통합 | Front + Gateway + Notification + RabbitMQ + PostgreSQL |
+| 전체 시나리오 | 위 서비스 전체 |
+
+IntelliJ 실행 목록에 서비스가 등록되어 있어도 실제 실행 여부는 각 실행 설정의 정지 버튼, 콘솔의 `Started ...` 로그, 해당 포트의 LISTEN 상태를 함께 확인한다.
