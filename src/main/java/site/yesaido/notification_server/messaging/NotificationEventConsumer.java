@@ -32,7 +32,16 @@ public class NotificationEventConsumer {
         this.dispatchService = dispatchService;
     }
 
-    @RabbitListener(queues = "${notification.rabbit.queue}")
+    @RabbitListener(queues = {
+            "${notification.rabbit.threshold.queue}",
+            "${notification.rabbit.action.queue}",
+            "${notification.rabbit.daily.queue}",
+            "${notification.rabbit.login.queue}",
+            "${notification.rabbit.question.queue}",
+            "${notification.rabbit.answer.queue}",
+            "${notification.rabbit.harvest.queue}",
+            "${notification.rabbit.cultivation-finished.queue}"
+    })
     public void consume(String message) {
         DomainEvent event = null;
         try {

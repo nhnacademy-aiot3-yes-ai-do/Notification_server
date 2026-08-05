@@ -17,10 +17,32 @@ Notification Service는 다른 서비스가 RabbitMQ로 발행한 이벤트를 �
 - WebSocket 알림은 지원하지 않는다.
 - `enabled=false`는 일시정지, `is_deleted=true`는 소프트 삭제다.
 - 삭제되지 않은 같은 구독 조합은 하나만 유지하고, 재구독 시 기존 구독을 활성화한다.
-- 제어 성공은 발송하지 않고 제어 실패만 발송한다.
+- 장치 ON/OFF 제어는 성공과 실패를 모두 알림으로 발송한다. 같은 제어 결과 이벤트는 한
+  번만 발행하며 `source_event_id`로 중복 발송을 막는다.
 - 발송은 `NotificationDelivery.MAX_ATTEMPT_COUNT` 기준으로 최대 3회 시도하며 최종 결과는 `SENT` 또는 `FAILED`로 저장한다. 환경 설정으로는 backoff만 조절한다.
 - `notification.source_event_id`로 중복 이벤트를 방지한다. 동시 Consumer의 UNIQUE 충돌은 이미 저장된 이벤트가 확인되면 정상 중복으로 처리한다.
 - Gateway가 JWT를 검증하고 전달한 `X-User-Id` 헤더를 사용자 ID로 사용한다.
+
+## RabbitMQ 연동 계약
+
+- Notification 계열 이벤트는 Durable Direct Exchange인
+  `yes-nhn.notification.exchange`로 받는다.
+- Notification은 다음 Queue를 선언하고 동일 Exchange에 Binding한다.
+  - `yes-nhn.notification.threshold.queue`
+  - `yes-nhn.notification.action.queue`
+  - `yes-nhn.notification.daily.queue`
+  - `yes-nhn.notification.login.queue`
+  - `yes-nhn.notification.question.queue`
+  - `yes-nhn.notification.answer.queue`
+  - `yes-nhn.notification.harvest.queue`
+  - `yes-nhn.notification.cultivation-finished.queue`
+- 운영 Routing Key는 아직 팀 합의 전이다. `application.yml`의 Queue명과 같은 기본
+  Routing Key는 로컬 실행용이며 운영 계약으로 간주하지 않는다.
+- 공용 Dead Letter Exchange와 Queue는 각각 `yes-nhn.dlx`, `yes-nhn.dlq`를 사용한다.
+- Notification은 공용 DLQ를 자동 소비하지 않는다. 관리자가 RabbitMQ Management UI에서
+  원인을 확인한 뒤 메시지를 수동 처리·삭제한다.
+- 센서 계열의 `yes-nhn.sensor.exchange`만 여러 Consumer에게 같은 데이터를 전달하기 위해
+  Topic Exchange를 사용한다. Notification과 Harvest 계열은 Direct Exchange를 사용한다.
 
 ## 코드 구조
 
@@ -99,7 +121,7 @@ mvn \
 
 ## 아직 외부 합의가 필요한 항목
 
-- RabbitMQ exchange, queue, routing key, vhost, ACK/NACK·DLQ 정책
+- RabbitMQ routing key, vhost, ACK/NACK와 Consumer 재시도 세부 방식
 - Producer별 실제 이벤트 JSON payload
 - Config allowlist와 Kubernetes Deployment의 최종 서비스명
 - Gateway의 `X-User-Id` 전달 및 외부 직접 접근 차단 방식

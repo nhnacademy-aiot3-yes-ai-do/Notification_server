@@ -259,8 +259,10 @@ PENDING
 - 최종 실패할 때 `error`를 저장하고 Delivery 실패 메시지를 DLQ로 보낸다.
 - RabbitMQ 메시지 자체가 파싱되지 않으면 원본 메시지가 Queue의 DLX 정책에 따라 DLQ로
   이동한다.
-- 제어 성공·일반 ON/OFF 성공은 알림으로 만들지 않는다.
-- `ACTUATOR_CONTROL_FAILED`만 제어 관련 알림으로 발송한다.
+- 장치 ON/OFF 제어 성공은 `ACTUATOR_CONTROL_SUCCEEDED`, 실패는
+  `ACTUATOR_CONTROL_FAILED`로 발송한다.
+- 동일 제어 결과는 Producer가 한 번만 발행하고, 재발행되더라도 동일 `source_event_id`를
+  사용해 Notification에서 중복 발송을 막는다.
 
 ## 6. 기준 Seed
 
@@ -281,6 +283,7 @@ PENDING
 - `ENVIRONMENT_RECOVERED`
 - `SENSOR_OFFLINE`
 - `SENSOR_ERROR`
+- `ACTUATOR_CONTROL_SUCCEEDED`
 - `ACTUATOR_CONTROL_FAILED`
 - `HARVEST_COMPLETED`
 - `CULTIVATION_FINISHED`
@@ -289,7 +292,7 @@ PENDING
 - `LOGIN_SUCCEEDED`
 
 Seed는 `ON CONFLICT`를 사용해 재실행해도 중복되지 않는다. 현재 이벤트 코드와 payload
-변수는 서비스 간 RabbitMQ 계약 확정 전까지의 기준안이다. 계약이 바뀌면 이미 적용된
+변수는 서비스 간 RabbitMQ payload 계약 확정 전까지의 기준안이다. 계약이 바뀌면 이미 적용된
 Migration을 수정하지 않고 새 Migration을 추가한다.
 
 ## 7. Index
@@ -325,6 +328,7 @@ Migration을 수정하지 않고 새 Migration을 추가한다.
 | `V5` | 활성 구독 partial UNIQUE 정책 조정 |
 | `V6` | 일시정지 구독 재사용을 위해 비삭제 구독 UNIQUE로 최종 보정 |
 | `V7` | `notification.message` 제거. 채널별 최종 발송 문구는 Delivery에만 보관 |
+| `V8` | 장치 ON/OFF 제어 성공 이벤트·구독 종류·채널·템플릿 Seed 추가 |
 
-Flyway가 적용한 Migration 파일은 수정하지 않는다. 변경이 필요하면 `V7` 이후 파일로
+Flyway가 적용한 Migration 파일은 수정하지 않는다. 변경이 필요하면 `V8` 이후 파일로
 추가한다.

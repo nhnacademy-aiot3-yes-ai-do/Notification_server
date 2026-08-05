@@ -19,7 +19,7 @@ Notification Service는 그 사건을 전달하는 역할을 맡는다. WebSocke
 
 ## 이벤트
 
-현재 기준 이벤트는 다음 10개다.
+현재 기준 이벤트는 다음 11개다.
 
 | 코드 | 의미 |
 |---|---|
@@ -27,6 +27,7 @@ Notification Service는 그 사건을 전달하는 역할을 맡는다. WebSocke
 | `ENVIRONMENT_RECOVERED` | 환경값이 정상 범위로 복구됨 |
 | `SENSOR_OFFLINE` | 센서 오프라인 |
 | `SENSOR_ERROR` | 센서 오류 |
+| `ACTUATOR_CONTROL_SUCCEEDED` | 장치 ON/OFF 제어 성공 |
 | `ACTUATOR_CONTROL_FAILED` | 자동 제어 실패 |
 | `HARVEST_COMPLETED` | 수확 완료 |
 | `CULTIVATION_FINISHED` | 재배 종료 |
@@ -81,15 +82,33 @@ API Gateway가 JWT를 검증한 뒤 전달하는 `X-User-Id`를 사용자 ID로 
 
 ## RabbitMQ 계약
 
-이벤트의 실제 exchange, queue, routing key, JSON payload는 Producer 담당자들과 공동
-회의에서 확정한다. 현재 이름은 `application.yml`의 기본값이며 환경변수로 교체할 수 있다.
-미확정 Producer별 payload 필드명은 Consumer의 Java DTO로 고정하지 않는다.
+2026년 8월 4일 공동 회의에서 Notification 계열 이벤트는 Durable Direct Exchange인
+`yes-nhn.notification.exchange`로 모으기로 했다. Producer는 Exchange에 이벤트를
+발행하고, Notification이 다음 Queue를 선언·Binding한 뒤 소비한다.
+
+| 용도 | Queue |
+|---|---|
+| 환경 임계값 초과·복구 | `yes-nhn.notification.threshold.queue` |
+| 장치 제어 성공·실패 | `yes-nhn.notification.action.queue` |
+| AI 일일 피드백 완료 | `yes-nhn.notification.daily.queue` |
+| 로그인 성공 | `yes-nhn.notification.login.queue` |
+| 문의 등록 | `yes-nhn.notification.question.queue` |
+| 문의 답변 완료 | `yes-nhn.notification.answer.queue` |
+| 수확 완료 | `yes-nhn.notification.harvest.queue` |
+| 재배 종료 | `yes-nhn.notification.cultivation-finished.queue` |
+
+Routing Key는 아직 최종 합의하지 않았다. `application.yml`은 로컬 실행을 위해 Queue명과
+같은 값을 기본 Routing Key로 사용하지만, 이 값은 Producer 계약 확정 후 교체해야 한다.
+Producer별 payload 필드명도 최종 합의 전까지 공통 Parser에서 과도하게 제한하지 않는다.
+
+공용 Dead Letter Exchange와 Queue는 `yes-nhn.dlx`, `yes-nhn.dlq`를 사용한다.
+Notification은 공용 DLQ를 자동으로 소비하지 않으며, 관리자가 RabbitMQ Management
+화면에서 원인을 확인한 뒤 수동으로 처리·삭제한다.
 
 계약 확정 전 준비 작업으로 `DomainEventParser`가 공통 envelope의 JSON 역직렬화와
 필수값을 검증한다. 임시 수확 완료 JSON, 필수 필드 누락, 잘못된 `targetId`, 잘못된 JSON을
 테스트하지만, 아직 미확정인 Producer별 payload 구조는 공통 Parser에서 제한하지 않는다.
-RabbitMQ Listener·Queue·DLX·DLQ는 구현했으며 실제 이름은 공동 계약 후 환경변수로
-주입한다.
+RabbitMQ Listener와 Direct Exchange·다중 Queue·공용 DLX·DLQ 선언은 구현했다.
 
 ## 외부 채널
 
@@ -113,7 +132,7 @@ RabbitMQ Listener·Queue·DLX·DLQ는 구현했으며 실제 이름은 공동 �
 
 ## 아직 확정할 항목
 
-- RabbitMQ exchange·queue·routing key·vhost
+- RabbitMQ routing key·vhost·ACK/NACK와 Consumer 재시도 세부 방식
 - Producer별 실제 JSON payload
 - 최종 API Base Path
 - 공통 오류 응답 JSON

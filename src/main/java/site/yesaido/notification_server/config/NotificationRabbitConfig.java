@@ -1,10 +1,14 @@
 package site.yesaido.notification_server.config;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Declarable;
+import org.springframework.amqp.core.Declarables;
+import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,21 +18,34 @@ import org.springframework.context.annotation.Configuration;
 public class NotificationRabbitConfig {
 
     @Bean
-    TopicExchange notificationEventExchange(NotificationProperties properties) {
-        return new TopicExchange(properties.rabbit().exchange(), true, false);
+    DirectExchange notificationEventExchange(NotificationProperties properties) {
+        return new DirectExchange(properties.rabbit().exchange(), true, false);
     }
 
     @Bean
-    TopicExchange notificationDeadLetterExchange(NotificationProperties properties) {
-        return new TopicExchange(properties.rabbit().deadLetterExchange(), true, false);
+    DirectExchange notificationDeadLetterExchange(NotificationProperties properties) {
+        return new DirectExchange(properties.rabbit().deadLetterExchange(), true, false);
     }
 
     @Bean
-    Queue notificationEventQueue(NotificationProperties properties) {
+    Declarables notificationEventQueues(
+            DirectExchange notificationEventExchange,
+            NotificationProperties properties
+    ) {
+        List<Declarable> declarables = new ArrayList<>();
         Map<String, Object> arguments = Map.of(
                 "x-dead-letter-exchange", properties.rabbit().deadLetterExchange(),
                 "x-dead-letter-routing-key", properties.rabbit().deadLetterRoutingKey());
-        return new Queue(properties.rabbit().queue(), true, false, false, arguments);
+
+        for (NotificationProperties.EventRoute route : properties.rabbit().eventRoutes()) {
+            Queue queue = new Queue(route.queue(), true, false, false, arguments);
+            Binding binding = BindingBuilder.bind(queue)
+                    .to(notificationEventExchange)
+                    .with(route.routingKey());
+            declarables.add(queue);
+            declarables.add(binding);
+        }
+        return new Declarables(declarables);
     }
 
     @Bean
@@ -37,20 +54,9 @@ public class NotificationRabbitConfig {
     }
 
     @Bean
-    Binding notificationEventBinding(
-            Queue notificationEventQueue,
-            TopicExchange notificationEventExchange,
-            NotificationProperties properties
-    ) {
-        return BindingBuilder.bind(notificationEventQueue)
-                .to(notificationEventExchange)
-                .with(properties.rabbit().routingKey());
-    }
-
-    @Bean
     Binding notificationDeadLetterBinding(
             Queue notificationDeadLetterQueue,
-            TopicExchange notificationDeadLetterExchange,
+            DirectExchange notificationDeadLetterExchange,
             NotificationProperties properties
     ) {
         return BindingBuilder.bind(notificationDeadLetterQueue)
