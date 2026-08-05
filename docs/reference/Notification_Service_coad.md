@@ -160,7 +160,7 @@ public static void main(String[] args)
 2. SpringApplication.run() 실행
 3. application.yml 읽기
 4. DataSource(PostgreSQL 연결) 준비
-5. Flyway가 V1~V7 Migration 확인·실행
+5. Flyway가 V1~V8 Migration 확인·실행
 6. JPA가 Entity와 실제 테이블 구조 비교(validate)
 7. Repository 구현체 생성
 8. RabbitMQ 연결 설정 준비
@@ -1263,7 +1263,7 @@ Template: SENSOR_ERROR + 해당 채널 조합 선택
 
 - Spring Boot 애플리케이션 실행
 - PostgreSQL 연결
-- Flyway V1~V7 실행
+- Flyway V1~V8 실행
 - JPA Entity 검증
 - Endpoint 생성·조회·수정·일시정지·소프트 삭제
 - Subscription 생성·조회·일시정지·소프트 삭제
@@ -1615,7 +1615,7 @@ Spring이 Service 구현체를 찾아 전달한다.
 
 이를 의존성 주입이라고 한다.
 
-Controller가 직접 `new NotificationEndpointServiceImpl(...)`을 하지 않는다.
+Controller가 직접 `new NotificationEndpointService(...)`을 하지 않는다.
 
 이 방식은 테스트하기 쉽다.
 
@@ -1906,11 +1906,10 @@ ID 값 검증에 사용한다.
 
 ---
 
-## 33. Service 인터페이스와 구현체를 나눈 이유
+## 33. Service를 단순한 클래스로 둔 이유
 
-Service는 두 종류의 파일로 나뉜다.
-
-첫 번째는 인터페이스다.
+현재 Endpoint·Subscription·Event·Query Service는 각각 실제 업무를 수행하는
+`@Service` 클래스 한 개다.
 
 ```text
 NotificationEndpointService
@@ -1919,28 +1918,16 @@ NotificationEventService
 NotificationQueryService
 ```
 
-두 번째는 구현체다.
+예전처럼 “인터페이스 + 구현체(Impl)” 파일을 1:1로 두면 구현을 바꿀 계획이 없는 동안에는
+파일만 늘어나고, 초보자가 실제 실행 코드를 찾기 어려워진다. 그래서 현재는 한 구현만 있는
+업무 Service를 구체 클래스로 둔다.
 
-```text
-NotificationEndpointServiceImpl
-NotificationSubscriptionServiceImpl
-NotificationEventServiceImpl
-NotificationQueryServiceImpl
-```
+다만 Telegram과 Discord처럼 실제 구현 방식이 둘 이상인 경우에는 `NotificationSender`
+인터페이스를 유지한다. 즉, **형식적인 인터페이스는 줄이고, 교체 가능한 전략에만
+인터페이스를 쓴다**는 기준이다.
 
-인터페이스는 “무엇을 할 수 있는가”를 보여준다.
-
-구현체는 “어떻게 하는가”를 보여준다.
-
-Controller는 구현체가 아니라 인터페이스에 의존한다.
-
-이 구조는 테스트 대역을 만들기 쉽다.
-
-구현 방식을 바꿔도 Controller 변경을 줄일 수 있다.
-
-무조건 모든 Service를 인터페이스로 나눠야 하는 것은 아니다.
-
-하지만 팀 프로젝트에서 계층 경계를 명확히 보여주는 장점이 있다.
+Controller도 이 Service를 직접 `new` 하지 않고 Spring에게 주입받는다. 그래서 테스트에서
+Repository나 Sender를 대체할 수 있고, Controller는 HTTP 처리만 담당한다.
 
 ### `@Service`
 
@@ -1969,7 +1956,7 @@ Component Scan 대상이 된다.
 
 ## 34. Endpoint Service를 순서대로 읽기
 
-`NotificationEndpointServiceImpl`은 Endpoint 업무 규칙을 담당한다.
+`NotificationEndpointService`는 Endpoint 업무 규칙을 담당한다.
 
 ### 생성 과정
 
@@ -2042,7 +2029,7 @@ Entity의 `softDelete()`를 호출한다.
 
 ## 35. Subscription Service를 순서대로 읽기
 
-`NotificationSubscriptionServiceImpl`은 구독 설정을 담당한다.
+`NotificationSubscriptionService`는 구독 설정을 담당한다.
 
 ### Endpoint 소유권 확인
 
@@ -2454,7 +2441,7 @@ payload에는 사용자 정보나 민감한 값이 들어갈 수 있다.
 
 ---
 
-## 42. `NotificationEventServiceImpl` 핵심 알고리즘
+## 42. `NotificationEventService` 핵심 알고리즘
 
 이 Service는 이벤트 한 건을 DB의 Notification과 Delivery로 바꾼다.
 
@@ -3385,13 +3372,13 @@ if문의 true와 false 같은 분기가 각각 실행됐는지 본다.
 ```text
 NotificationEndpointController.create
 → NotificationEndpointService.create
-→ NotificationEndpointServiceImpl.create
+→ NotificationEndpointService.create
 → ChannelTypeRepository
 → NotificationEndpointRepository
 → NotificationEndpoint Entity
 → EndpointCreateRequest
 → EndpointResponse
-→ NotificationEndpointServiceImplTest
+→ NotificationEndpointServiceTest
 ```
 
 메서드 안에서 모르는 클래스를 만날 때 한 단계만 따라간다.
@@ -3431,7 +3418,7 @@ NotificationEndpointController.create
 2. `X-User-Id` 헤더 확인
 3. DTO 검증 조건 확인
 4. ID가 양수인지 확인
-5. ErrorResponse 코드 확인
+5. ProblemDetail의 `code`, `detail`, `path` 확인
 
 ### DB 데이터가 조회되지 않을 때
 
@@ -3687,7 +3674,7 @@ Routing Key와 Binding이 맞는 Notification Queue로 들어간다.
 
 ### 7단계
 
-`NotificationEventServiceImpl`이 eventId 중복 여부를 확인한다.
+`NotificationEventService`가 eventId 중복 여부를 확인한다.
 
 ### 8단계
 
@@ -3799,7 +3786,7 @@ Sender Registry가 Telegram 또는 Discord Sender를 선택한다.
 - Schema
 - 계정 권한
 - Flyway 실행 권한
-- V1~V7 정상 적용
+- V1~V8 정상 적용
 - JPA validate 성공
 - 운영 백업 정책
 
@@ -3945,7 +3932,7 @@ source_event_id 사전 확인
 2026-07-31에는 Docker PostgreSQL 통합 환경을 활성화해 다음을 확인했다.
 
 - PostgreSQL 16.14 연결
-- Flyway V1~V7 검증
+- Flyway V1~V8 검증
 - Endpoint Repository 통합 테스트
 - Subscription Repository 통합 테스트
 - UNIQUE 제약조건 테스트
@@ -4021,3 +4008,145 @@ DB 또는 RabbitMQ가 준비되지 않은 상태에서 Notification만 실행하
 | 전체 시나리오 | 위 서비스 전체 |
 
 IntelliJ 실행 목록에 서비스가 등록되어 있어도 실제 실행 여부는 각 실행 설정의 정지 버튼, 콘솔의 `Started ...` 로그, 해당 포트의 LISTEN 상태를 함께 확인한다.
+
+## 70. 통합 프로젝트와 Git 저장소 동기화
+
+### 70.1 통합 프로젝트는 별도의 clone이다
+
+통합 실행 폴더의 `Notification_service`와 기존 작업 폴더의 `Notification_service`는 같은 GitHub 원격 저장소를 바라보더라도 서로 다른 로컬 clone이다. 한 폴더에서 파일을 수정하거나 커밋해도 다른 폴더의 파일은 자동으로 바뀌지 않는다.
+
+```text
+통합 프로젝트/Notification_service
+기존 작업 폴더/Notification_service
+        └── 같은 origin을 바라볼 수 있지만 서로 다른 로컬 작업 복사본
+```
+
+### 70.2 통합 프로젝트에서 작업할 때의 표준 흐름
+
+앞으로 통합 실행과 연동 테스트를 통합 프로젝트에서 진행한다면 Notification도 그 안의 저장소에서 작업한다.
+
+```text
+통합 프로젝트/Notification_service에서 수정
+→ feature 브랜치에서 커밋
+→ origin에 push
+→ develop 대상 Pull Request 생성
+→ 리뷰·검사 통과 후 merge
+```
+
+커밋은 로컬 기록일 뿐 다른 clone에 전달하지 않는다. 원격에 push한 뒤 기존 작업 폴더를 최신화하려면 해당 폴더에서 다음처럼 pull해야 한다.
+
+```bash
+git pull origin feature/notification-contract
+```
+
+PR이 `develop`에 병합된 뒤에는 다음처럼 develop을 기준으로 동기화한다.
+
+```bash
+git checkout develop
+git pull origin develop
+```
+
+두 clone에서 동시에 같은 파일을 수정하면 서로 다른 커밋이 생겨 충돌할 수 있으므로, 실제 코드 작업 폴더는 한 곳으로 정하고 다른 폴더는 실행·확인 용도로 사용하는 것이 안전하다.
+
+---
+
+## 71. 2026-08-05 리팩터링과 외부 연동 상태
+
+이 절은 “현재 코드가 왜 이렇게 생겼는가”를 빠르게 복습하기 위한 최신 요약이다.
+
+### 71.1 API 응답을 `ResponseEntity`로 통일한 이유
+
+`ResponseEntity`는 Controller가 **응답 본문뿐 아니라 HTTP 상태 코드도 직접 선택**하게 해준다.
+
+```text
+Endpoint 생성       → 201 Created
+Endpoint/구독 조회  → 200 OK
+Endpoint/구독 수정  → 200 OK
+Endpoint/구독 삭제  → 204 No Content
+```
+
+프론트는 이 상태 코드만 보고도 “생성 성공”, “삭제 성공”, “요청 오류”를 구분할 수 있다.
+Controller마다 서로 다른 방식으로 응답하면 프론트와 테스트 코드가 어려워지므로 한 방식으로 맞췄다.
+
+### 71.2 `ProblemDetail`은 무엇인가
+
+Spring이 제공하는 표준 오류 응답 객체다. 예외가 생기면 `GlobalExceptionHandler`가 다음처럼
+안전한 형태로 바꾼다.
+
+```json
+{
+  "title": "Not Found",
+  "status": 404,
+  "detail": "요청한 알림 수신 정보를 찾을 수 없습니다.",
+  "code": "NOTIFICATION_NOT_FOUND",
+  "timestamp": "2026-08-05T10:00:00",
+  "path": "/api/v1/notification/endpoints/10"
+}
+```
+
+여기서 `detail`은 사용자에게 보여 줄 안전한 설명이고, DB 비밀번호·Webhook URL·토큰·내부
+예외 원문은 절대 넣지 않는다. `code`는 프론트나 로그가 오류 종류를 안정적으로 구분할 때 쓴다.
+
+### 71.3 `LAZY`와 `join fetch`를 함께 쓰는 이유
+
+Entity 관계를 모두 즉시 읽으면 Endpoint 하나를 조회하는데도 연관된 Subscription과 Delivery가
+연쇄적으로 읽힐 수 있다. 그래서 Entity는 기본적으로 `LAZY`로 둔다. 대신 목록 화면처럼
+Endpoint의 채널 이름, 구독의 이벤트 이름, Delivery의 Template이 꼭 필요한 조회는 Repository에
+JPQL `join fetch`를 명시한다.
+
+```text
+기본 Entity 조회       → 필요한 자기 테이블만 읽기
+목록 API 전용 Repository → 필요한 관계만 join fetch로 함께 읽기
+```
+
+이는 성능을 무조건 빠르게 만드는 마법이 아니라, “언제 어떤 연관 데이터를 읽는지”를 코드에
+명확히 남기는 방식이다.
+
+### 71.4 현재 확정된 RabbitMQ 범위
+
+Notification은 `yes-nhn.notification.exchange`라는 **direct exchange**를 사용한다.
+임계값 초과, 제어 결과, AI 일일 피드백, 로그인, 문의/답변, 수확, 재배 종료 이벤트는
+각각 분리된 Notification 큐로 들어온다. 처리할 수 없는 메시지는 `yes-nhn.dlx`를 거쳐
+`yes-nhn.dlq`에 남기고 운영자가 수동으로 확인한다.
+
+아직 확정 전인 값도 있다.
+
+- 각 큐의 최종 routing key
+- RabbitMQ vhost와 ACK/NACK 재전달 규칙
+- Producer별 실제 JSON payload의 세부 필드
+- Telegram Bot Token, Discord Webhook의 운영 Secret 전달 방식
+- 재배/문의 대상 소유권 확인 API
+- Config 저장소와 Kubernetes의 최종 환경 변수
+
+따라서 현재 Consumer와 Service는 Mock JSON 및 내부 테스트로 구조를 검증하고 있다. 회의에서
+실제 계약이 확정되면 Consumer 설정과 통합 테스트의 값만 연결한다. 이 단계에서는 다른 서비스
+DB를 직접 읽지 않고, Producer 이벤트와 공개 API라는 서비스 경계를 유지한다.
+
+### 71.5 지금 코드를 읽는 가장 쉬운 순서
+
+실제 이벤트 한 건을 따라가며 읽으면 된다.
+
+```text
+RabbitMQ Consumer
+→ DomainEventParser
+→ NotificationEventService
+→ Notification / Delivery 저장
+→ Template Renderer
+→ Telegram 또는 Discord Sender
+→ Delivery 상태·시도 횟수 저장
+```
+
+웹에서 Endpoint를 등록하는 흐름은 다음과 같다.
+
+```text
+Gateway가 X-User-Id 전달
+→ NotificationEndpointController
+→ NotificationEndpointService
+→ ChannelType·중복·소유 조건 검증
+→ NotificationEndpointRepository
+→ PostgreSQL
+```
+
+Gateway가 JWT를 검증한 뒤 신뢰 가능한 `X-User-Id`를 전달한다는 팀 방향이므로, Notification은
+JWT 서명을 다시 검증하지 않는다. 다만 Notification Service가 Gateway를 우회해 외부에 직접
+노출되면 이 전제가 깨지므로, 실제 배포 시 Gateway route와 네트워크 접근 정책도 함께 확인해야 한다.

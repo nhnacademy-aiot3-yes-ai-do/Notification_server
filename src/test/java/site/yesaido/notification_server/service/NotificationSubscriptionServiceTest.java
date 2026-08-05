@@ -22,9 +22,7 @@ import site.yesaido.notification_server.repository.NotificationEndpointRepositor
 import site.yesaido.notification_server.repository.NotificationSubscriptionRepository;
 import site.yesaido.notification_server.repository.NotificationSubscriptionTypeRepository;
 import site.yesaido.notification_server.repository.SubscriptionChannelRepository;
-import site.yesaido.notification_server.service.impl.NotificationSubscriptionServiceImpl;
-
-class NotificationSubscriptionServiceImplTest {
+class NotificationSubscriptionServiceTest {
 
     private final NotificationSubscriptionRepository subscriptionRepository =
             mock(NotificationSubscriptionRepository.class);
@@ -34,11 +32,11 @@ class NotificationSubscriptionServiceImplTest {
             mock(NotificationEndpointRepository.class);
     private final SubscriptionChannelRepository channelRepository =
             mock(SubscriptionChannelRepository.class);
-    private NotificationSubscriptionServiceImpl service;
+    private NotificationSubscriptionService service;
 
     @BeforeEach
     void setUp() {
-        service = new NotificationSubscriptionServiceImpl(
+        service = new NotificationSubscriptionService(
                 subscriptionRepository, typeRepository, endpointRepository, channelRepository);
     }
 

@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import site.yesaido.notification_server.exception.InvalidDeliveryStateException;
 
 @Getter
 @Entity

@@ -49,13 +49,18 @@ Notification Service는 다른 서비스가 RabbitMQ로 발행한 이벤트를 �
 - 기본 Java 패키지는 `site.yesaido.notification_server`를 사용한다.
 - Spring Application과 중앙 배포 서비스명은 `notification-server`를 사용한다.
 - Controller는 HTTP 요청·응답과 입력 검증을 담당한다.
+- Controller 응답은 `ResponseEntity`로 통일해 200, 201, 204 상태를 코드에 명시한다.
 - Service는 트랜잭션과 도메인 규칙을 담당한다.
+- 구현체가 하나뿐이고 교체 가능성이 없는 Service에는 형식적인 인터페이스와 `impl` 패키지를 만들지 않는다.
+- Telegram·Discord처럼 실제 구현 전략이 여러 개인 경계에는 인터페이스를 유지한다.
 - Repository는 데이터 조회·저장에 집중한다.
 - RabbitMQ Consumer는 역직렬화와 Service 호출만 담당한다.
 - Telegram·Discord 연동은 채널별 Provider로 분리한다.
 - Entity를 API 요청·응답이나 메시지 계약에 직접 노출하지 않는다.
 - Entity 상태는 Setter가 아니라 의미 있는 도메인 메서드로 변경한다.
 - 연관관계는 특별한 이유가 없으면 LAZY를 사용한다.
+- API 응답에 연관 데이터가 필요하면 Repository의 명시적인 JPQL `fetch join`으로 조회 의도를 드러낸다.
+- 여러 일대다 컬렉션을 한 쿼리에서 동시에 fetch join하지 않는다.
 
 ## DB 변경
 
@@ -73,7 +78,9 @@ Notification Service는 다른 서비스가 RabbitMQ로 발행한 이벤트를 �
 - Gateway는 클라이언트가 보낸 `X-User-Id`를 신뢰하지 않고, 검증한 JWT의 `sub` 값으로 덮어써야 한다.
 - 비밀번호, 토큰, Telegram Chat ID, Discord Webhook 전체 값을 로그에 남기지 않는다.
 - 도메인 규칙 위반은 의미가 드러나는 전용 예외로 표현한다.
-- Controller 구현 시 `@RestControllerAdvice`에서 공통 오류 응답으로 변환한다.
+- `@RestControllerAdvice`에서 예외를 Spring `ProblemDetail` 형식으로 변환한다.
+- 오류 응답은 HTTP 상태, `title`, `detail`, `code`, `timestamp`, `path`를 공통으로 제공한다.
+- DTO 검증 메시지는 사용자가 이해할 수 있는 구체적인 한국어 문장으로 작성한다.
 - Repository의 제약조건 예외만 사용자에게 그대로 노출하지 않는다.
 
 ## 예외와 운영 로그

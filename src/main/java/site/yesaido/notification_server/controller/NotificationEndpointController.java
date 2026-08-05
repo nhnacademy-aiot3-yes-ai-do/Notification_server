@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.net.URI;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,18 +24,16 @@ import site.yesaido.notification_server.service.NotificationEndpointService;
 
 @Validated
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/notification-endpoints")
 public class NotificationEndpointController {
 
     private final NotificationEndpointService endpointService;
 
-    public NotificationEndpointController(NotificationEndpointService endpointService) {
-        this.endpointService = endpointService;
-    }
-
     @PostMapping
     public ResponseEntity<EndpointResponse> create(
-            @RequestHeader("X-User-Id") @Positive Long userId,
+            @RequestHeader("X-User-Id")
+            @Positive(message = "사용자 ID는 1 이상이어야 합니다.") Long userId,
             @Valid @RequestBody EndpointCreateRequest request
     ) {
         EndpointResponse response = endpointService.create(userId, request);
@@ -43,34 +42,42 @@ public class NotificationEndpointController {
     }
 
     @GetMapping
-    public List<EndpointResponse> findAll(
-            @RequestHeader("X-User-Id") @Positive Long userId
+    public ResponseEntity<List<EndpointResponse>> findAll(
+            @RequestHeader("X-User-Id")
+            @Positive(message = "사용자 ID는 1 이상이어야 합니다.") Long userId
     ) {
-        return endpointService.findAll(userId);
+        return ResponseEntity.ok(endpointService.findAll(userId));
     }
 
     @PatchMapping("/{endpointId}")
-    public EndpointResponse update(
-            @RequestHeader("X-User-Id") @Positive Long userId,
-            @PathVariable @Positive Long endpointId,
+    public ResponseEntity<EndpointResponse> update(
+            @RequestHeader("X-User-Id")
+            @Positive(message = "사용자 ID는 1 이상이어야 합니다.") Long userId,
+            @PathVariable
+            @Positive(message = "알림 수신 경로 ID는 1 이상이어야 합니다.") Long endpointId,
             @Valid @RequestBody EndpointUpdateRequest request
     ) {
-        return endpointService.update(userId, endpointId, request);
+        return ResponseEntity.ok(endpointService.update(userId, endpointId, request));
     }
 
     @PatchMapping("/{endpointId}/enabled")
-    public EndpointResponse changeEnabled(
-            @RequestHeader("X-User-Id") @Positive Long userId,
-            @PathVariable @Positive Long endpointId,
+    public ResponseEntity<EndpointResponse> changeEnabled(
+            @RequestHeader("X-User-Id")
+            @Positive(message = "사용자 ID는 1 이상이어야 합니다.") Long userId,
+            @PathVariable
+            @Positive(message = "알림 수신 경로 ID는 1 이상이어야 합니다.") Long endpointId,
             @Valid @RequestBody EndpointEnabledRequest request
     ) {
-        return endpointService.changeEnabled(userId, endpointId, request.enabled());
+        return ResponseEntity.ok(
+                endpointService.changeEnabled(userId, endpointId, request.enabled()));
     }
 
     @DeleteMapping("/{endpointId}")
     public ResponseEntity<Void> delete(
-            @RequestHeader("X-User-Id") @Positive Long userId,
-            @PathVariable @Positive Long endpointId
+            @RequestHeader("X-User-Id")
+            @Positive(message = "사용자 ID는 1 이상이어야 합니다.") Long userId,
+            @PathVariable
+            @Positive(message = "알림 수신 경로 ID는 1 이상이어야 합니다.") Long endpointId
     ) {
         endpointService.delete(userId, endpointId);
         return ResponseEntity.noContent().build();

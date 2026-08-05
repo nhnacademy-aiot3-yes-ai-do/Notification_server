@@ -40,7 +40,7 @@ class NotificationEndpointRepositoryTest {
         insertEndpoint(9002L, 9007L, 9001L, false, true, "222");
         insertEndpoint(9003L, 9008L, 9001L, true, false, "333");
 
-        List<?> endpoints = repository.findAllByUserIdAndDeletedFalse(9007L);
+        List<?> endpoints = repository.findAllActiveByUserId(9007L);
 
         assertThat(endpoints).hasSize(1);
         assertThat(endpoints.get(0)).extracting("destination").isEqualTo("111");

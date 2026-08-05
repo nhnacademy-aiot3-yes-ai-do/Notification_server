@@ -27,10 +27,9 @@ import site.yesaido.notification_server.repository.NotificationEventTypeReposito
 import site.yesaido.notification_server.repository.NotificationRepository;
 import site.yesaido.notification_server.repository.NotificationSubscriptionRepository;
 import site.yesaido.notification_server.repository.NotificationTemplateRepository;
-import site.yesaido.notification_server.service.impl.NotificationEventServiceImpl;
 import site.yesaido.notification_server.template.TemplateRenderer;
 
-class NotificationEventServiceImplTest {
+class NotificationEventServiceTest {
 
     private final NotificationRepository notificationRepository =
             mock(NotificationRepository.class);
@@ -43,11 +42,11 @@ class NotificationEventServiceImplTest {
     private final NotificationDeliveryRepository deliveryRepository =
             mock(NotificationDeliveryRepository.class);
     private final TemplateRenderer renderer = mock(TemplateRenderer.class);
-    private NotificationEventServiceImpl service;
+    private NotificationEventService service;
 
     @BeforeEach
     void setUp() {
-        service = new NotificationEventServiceImpl(
+        service = new NotificationEventService(
                 notificationRepository,
                 eventTypeRepository,
                 subscriptionRepository,

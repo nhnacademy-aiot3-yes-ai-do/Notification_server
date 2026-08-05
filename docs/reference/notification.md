@@ -134,9 +134,31 @@ RabbitMQ Listener와 Direct Exchange·다중 Queue·공용 DLX·DLQ 선언은 �
 
 - RabbitMQ routing key·vhost·ACK/NACK와 Consumer 재시도 세부 방식
 - Producer별 실제 JSON payload
-- 최종 API Base Path
-- 공통 오류 응답 JSON
-- Telegram·Discord 테스트 계정과 Provider 세부 방식
+- Cultivation·Inquiry 대상 소유권 확인 API와 공동 재배자 구독 범위
+- Telegram·Discord 테스트 계정·Secret 전달 방식과 Provider 세부 방식
+- Config 저장소·Kubernetes의 Notification Service 등록 값
+
+## 2026-08-05 현재 구현·연동 상태
+
+### 이미 정리된 범위
+
+- Notification 교환기는 `yes-nhn.notification.exchange`를 **direct exchange**로 사용한다.
+- Notification Consumer용 큐는 임계값, 제어 결과, 일일 피드백, 로그인, 문의/답변,
+  수확, 재배 종료 흐름으로 분리한다.
+- 실패 메시지는 `yes-nhn.dlx`와 `yes-nhn.dlq`로 보내고, 운영자가 확인 후 수동 처리한다.
+- 서비스 내부에는 Endpoint·Subscription API, 이벤트 수신 뼈대, 템플릿/발송 이력 모델,
+  중복 이벤트 방지와 최대 3회 재시도 정책이 구현되어 있다.
+
+### 회의 후 실제 값으로 연결할 범위
+
+- 각 큐의 최종 routing key, RabbitMQ vhost, ACK/NACK·재전달 규칙
+- Rule·Cultivation·AI·Auth·Inquiry Producer가 보내는 최종 JSON 값과 필수 payload 필드
+- Telegram Bot Token, Discord Webhook 등 Secret의 운영 전달·관리 방식
+- 재배/문의 대상에 대한 소유권 확인 API와 가족 공동 재배자의 구독 가능 범위
+- Gateway route, Config 저장소 allowlist, Kubernetes Deployment·Service 이름 및 환경 변수
+
+즉, 현재는 Notification 내부 구조와 로컬 검증은 가능한 상태이며, 외부 서비스와의
+실제 연결 값만 공통 회의 결과에 맞춰 바꾸면 된다.
 
 ## CI/CD 현재 규칙
 
@@ -165,9 +187,12 @@ Notification Service는 JWT를 다시 검증하거나 claim을 직접 해석하�
 반드시 Gateway를 거치도록 해야 한다. 또한 Gateway는 클라이언트가 임의로 넣은
 `X-User-Id`를 신뢰하지 않고, 검증한 JWT의 `sub` 값으로 덮어써야 한다.
 
-Controller와 공통 `ErrorResponse`, `@RestControllerAdvice`가 구현되어 있다. 사용자 ID
-형식 오류, 소유 데이터 없음, 중복 리소스, 지원하지 않는 채널, 외부 Provider 실패를 서로
-다른 HTTP 상태와 오류 코드로 구분한다. 최종 팀 공통 오류 형식이 확정되면 필드명을 맞춘다.
+모든 Controller는 `ResponseEntity`로 HTTP 상태를 명시한다. 생성은 `201 Created`, 조회·수정은
+`200 OK`, 삭제는 `204 No Content`를 사용한다. 공통 예외는 `@RestControllerAdvice`와 Spring의
+`ProblemDetail`로 응답하며, `title`, `detail`, `status`에 더해 `code`, `timestamp`, `path`를
+제공한다. 사용자 ID 형식 오류, 소유 데이터 없음, 중복 리소스, 지원하지 않는 채널, 외부
+Provider 실패를 서로 다른 HTTP 상태와 오류 코드로 구분한다. 팀 공통 오류 형식이 확정되면
+이 확장 필드 이름만 맞춘다.
 
 예외가 발생하면 운영 로그에는 이벤트·알림·발송을 추적할 수 있는 식별자와 재시도 정보를
 남긴다. JWT·Webhook URL·Chat ID·토큰·민감한 payload 원문은 기록하지 않는다.

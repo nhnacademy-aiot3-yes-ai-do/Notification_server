@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import site.yesaido.notification_server.exception.InvalidDeliveryStateException;
 
 class NotificationDeliveryTest {
 

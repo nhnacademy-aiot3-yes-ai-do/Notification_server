@@ -18,9 +18,7 @@ import site.yesaido.notification_server.provider.NotificationSender;
 import site.yesaido.notification_server.provider.NotificationSenderRegistry;
 import site.yesaido.notification_server.repository.ChannelTypeRepository;
 import site.yesaido.notification_server.repository.NotificationEndpointRepository;
-import site.yesaido.notification_server.service.impl.NotificationEndpointServiceImpl;
-
-class NotificationEndpointServiceImplTest {
+class NotificationEndpointServiceTest {
 
     private final NotificationEndpointRepository endpointRepository =
             mock(NotificationEndpointRepository.class);
@@ -29,11 +27,11 @@ class NotificationEndpointServiceImplTest {
     private final NotificationSenderRegistry senderRegistry =
             mock(NotificationSenderRegistry.class);
     private final NotificationSender sender = mock(NotificationSender.class);
-    private NotificationEndpointServiceImpl service;
+    private NotificationEndpointService service;
 
     @BeforeEach
     void setUp() {
-        service = new NotificationEndpointServiceImpl(
+        service = new NotificationEndpointService(
                 endpointRepository, channelTypeRepository, senderRegistry);
     }
 

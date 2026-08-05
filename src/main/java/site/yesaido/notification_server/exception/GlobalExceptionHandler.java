@@ -8,12 +8,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -21,7 +25,7 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(NotificationNotFoundException.class)
-    ResponseEntity<ErrorResponse> handleNotFound(
+    ResponseEntity<ProblemDetail> handleNotFound(
             NotificationNotFoundException exception,
             HttpServletRequest request
     ) {
@@ -33,7 +37,7 @@ public class GlobalExceptionHandler {
         DuplicateNotificationResourceException.class,
         DataIntegrityViolationException.class
     })
-    ResponseEntity<ErrorResponse> handleConflict(
+    ResponseEntity<ProblemDetail> handleConflict(
             RuntimeException exception,
             HttpServletRequest request
     ) {
@@ -46,7 +50,7 @@ public class GlobalExceptionHandler {
         MethodArgumentNotValidException.class,
         BindException.class
     })
-    ResponseEntity<ErrorResponse> handleValidation(
+    ResponseEntity<ProblemDetail> handleValidation(
             BindException exception,
             HttpServletRequest request
     ) {
@@ -59,10 +63,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
         IllegalArgumentException.class,
         HttpMessageNotReadableException.class,
-        ConstraintViolationException.class
+        ConstraintViolationException.class,
+        MissingRequestHeaderException.class,
+        MethodArgumentTypeMismatchException.class,
+        HandlerMethodValidationException.class
     })
-    ResponseEntity<ErrorResponse> handleBadRequest(
-            RuntimeException exception,
+    ResponseEntity<ProblemDetail> handleBadRequest(
+            Exception exception,
             HttpServletRequest request
     ) {
         return response(HttpStatus.BAD_REQUEST, "INVALID_REQUEST",
@@ -70,7 +77,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UnsupportedNotificationChannelException.class)
-    ResponseEntity<ErrorResponse> handleUnsupportedChannel(
+    ResponseEntity<ProblemDetail> handleUnsupportedChannel(
             UnsupportedNotificationChannelException exception,
             HttpServletRequest request
     ) {
@@ -79,7 +86,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NotificationProviderException.class)
-    ResponseEntity<ErrorResponse> handleProvider(
+    ResponseEntity<ProblemDetail> handleProvider(
             NotificationProviderException exception,
             HttpServletRequest request
     ) {
@@ -89,7 +96,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    ResponseEntity<ErrorResponse> handleUnexpected(
+    ResponseEntity<ProblemDetail> handleUnexpected(
             Exception exception,
             HttpServletRequest request
     ) {
@@ -98,14 +105,17 @@ public class GlobalExceptionHandler {
                 "서버 내부 오류가 발생했습니다.", request);
     }
 
-    private ResponseEntity<ErrorResponse> response(
+    private ResponseEntity<ProblemDetail> response(
             HttpStatus status,
             String code,
             String message,
             HttpServletRequest request
     ) {
-        ErrorResponse body = new ErrorResponse(
-                OffsetDateTime.now(), status.value(), code, message, request.getRequestURI());
-        return ResponseEntity.status(status).body(body);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, message);
+        problem.setTitle(status.getReasonPhrase());
+        problem.setProperty("code", code);
+        problem.setProperty("timestamp", OffsetDateTime.now());
+        problem.setProperty("path", request.getRequestURI());
+        return ResponseEntity.status(status).body(problem);
     }
 }

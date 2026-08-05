@@ -2,7 +2,7 @@
 
 ## 1. 문서 기준
 
-이 문서는 Notification Service의 실제 코드와 Flyway Migration `V1`~`V7`을 기준으로
+이 문서는 Notification Service의 실제 코드와 Flyway Migration `V1`~`V8`을 기준으로
 작성한 최신 DB 명세다. ERD의 과거 초안보다 실행되는 Migration과 Entity를 우선한다.
 
 - DBMS: PostgreSQL
@@ -15,10 +15,18 @@
 
 ### SSOT 원칙
 
-최종 스키마의 SSOT(Single Source of Truth)는 Flyway `V1`~`V7`을 순서대로 적용한
+최종 스키마의 SSOT(Single Source of Truth)는 Flyway `V1`~`V8`을 순서대로 적용한
 PostgreSQL 상태다. ERD는 테이블 관계를 설명하는 설계 문서이며, ERD와 문서가 실제
 Migration과 다르면 Flyway 최종 상태에 맞춰 갱신한다. 이미 적용된 Migration은 수정하지
 않고 다음 버전 파일로 변경한다.
+
+### 조회 정책
+
+Entity 관계는 기본적으로 `LAZY`로 둔다. 목록 조회에서 실제로 필요한 연관 데이터만
+Repository의 JPQL `join fetch`로 함께 읽는다. 예를 들어 Endpoint 목록은 채널 유형을,
+Subscription 목록은 Endpoint·이벤트 유형·대상 유형을, Delivery 목록은 Subscription·Endpoint·
+Template을 명시적으로 가져온다. 이렇게 하면 기본 조회가 무심코 큰 연관 그래프를 읽는 일을
+막으면서도, 목록 응답에서 발생할 수 있는 N+1 조회를 줄일 수 있다.
 
 ## 2. 데이터 흐름
 
