@@ -20,6 +20,11 @@ public class DeliveryStateService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Optional<DeliveryCommand> claimForDispatch(Long deliveryId) {
+        /*
+         * 발송 선점의 기준은 Entity 조회가 아니라 Repository의 조건부 UPDATE다.
+         * Consumer와 복구 스케줄러가 동시에 실행돼도 PENDING -> SENDING 전환에 성공한
+         * 한 작업만 외부 Provider를 호출할 수 있다.
+         */
         int claimed = deliveryRepository.claimPendingDelivery(
                 deliveryId, NotificationDelivery.MAX_ATTEMPT_COUNT);
         if (claimed == 0) {
@@ -58,6 +63,7 @@ public class DeliveryStateService {
     public boolean failStaleClaimWhenAttemptsExhausted(
             Long deliveryId, LocalDateTime staleBefore, String error
     ) {
+        // 시도를 모두 소진한 SENDING은 다시 PENDING으로 풀지 않고 최종 실패로 마감한다.
         return deliveryRepository.failStaleSendingDeliveryWhenAttemptsExhausted(
                 deliveryId,
                 staleBefore,
