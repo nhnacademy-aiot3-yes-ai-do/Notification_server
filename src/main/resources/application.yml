@@ -1,4 +1,7 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
   application:
     name: notification-server
 
@@ -75,6 +78,11 @@ notification:
       allowed-hosts: ${DISCORD_ALLOWED_HOSTS:discord.com,discordapp.com}
   retry:
     backoff: ${NOTIFICATION_RETRY_BACKOFF:1s}
+  recovery:
+    pending-delivery-delay: ${NOTIFICATION_PENDING_DELIVERY_RECOVERY_DELAY:PT1M}
+    pending-delivery-min-age: ${NOTIFICATION_PENDING_DELIVERY_MIN_AGE:PT30S}
+    sending-claim-timeout: ${NOTIFICATION_SENDING_CLAIM_TIMEOUT:PT5M}
+    pending-delivery-batch-size: ${NOTIFICATION_PENDING_DELIVERY_BATCH_SIZE:100}
 
 server:
   port: ${SERVER_PORT:8080}
@@ -92,6 +100,8 @@ management:
     health:
       probes:
         enabled: true
+      # 외부 상태 상세(DB URL·브로커 정보 등)는 노출하지 않는다.
+      show-details: never
 
 logging:
   level:

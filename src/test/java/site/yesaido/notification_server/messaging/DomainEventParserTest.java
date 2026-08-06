@@ -52,6 +52,62 @@ class DomainEventParserTest {
     }
 
     @Test
+    void 임시_환경이상_JSON에서_템플릿에_필요한_값을_읽는다() {
+        String message = """
+                {
+                  "eventId": "e4f5216e-41ae-4b1c-becf-5c3a94dc3311",
+                  "eventType": "ENVIRONMENT_THRESHOLD_BREACHED",
+                  "producer": "rule-engine",
+                  "targetType": "CULTIVATION",
+                  "targetId": 101,
+                  "occurredAt": "2026-08-06T09:30:00+09:00",
+                  "payload": {
+                    "cultivationName": "느타리 1번",
+                    "sensorType": "TEMPERATURE",
+                    "currentValue": 28.5,
+                    "unit": "°C",
+                    "thresholdMin": 18,
+                    "thresholdMax": 22
+                  }
+                }
+                """;
+
+        DomainEvent event = parser.parse(message);
+
+        assertEquals("ENVIRONMENT_THRESHOLD_BREACHED", event.eventType());
+        assertEquals("rule-engine", event.producer());
+        assertEquals("느타리 1번", event.payload().get("cultivationName").textValue());
+        assertEquals(28.5, event.payload().get("currentValue").doubleValue());
+        assertEquals(22, event.payload().get("thresholdMax").intValue());
+    }
+
+    @Test
+    void 임시_AI_피드백완료_JSON에서_요약을_읽는다() {
+        String message = """
+                {
+                  "eventId": "e36fb8a6-7356-4cc3-b098-62480be40a63",
+                  "eventType": "DAILY_FEEDBACK_COMPLETED",
+                  "producer": "ai-service",
+                  "targetType": "CULTIVATION",
+                  "targetId": 101,
+                  "occurredAt": "2026-08-06T10:00:00+09:00",
+                  "payload": {
+                    "cultivationName": "느타리 1번",
+                    "feedbackId": 82,
+                    "feedbackSummary": "습도 관리가 안정적입니다."
+                  }
+                }
+                """;
+
+        DomainEvent event = parser.parse(message);
+
+        assertEquals("DAILY_FEEDBACK_COMPLETED", event.eventType());
+        assertEquals(82L, event.payload().get("feedbackId").longValue());
+        assertEquals("습도 관리가 안정적입니다.",
+                event.payload().get("feedbackSummary").textValue());
+    }
+
+    @Test
     void 공통필드가_유효하면_아직_확정되지_않은_이벤트코드도_파싱한다() {
         String message = """
                 {

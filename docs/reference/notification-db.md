@@ -2,7 +2,7 @@
 
 ## 1. 문서 기준
 
-이 문서는 Notification Service의 실제 코드와 Flyway Migration `V1`~`V8`을 기준으로
+이 문서는 Notification Service의 실제 코드와 Flyway Migration `V1`~`V10`을 기준으로
 작성한 최신 DB 명세다. ERD의 과거 초안보다 실행되는 Migration과 Entity를 우선한다.
 
 - DBMS: PostgreSQL
@@ -15,7 +15,7 @@
 
 ### SSOT 원칙
 
-최종 스키마의 SSOT(Single Source of Truth)는 Flyway `V1`~`V8`을 순서대로 적용한
+최종 스키마의 SSOT(Single Source of Truth)는 Flyway `V1`~`V10`을 순서대로 적용한
 PostgreSQL 상태다. ERD는 테이블 관계를 설명하는 설계 문서이며, ERD와 문서가 실제
 Migration과 다르면 Flyway 최종 상태에 맞춰 갱신한다. 이미 적용된 Migration은 수정하지
 않고 다음 버전 파일로 변경한다.
@@ -58,9 +58,10 @@ notification_delivery ───── 채널별 메시지·상태·재시도 결
 |---|---|---|
 | `notification` | `source_event_id UNIQUE` | 같은 RabbitMQ 이벤트의 중복 저장·발송 방지 |
 | `notification_delivery` | `UNIQUE(notification_id, notification_subscription_id)` | 같은 원본 이벤트를 같은 구독으로 두 번 발송하지 않음 |
-| `notification_delivery` | `CHECK(status IN ('PENDING', 'SENT', 'FAILED'))` | 허용되지 않은 발송 상태 저장 방지 |
+| `notification_delivery` | `CHECK(status IN ('PENDING', 'SENDING', 'SENT', 'FAILED'))` | 허용되지 않은 발송 상태 저장 방지 |
 | `notification_delivery` | `CHECK(attempt_count BETWEEN 0 AND 3)` | 확정된 최대 3회 발송 정책 강제 |
 | `notification_subscription` | partial UNIQUE, `WHERE is_deleted = FALSE` | 비삭제 상태의 같은 구독 조합은 하나만 유지 |
+| `notification_endpoint` | partial UNIQUE, `WHERE is_deleted = FALSE` | 같은 사용자의 같은 채널·수신 경로 중복 등록 방지 |
 
 `enabled=false`는 삭제가 아니라 일시정지다. 따라서 `enabled=false`인 구독도 위 partial
 UNIQUE 대상에 포함되며, 재구독 요청은 새 행 생성 대신 기존 구독을 다시 활성화한다.
@@ -176,6 +177,10 @@ UNIQUE 대상에 포함되며, 재구독 요청은 새 행 생성 대신 기존 
 `enabled=false`는 다시 켤 수 있는 일시정지다. `is_deleted=true`는 일반 목록에서 제외하는
 삭제다. 발송 대상은 두 값이 모두 활성 상태여야 한다.
 
+`(user_id, channel_type_id, destination)`에는 `is_deleted = FALSE` 조건의 partial UNIQUE
+index가 있다. 따라서 삭제되지 않은 동일 Telegram Chat ID 또는 동일 Discord Webhook을 같은
+사용자가 중복 등록하지 못하며, 삭제된 과거 Endpoint 행은 발송 이력 보존을 위해 남는다.
+
 ### 4.8 `notification_subscription`
 
 | 컬럼 | 타입 | NULL | 설명 |
@@ -236,7 +241,7 @@ UNIQUE (
 | `notification_id` | BIGINT | X | 알림 원본 FK |
 | `notification_subscription_id` | BIGINT | X | 실제 수신 구독 FK |
 | `notification_template_id` | BIGINT | X | 채널별 사용 템플릿 FK |
-| `status` | VARCHAR(20) | X | `PENDING`, `SENT`, `FAILED` |
+| `status` | VARCHAR(20) | X | `PENDING`, `SENDING`, `SENT`, `FAILED` |
 | `provider_message_id` | VARCHAR(200) | O | Telegram·Discord 응답 ID |
 | `rendered_message` | TEXT | X | 변수 치환이 끝난 최종 메시지 |
 | `attempt_count` | SMALLINT | X | 발송 시도 수, 0~3 |
@@ -253,14 +258,27 @@ Telegram·Discord가 서로 다른 템플릿을 선택하기 때문이다.
 따라서 잘못된 상태 문자열이나 0~3 범위를 벗어난 발송 시도 횟수는 PostgreSQL이 저장을
 거부한다.
 
+Consumer가 `notification`·`notification_delivery` 저장 직후 중단되면 Delivery가 `PENDING`으로
+남을 수 있다. 일정 시간(기본 30초) 이상 오래된 `PENDING` Delivery 중 시도 횟수가 3 미만인
+건은 스케줄러가 일정 주기(기본 1분)로 다시 발송한다. 이 작업은 중복 이벤트를 다시 저장하는
+것이 아니라 이미 저장된 Delivery를 회복하는 작업이다.
+
+외부 발송 직전에는 조건부 UPDATE로 `PENDING → SENDING` 선점을 수행한다. 따라서 Consumer와
+스케줄러 또는 여러 서버 인스턴스가 동시에 같은 Delivery를 선택해도 한 작업만 발송한다.
+`SENDING` 상태가 프로세스 비정상 종료로 오래 남으면 기본 5분 뒤 복구한다. 이때 시도 횟수가
+3회 미만이면 `PENDING`으로 되돌려 남은 횟수만큼 재발송하고, 3회를 모두 소진했다면 바로
+`FAILED`로 확정한 뒤 DLQ 메시지를 발행한다.
+
 ## 5. 상태·발송 정책
 
 ```text
 PENDING
-  ├── 외부 발송 성공 ──> SENT
-  └── 실패
-       ├── attempt_count < 3 ──> 다시 시도
-       └── 3회 소진 ──> FAILED + DLQ 메시지
+  └── 조건부 선점 성공 ──> SENDING
+       ├── 외부 발송 성공 ──> SENT
+       ├── 실패 + attempt_count < 3 ──> SENDING 상태에서 재시도
+       ├── 3회 소진 ──> FAILED + DLQ 메시지
+       ├── 프로세스 중단 후 선점 만료 + 시도 잔여 ──> PENDING 회복
+       └── 프로세스 중단 후 선점 만료 + 3회 소진 ──> FAILED + DLQ 메시지
 ```
 
 - 성공할 때 `provider_message_id`, `sent_at`을 저장한다.
@@ -322,6 +340,8 @@ Migration을 수정하지 않고 새 Migration을 추가한다.
 - 클라이언트가 임의로 보낸 `X-User-Id`는 Gateway가 제거하거나 검증한 JWT 값으로
   덮어써야 한다.
 - Telegram Chat ID, Discord Webhook, Bot Token, payload 원문은 로그에 남기지 않는다.
+- 발송 재시도 로그에는 `deliveryId`, 채널, 시도 횟수, 실패 예외 종류만 기록한다. Provider
+  예외의 원문 stack trace는 Webhook URL 노출 가능성이 있어 운영 로그에 그대로 남기지 않는다.
 - Cultivation·Inquiry 대상 접근 권한 확인은 해당 서비스의 내부 API 계약이 확정된 뒤
   연동한다. Endpoint 소유권 검사는 현재 코드에 구현되어 있다.
 
@@ -337,6 +357,8 @@ Migration을 수정하지 않고 새 Migration을 추가한다.
 | `V6` | 일시정지 구독 재사용을 위해 비삭제 구독 UNIQUE로 최종 보정 |
 | `V7` | `notification.message` 제거. 채널별 최종 발송 문구는 Delivery에만 보관 |
 | `V8` | 장치 ON/OFF 제어 성공 이벤트·구독 종류·채널·템플릿 Seed 추가 |
+| `V9` | 비삭제 Endpoint의 사용자·채널·수신 경로 UNIQUE 제약 추가 |
+| `V10` | 조건부 선점 상태를 표현하기 위해 Delivery `SENDING` 상태 허용 |
 
-Flyway가 적용한 Migration 파일은 수정하지 않는다. 변경이 필요하면 `V8` 이후 파일로
+Flyway가 적용한 Migration 파일은 수정하지 않는다. 변경이 필요하면 `V10` 이후 파일로
 추가한다.

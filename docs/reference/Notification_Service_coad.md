@@ -671,6 +671,7 @@ Telegram과 Discord의 메시지 형식은 달라질 수 있다. 따라서 템�
 ```java
 public enum DeliveryStatus {
     PENDING,
+    SENDING,
     SENT,
     FAILED
 }
@@ -679,6 +680,7 @@ public enum DeliveryStatus {
 | 상태 | 뜻 |
 |---|---|
 | `PENDING` | 발송 전 또는 재시도 대기 |
+| `SENDING` | 한 작업이 발송 권한을 선점하고 Provider 호출 중인 상태 |
 | `SENT` | 외부 채널 발송 성공 |
 | `FAILED` | 최종 실패 |
 
@@ -690,13 +692,20 @@ public enum DeliveryStatus {
 markSent(providerMessageId)
 markFailed(error)
 increaseAttemptCount()
+claimForDispatch()
+releaseStaleClaim()
 ```
 
 - `markSent`: 상태를 SENT로 바꾸고 외부 Provider가 준 메시지 ID와 발송 시각을 저장
 - `markFailed`: 실패 상태와 오류 메시지 저장
 - `increaseAttemptCount`: 최대 3회까지만 재시도 횟수 증가
+- `claimForDispatch`: PENDING 상태를 SENDING으로 바꾸는 발송 선점 규칙
+- `releaseStaleClaim`: 시도 횟수가 남은 비정상 종료 SENDING을 다시 PENDING으로 되돌림
 
-이 메서드들은 현재 `DeliveryStateService`와 `DeliveryDispatchService`에서 호출된다.
+`increaseAttemptCount`, `markSent`, `markFailed`는 `DeliveryStateService`를 통해 실제 상태를
+바꾼다. `claimForDispatch`, `releaseStaleClaim`은 상태 전이 규칙을 읽기 쉽게 표현한 도메인
+메서드다. 다중 인스턴스에서 실제로 한 작업만 선점하게 만드는 기준은 Repository의 조건부
+UPDATE이며, 이 조건부 UPDATE가 운영 경로의 SSOT다.
 
 Telegram·Discord Provider 발송 결과에 따라 Delivery 상태가 바뀐다.
 
@@ -2832,11 +2841,18 @@ Telegram 또는 Discord가 잠시 오류를 반환할 수 있다.
 
 `dispatch(deliveryId)`를 호출한다.
 
+### 발송 권한 선점
+
+`stateService.claimForDispatch(deliveryId)`를 호출한다.
+
+Repository의 조건부 UPDATE가 `PENDING → SENDING`을 한 번만 성공시킨다. Consumer와 스케줄러가
+동시에 같은 Delivery를 처리하려 해도 먼저 선점한 작업만 Provider 호출을 진행한다.
+
 ### 시도 횟수 증가
 
-`stateService.startAttempt(deliveryId)`를 호출한다.
-
-DB의 attemptCount가 증가한다.
+선점에 성공한 뒤 각 Provider 호출 직전에 `recordAttempt(deliveryId)`로 DB의 attemptCount를 증가시킨다.
+RetryTemplate은 항상 3번을 새로 시도하는 것이 아니라, 기존 attemptCount를 뺀 **남은 횟수**만
+실행한다. 이미 2회 실패한 Delivery라면 다음 dispatch에서는 Provider를 1회만 호출한다.
 
 필요한 발송 정보가 `DeliveryCommand`로 반환된다.
 
@@ -2927,6 +2943,7 @@ Delivery는 상태를 가진다.
 
 ```text
 PENDING
+SENDING
 SENT
 FAILED
 ```
@@ -2936,6 +2953,13 @@ FAILED
 아직 발송 완료되지 않은 상태다.
 
 Delivery 생성 시 기본 상태다.
+
+### SENDING
+
+조건부 UPDATE로 한 작업이 발송 권한을 얻은 상태다. 외부 Provider 호출 중인 Delivery를 다른
+Consumer나 복구 배치가 다시 보내지 못하게 한다. 비정상 종료로 오래 멈추면 시도 횟수가 남은 경우만
+선점 만료 후 PENDING으로 되돌려 복구한다. 이미 3회를 소진했다면 PENDING으로 되돌리지 않고
+FAILED와 DLQ로 최종 처리한다.
 
 ### SENT
 
@@ -2955,9 +2979,7 @@ error가 기록된다.
 
 그래서 VARCHAR 또는 Enum을 사용한다.
 
-상태가 늘어날 가능성도 있다.
-
-예를 들어 향후 `SENDING`을 추가할 수 있다.
+`SENDING`은 이미 V10 Migration으로 추가되어 실제 선점 상태로 사용한다.
 
 ### 도메인 메서드
 

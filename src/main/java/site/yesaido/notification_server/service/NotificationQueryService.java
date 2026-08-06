@@ -1,10 +1,11 @@
 package site.yesaido.notification_server.service;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import site.yesaido.notification_server.dto.delivery.DeliveryResponse;
+import site.yesaido.notification_server.dto.delivery.DeliveryPageResponse;
 import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
 
 @Service
@@ -14,10 +15,9 @@ public class NotificationQueryService {
 
     private final NotificationDeliveryRepository deliveryRepository;
 
-    public List<DeliveryResponse> findDeliveries(Long userId) {
-        return deliveryRepository
-                .findAllByUserId(userId).stream()
-                .map(DeliveryResponse::from)
-                .toList();
+    public DeliveryPageResponse findDeliveries(Long userId, int page, int size) {
+        return DeliveryPageResponse.from(deliveryRepository.findPageByUserId(
+                userId,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))));
     }
 }

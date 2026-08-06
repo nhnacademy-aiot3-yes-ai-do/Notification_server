@@ -77,7 +77,7 @@ public class NotificationDelivery extends AuditEntity {
 
     /** 외부 발송에 성공했을 때만 호출한다. */
     public void markSent(String providerMessageId) {
-        requirePending();
+        requireSending();
         this.status = DeliveryStatus.SENT;
         this.providerMessageId = providerMessageId;
         this.sentAt = LocalDateTime.now();
@@ -85,14 +85,14 @@ public class NotificationDelivery extends AuditEntity {
 
     /** 재시도를 모두 소진한 최종 실패일 때 호출한다. */
     public void markFailed(String error) {
-        requirePending();
+        requireSending();
         this.status = DeliveryStatus.FAILED;
         this.error = error;
     }
 
     /** 재시도 횟수를 도메인 메서드로만 증가시킨다. */
     public void increaseAttemptCount() {
-        requirePending();
+        requireSending();
         if (attemptCount >= MAX_ATTEMPT_COUNT) {
             throw new InvalidDeliveryStateException("최대 발송 시도 횟수를 초과할 수 없습니다.");
         }
@@ -100,13 +100,39 @@ public class NotificationDelivery extends AuditEntity {
     }
 
     public boolean canRetry() {
-        return status == DeliveryStatus.PENDING && attemptCount < MAX_ATTEMPT_COUNT;
+        return (status == DeliveryStatus.PENDING || status == DeliveryStatus.SENDING)
+                && attemptCount < MAX_ATTEMPT_COUNT;
+    }
+
+    /**
+     * 외부 Provider 호출 전에 발송 권한을 선점한다. 실제 동시성 제어는 Repository의
+     * 조건부 UPDATE로 보장하고, 이 메서드는 도메인 상태 전이 규칙을 표현한다.
+     */
+    public void claimForDispatch() {
+        requirePending();
+        if (attemptCount >= MAX_ATTEMPT_COUNT) {
+            throw new InvalidDeliveryStateException("최대 발송 시도 횟수를 초과한 발송은 선점할 수 없습니다.");
+        }
+        this.status = DeliveryStatus.SENDING;
+    }
+
+    /** 처리 프로세스가 비정상 종료되어 오래 멈춘 선점을 회복할 때만 호출한다. */
+    public void releaseStaleClaim() {
+        requireSending();
+        this.status = DeliveryStatus.PENDING;
     }
 
     private void requirePending() {
         if (status != DeliveryStatus.PENDING) {
             throw new InvalidDeliveryStateException(
                     "대기 상태의 발송만 변경할 수 있습니다. 현재 상태: " + status);
+        }
+    }
+
+    private void requireSending() {
+        if (status != DeliveryStatus.SENDING) {
+            throw new InvalidDeliveryStateException(
+                    "발송 중 상태의 발송만 변경할 수 있습니다. 현재 상태: " + status);
         }
     }
 }

@@ -1,6 +1,5 @@
 package site.yesaido.notification_server.provider;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
@@ -41,14 +40,24 @@ public class TelegramSender implements NotificationSender {
         }
 
         try {
-            JsonNode response = restClient.post()
+            Map<?, ?> response = restClient.post()
                     .uri("/bot{token}/sendMessage", botToken)
                     .body(Map.of("chat_id", destination, "text", message))
                     .retrieve()
-                    .body(JsonNode.class);
-            String messageId = response == null
-                    ? null
-                    : response.path("result").path("message_id").asText(null);
+                    .body(Map.class);
+            if (response == null || !Boolean.TRUE.equals(response.get("ok"))) {
+                Object descriptionValue = response == null ? null : response.get("description");
+                String description = descriptionValue == null
+                        ? "알 수 없는 Telegram API 오류입니다."
+                        : String.valueOf(descriptionValue);
+                throw new NotificationProviderException("Telegram 메시지 발송에 실패했습니다: "
+                        + description);
+            }
+            Object result = response.get("result");
+            Object rawMessageId = result instanceof Map<?, ?> resultMap
+                    ? resultMap.get("message_id")
+                    : null;
+            String messageId = rawMessageId == null ? null : String.valueOf(rawMessageId);
             return new ProviderSendResult(messageId);
         } catch (NotificationProviderException exception) {
             throw exception;

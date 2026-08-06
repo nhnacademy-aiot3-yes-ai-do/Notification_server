@@ -1,6 +1,5 @@
 package site.yesaido.notification_server.provider;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Locale;
@@ -55,12 +54,13 @@ public class DiscordSender implements NotificationSender {
         validateDestination(destination);
         URI webhook = URI.create(destination + (destination.contains("?") ? "&wait=true" : "?wait=true"));
         try {
-            JsonNode response = restClient.post()
+            Map<?, ?> response = restClient.post()
                     .uri(webhook)
                     .body(Map.of("content", message))
                     .retrieve()
-                    .body(JsonNode.class);
-            return new ProviderSendResult(response == null ? null : response.path("id").asText(null));
+                    .body(Map.class);
+            Object messageId = response == null ? null : response.get("id");
+            return new ProviderSendResult(messageId == null ? null : String.valueOf(messageId));
         } catch (RuntimeException exception) {
             throw new NotificationProviderException("Discord 메시지 발송에 실패했습니다.", exception);
         }

@@ -44,6 +44,7 @@ class NotificationDeliveryTest {
     void 발송에_성공하면_성공상태와_외부메시지ID를_기록한다() {
         NotificationDelivery delivery = createDelivery();
 
+        delivery.claimForDispatch();
         delivery.increaseAttemptCount();
         delivery.markSent("telegram-message-1");
 
@@ -57,6 +58,7 @@ class NotificationDeliveryTest {
     void 최종_발송에_실패하면_실패상태와_원인을_기록한다() {
         NotificationDelivery delivery = createDelivery();
 
+        delivery.claimForDispatch();
         delivery.markFailed("provider timeout");
 
         assertEquals(DeliveryStatus.FAILED, delivery.getStatus());
@@ -66,6 +68,7 @@ class NotificationDeliveryTest {
     @Test
     void 성공한_발송은_실패상태로_되돌릴_수_없다() {
         NotificationDelivery delivery = createDelivery();
+        delivery.claimForDispatch();
         delivery.markSent("telegram-message-1");
 
         assertThrows(InvalidDeliveryStateException.class,
@@ -76,6 +79,7 @@ class NotificationDeliveryTest {
     void 발송_시도는_최대_세번까지만_기록한다() {
         NotificationDelivery delivery = createDelivery();
 
+        delivery.claimForDispatch();
         delivery.increaseAttemptCount();
         delivery.increaseAttemptCount();
         delivery.increaseAttemptCount();
@@ -83,6 +87,16 @@ class NotificationDeliveryTest {
         assertEquals(3, delivery.getAttemptCount());
         assertFalse(delivery.canRetry());
         assertThrows(InvalidDeliveryStateException.class, delivery::increaseAttemptCount);
+    }
+
+    @Test
+    void 발송은_대기상태에서_한번만_선점할_수_있다() {
+        NotificationDelivery delivery = createDelivery();
+
+        delivery.claimForDispatch();
+
+        assertEquals(DeliveryStatus.SENDING, delivery.getStatus());
+        assertThrows(InvalidDeliveryStateException.class, delivery::claimForDispatch);
     }
 
     private NotificationDelivery createDelivery() {

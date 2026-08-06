@@ -1,6 +1,7 @@
 package site.yesaido.notification_server.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
@@ -55,6 +57,16 @@ class NotificationEndpointRepositoryTest {
         assertThat(repository.findByIdAndUserIdAndDeletedFalse(9004L, 9010L)).isPresent();
         assertThat(repository.findByIdAndUserIdAndDeletedFalse(9005L, 9010L)).isEmpty();
         assertThat(repository.findByIdAndUserIdAndDeletedFalse(9004L, 9011L)).isEmpty();
+    }
+
+    @Test
+    void 삭제되지_않은_동일_endpoint는_중복_등록할_수_없다() {
+        insertChannelType(9006L, "TEST_TELEGRAM_3");
+        insertEndpoint(9006L, 9012L, 9006L, true, false, "duplicate-chat");
+
+        assertThatThrownBy(() -> insertEndpoint(
+                9007L, 9012L, 9006L, true, false, "duplicate-chat"))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private void insertChannelType(Long id, String code) {

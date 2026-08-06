@@ -4,10 +4,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import site.yesaido.notification_server.config.NotificationProperties;
 import site.yesaido.notification_server.exception.NotificationProviderException;
@@ -27,8 +29,8 @@ class DeliveryDispatchServiceTest {
     void retriesProviderFailureAndMarksSuccess() {
         DeliveryDispatchService service = service();
         DeliveryCommand command =
-                new DeliveryCommand(7L, "TELEGRAM", "12345", "메시지");
-        when(stateService.startAttempt(7L)).thenReturn(command);
+                new DeliveryCommand(7L, "TELEGRAM", "12345", "메시지", (short) 0);
+        when(stateService.claimForDispatch(7L)).thenReturn(Optional.of(command));
         when(registry.get("TELEGRAM")).thenReturn(sender);
         when(sender.send("12345", "메시지"))
                 .thenThrow(new NotificationProviderException("temporary"))
@@ -37,7 +39,8 @@ class DeliveryDispatchServiceTest {
 
         service.dispatch(7L);
 
-        verify(stateService, times(3)).startAttempt(7L);
+        verify(stateService).claimForDispatch(7L);
+        verify(stateService, times(3)).recordAttempt(7L);
         verify(stateService).markSent(7L, "99");
         verify(stateService, never()).markFailed(
                 org.mockito.ArgumentMatchers.anyLong(),
@@ -48,17 +51,47 @@ class DeliveryDispatchServiceTest {
     void marksFailureAndPublishesDeadLetterAfterRetries() {
         DeliveryDispatchService service = service();
         DeliveryCommand command =
-                new DeliveryCommand(7L, "DISCORD", "https://discord.com/api/webhooks/1/t", "메시지");
-        when(stateService.startAttempt(7L)).thenReturn(command);
+                new DeliveryCommand(7L, "DISCORD", "https://discord.com/api/webhooks/1/t", "메시지", (short) 0);
+        when(stateService.claimForDispatch(7L)).thenReturn(Optional.of(command));
         when(registry.get("DISCORD")).thenReturn(sender);
         when(sender.send(command.destination(), command.message()))
                 .thenThrow(new NotificationProviderException("provider down"));
 
         service.dispatch(7L);
 
-        verify(stateService, times(3)).startAttempt(7L);
+        verify(stateService).claimForDispatch(7L);
+        verify(stateService, times(3)).recordAttempt(7L);
         verify(stateService).markFailed(7L, "provider down");
         verify(deadLetterPublisher).publish(7L, "provider down");
+    }
+
+    @Test
+    void skipsProviderCallWhenAnotherWorkerAlreadyClaimedDelivery() {
+        DeliveryDispatchService service = service();
+        when(stateService.claimForDispatch(7L)).thenReturn(Optional.empty());
+
+        service.dispatch(7L);
+
+        verify(stateService).claimForDispatch(7L);
+        verify(stateService, never()).recordAttempt(7L);
+        verifyNoInteractions(registry, sender, deadLetterPublisher);
+    }
+
+    @Test
+    void usesOnlyRemainingAttemptsWhenDeliveryAlreadyHasFailures() {
+        DeliveryDispatchService service = service();
+        DeliveryCommand command =
+                new DeliveryCommand(7L, "TELEGRAM", "12345", "메시지", (short) 2);
+        when(stateService.claimForDispatch(7L)).thenReturn(Optional.of(command));
+        when(registry.get("TELEGRAM")).thenReturn(sender);
+        when(sender.send("12345", "메시지"))
+                .thenThrow(new NotificationProviderException("last chance failed"));
+
+        service.dispatch(7L);
+
+        verify(stateService).recordAttempt(7L);
+        verify(stateService).markFailed(7L, "last chance failed");
+        verify(deadLetterPublisher).publish(7L, "last chance failed");
     }
 
     private DeliveryDispatchService service() {

@@ -1,0 +1,30 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  # 로컬 개발에서는 중앙 Config/Kubernetes를 사용하지 않는다.
+  cloud:
+    kubernetes:
+      discovery:
+        enabled: false
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+
+server:
+  port: ${SERVER_PORT:9004}
+
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:false}
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+logging:
+  level:
+    site.yesaido.notification_server: DEBUG

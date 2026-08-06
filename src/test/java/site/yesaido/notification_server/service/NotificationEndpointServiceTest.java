@@ -18,12 +18,15 @@ import site.yesaido.notification_server.provider.NotificationSender;
 import site.yesaido.notification_server.provider.NotificationSenderRegistry;
 import site.yesaido.notification_server.repository.ChannelTypeRepository;
 import site.yesaido.notification_server.repository.NotificationEndpointRepository;
+import site.yesaido.notification_server.repository.NotificationSubscriptionRepository;
 class NotificationEndpointServiceTest {
 
     private final NotificationEndpointRepository endpointRepository =
             mock(NotificationEndpointRepository.class);
     private final ChannelTypeRepository channelTypeRepository =
             mock(ChannelTypeRepository.class);
+    private final NotificationSubscriptionRepository subscriptionRepository =
+            mock(NotificationSubscriptionRepository.class);
     private final NotificationSenderRegistry senderRegistry =
             mock(NotificationSenderRegistry.class);
     private final NotificationSender sender = mock(NotificationSender.class);
@@ -32,7 +35,7 @@ class NotificationEndpointServiceTest {
     @BeforeEach
     void setUp() {
         service = new NotificationEndpointService(
-                endpointRepository, channelTypeRepository, senderRegistry);
+                endpointRepository, channelTypeRepository, subscriptionRepository, senderRegistry);
     }
 
     @Test
@@ -50,6 +53,7 @@ class NotificationEndpointServiceTest {
                 7L, new EndpointCreateRequest(1L, "123456", "내 텔레그램"));
 
         assertThat(response.channelCode()).isEqualTo("TELEGRAM");
+        assertThat(response.destination()).endsWith("3456").doesNotContain("123456");
         assertThat(response.enabled()).isTrue();
         verify(sender).validateDestination("123456");
     }
@@ -72,5 +76,22 @@ class NotificationEndpointServiceTest {
 
         verify(endpointRepository, never()).save(org.mockito.ArgumentMatchers.any(
                 NotificationEndpoint.class));
+    }
+
+    @Test
+    void deletingEndpointAlsoSoftDeletesActiveSubscriptions() {
+        NotificationEndpoint endpoint = mock(NotificationEndpoint.class);
+        var firstSubscription = mock(site.yesaido.notification_server.domain.NotificationSubscription.class);
+        var secondSubscription = mock(site.yesaido.notification_server.domain.NotificationSubscription.class);
+        when(endpointRepository.findByIdAndUserIdAndDeletedFalse(10L, 7L))
+                .thenReturn(Optional.of(endpoint));
+        when(subscriptionRepository.findAllByEndpoint_IdAndDeletedFalse(10L))
+                .thenReturn(java.util.List.of(firstSubscription, secondSubscription));
+
+        service.delete(7L, 10L);
+
+        verify(endpoint).softDelete();
+        verify(firstSubscription).softDelete();
+        verify(secondSubscription).softDelete();
     }
 }

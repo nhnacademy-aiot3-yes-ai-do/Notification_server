@@ -1,5 +1,7 @@
 package site.yesaido.notification_server.service;
 
+import java.time.Duration;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.retry.support.RetryTemplate;
@@ -19,7 +21,7 @@ public class DeliveryDispatchService {
     private final DeliveryStateService stateService;
     private final NotificationSenderRegistry senderRegistry;
     private final DeadLetterPublisher deadLetterPublisher;
-    private final RetryTemplate retryTemplate;
+    private final Duration retryBackoff;
 
     public DeliveryDispatchService(
             DeliveryStateService stateService,
@@ -30,23 +32,46 @@ public class DeliveryDispatchService {
         this.stateService = stateService;
         this.senderRegistry = senderRegistry;
         this.deadLetterPublisher = deadLetterPublisher;
-        this.retryTemplate = RetryTemplate.builder()
-                .maxAttempts(NotificationDelivery.MAX_ATTEMPT_COUNT)
-                .fixedBackoff(properties.retry().backoff())
-                .build();
+        this.retryBackoff = properties.retry().backoff();
     }
 
     public void dispatch(Long deliveryId) {
+        Optional<DeliveryCommand> claimedCommand = stateService.claimForDispatch(deliveryId);
+        if (claimedCommand.isEmpty()) {
+            log.debug("Notification delivery dispatch skipped because it was already claimed or finalized: deliveryId={}",
+                    deliveryId);
+            return;
+        }
+
+        DeliveryCommand command = claimedCommand.get();
+        short remainingAttempts = command.remainingAttempts(NotificationDelivery.MAX_ATTEMPT_COUNT);
+        RetryTemplate retryTemplate = RetryTemplate.builder()
+                .maxAttempts(remainingAttempts)
+                .fixedBackoff(retryBackoff)
+                .build();
+
         retryTemplate.execute(
                 context -> {
-                    DeliveryCommand command = stateService.startAttempt(deliveryId);
+                    stateService.recordAttempt(deliveryId);
                     NotificationSender sender = senderRegistry.get(command.channelCode());
-                    ProviderSendResult result = sender.send(
-                            command.destination(), command.message());
-                    stateService.markSent(deliveryId, result.messageId());
-                    log.info("Notification delivery sent: deliveryId={}, channel={}",
-                            deliveryId, command.channelCode());
-                    return null;
+                    int attempt = command.attemptCount() + context.getRetryCount() + 1;
+                    try {
+                        ProviderSendResult result = sender.send(
+                                command.destination(), command.message());
+                        stateService.markSent(deliveryId, result.messageId());
+                        log.info("Notification delivery sent: deliveryId={}, channel={}, attempt={}",
+                                deliveryId, command.channelCode(), attempt);
+                        return null;
+                    } catch (RuntimeException exception) {
+                        log.warn("Notification delivery attempt failed: deliveryId={}, channel={}, "
+                                        + "attempt={}/{}, failureType={}",
+                                deliveryId,
+                                command.channelCode(),
+                                attempt,
+                                NotificationDelivery.MAX_ATTEMPT_COUNT,
+                                exception.getClass().getSimpleName());
+                        throw exception;
+                    }
                 },
                 context -> {
                     Throwable failure = context.getLastThrowable();
@@ -55,8 +80,11 @@ public class DeliveryDispatchService {
                             : failure.getMessage();
                     stateService.markFailed(deliveryId, reason);
                     deadLetterPublisher.publish(deliveryId, reason);
-                    log.error("Notification delivery failed after retries: deliveryId={}",
-                            deliveryId, failure);
+                    log.error("Notification delivery failed after retries: deliveryId={}, attempts={}, "
+                                    + "failureType={}",
+                            deliveryId,
+                            command.attemptCount() + remainingAttempts,
+                            failure == null ? "Unknown" : failure.getClass().getSimpleName());
                     return null;
                 });
     }

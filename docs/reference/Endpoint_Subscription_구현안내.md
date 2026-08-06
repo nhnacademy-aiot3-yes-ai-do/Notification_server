@@ -1,9 +1,10 @@
 # Endpoint·Subscription 구현 안내
 
-수신 담당: 서영님  
+현재 구현 담당: 호준(Notification Service)  
+참고: 서영님은 현재 프론트엔드에 전념하며, 아래 내용은 Notification API와 프론트 연동을 위한 기준 문서다.  
 작성 목적: Notification Service의 Endpoint·Subscription 구현 범위와 연동 기준 공유
 
-이 문서는 `Notification_역할분담_및_개발실행계획.md`의 내용을 실제 구현 관점에서 정리한 안내 문서다. 큰 역할분담과 정책은 이미 팀에서 확정되었으며, 이 문서는 서영님이 구현을 시작할 때 참고하면 된다.
+이 문서는 `Notification_역할분담_및_개발실행계획.md`의 내용을 실제 구현 관점에서 정리한 안내 문서다. Endpoint·Subscription 구현은 Notification 담당자가 진행하고, 프론트엔드는 확정된 API 계약을 사용한다.
 
 ## 1. 담당 범위
 
@@ -95,7 +96,7 @@ DELETE /api/v1/notifications/subscriptions/{subscriptionId}
 
 ## 5. 관련 테이블
 
-서영님이 주로 사용하는 테이블은 다음과 같다.
+Endpoint·Subscription 구현과 프론트 연동에 사용되는 테이블은 다음과 같다.
 
 - `notification_endpoint`
 - `notification_subscription`
@@ -174,7 +175,7 @@ Notification이 Cultivation DB를 직접 조회하지 않는 구조를 유지한
 - 페이지네이션 필요 여부
 - Endpoint 등록 직후 테스트 메시지를 보낼지 여부
 
-## 9. 호준(Notification Consumer 담당)에게 공유할 결과물
+## 9. Notification Consumer 담당자에게 공유할 결과물
 
 Endpoint·Subscription 구현 후 아래 내용을 공유한다.
 
@@ -203,7 +204,7 @@ Endpoint·Subscription 구현 후 아래 내용을 공유한다.
 
 ## 11. 현재 시점의 협업 방법
 
-서영님 이 문서를 전달받은 즉시 모든 세부 API 명세를 완성할 필요는 없어요. 우선 담당 범위와 기본 정책을 기준으로 구현을 시작하고, Consumer 통합 전에 최종 요청·응답 JSON과 인증·권한 정보를 확정하면 됩니다.
+이 문서만으로 모든 외부 연동을 확정하는 것은 아니다. 우선 Notification 내부 구현을 진행하고, 프론트 연동 전에 최종 요청·응답 JSON과 인증·권한 정보를 확정한다.
 
 ## 12. 팀 공통 설명
 

@@ -14,6 +14,7 @@ import site.yesaido.notification_server.exception.NotificationNotFoundException;
 import site.yesaido.notification_server.provider.NotificationSenderRegistry;
 import site.yesaido.notification_server.repository.ChannelTypeRepository;
 import site.yesaido.notification_server.repository.NotificationEndpointRepository;
+import site.yesaido.notification_server.repository.NotificationSubscriptionRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,7 @@ public class NotificationEndpointService {
 
     private final NotificationEndpointRepository endpointRepository;
     private final ChannelTypeRepository channelTypeRepository;
+    private final NotificationSubscriptionRepository subscriptionRepository;
     private final NotificationSenderRegistry senderRegistry;
 
     @Transactional
@@ -79,7 +81,10 @@ public class NotificationEndpointService {
 
     @Transactional
     public void delete(Long userId, Long endpointId) {
-        findOwnedEndpoint(userId, endpointId).softDelete();
+        NotificationEndpoint endpoint = findOwnedEndpoint(userId, endpointId);
+        endpoint.softDelete();
+        subscriptionRepository.findAllByEndpoint_IdAndDeletedFalse(endpointId)
+                .forEach(subscription -> subscription.softDelete());
     }
 
     private NotificationEndpoint findOwnedEndpoint(Long userId, Long endpointId) {

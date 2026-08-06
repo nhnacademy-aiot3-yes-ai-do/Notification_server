@@ -90,7 +90,8 @@ public class GlobalExceptionHandler {
             NotificationProviderException exception,
             HttpServletRequest request
     ) {
-        log.error("Notification provider request failed: path={}", request.getRequestURI(), exception);
+        log.error("Notification provider request failed: path={}, failureType={}",
+                request.getRequestURI(), exception.getClass().getSimpleName());
         return response(HttpStatus.BAD_GATEWAY, "NOTIFICATION_PROVIDER_FAILURE",
                 "외부 알림 채널 요청에 실패했습니다.", request);
     }
@@ -100,7 +101,8 @@ public class GlobalExceptionHandler {
             Exception exception,
             HttpServletRequest request
     ) {
-        log.error("Unexpected notification API error: path={}", request.getRequestURI(), exception);
+        log.error("Unexpected notification API error: path={}, failureType={}",
+                request.getRequestURI(), exception.getClass().getSimpleName());
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR",
                 "서버 내부 오류가 발생했습니다.", request);
     }

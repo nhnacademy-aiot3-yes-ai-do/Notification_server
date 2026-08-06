@@ -1,5 +1,20 @@
 # Notification Service
 
+## 관련 문서
+
+이 문서는 Notification Service의 전체 역할과 처리 흐름을 설명하는 상위 문서다.
+세부 내용은 목적에 맞는 문서에서 확인한다.
+
+| 확인할 내용 | 문서 |
+|---|---|
+| HTTP API 경로·요청·응답·오류 형식 | [`notification-api.md`](./notification-api.md) |
+| Flyway 기준 테이블·제약조건·인덱스 | [`notification-db.md`](./notification-db.md) |
+| Endpoint·Subscription 구현 절차 | [`Endpoint_Subscription_구현안내.md`](./Endpoint_Subscription_구현안내.md) |
+| 코드 구조와 기술 학습 | [`Notification_Service_coad.md`](./Notification_Service_coad.md) |
+
+API나 DB의 세부 정의가 이 문서와 다를 경우, API는 `notification-api.md`, 스키마는
+`notification-db.md`를 우선 확인한다. 최종 DB 스키마의 기준은 Flyway Migration이다.
+
 ## 역할
 
 Notification Service는 다른 서비스가 RabbitMQ로 발행한 이벤트를 받아 사용자의 구독과
@@ -48,9 +63,21 @@ Producer 서비스
   → 이벤트×채널 Template 선택
   → notification 저장
   → 채널별 notification_delivery 생성
+  → PENDING → SENDING 선점(조건부 DB UPDATE)
   → Telegram/Discord 발송
-  → PENDING → SENT 또는 FAILED
+  → SENT 또는 FAILED
 ```
+
+`SENDING`은 Consumer와 복구 스케줄러, 또는 서버 인스턴스 여러 개가 같은 Delivery를 동시에
+발송하지 못하게 하는 내부 선점 상태다. `PENDING → SENDING`은 조건부 UPDATE로 한 작업만
+성공한다. 이미 다른 작업이 선점했거나 완료한 Delivery는 발송을 건너뛴다.
+
+DB 저장 직후 Consumer 프로세스가 중단되어 `PENDING` Delivery만 남는 경우를 대비해,
+일정 시간 이상 오래된 미완료 Delivery를 스케줄러가 다시 발송한다. `SENDING` 상태에서
+프로세스가 비정상 종료된 경우에는 별도 선점 만료 시간(기본 5분) 뒤 복구한다. 시도 횟수가
+남아 있으면 `PENDING`으로 되돌리지만, 3회를 모두 소진한 상태라면 `FAILED`와 DLQ로 최종
+처리한다. 같은 RabbitMQ 이벤트의 `source_event_id`는 UNIQUE이므로 원본 이벤트와 Delivery가
+중복 생성되지는 않는다.
 
 구독자가 없으면 원본 `notification`만 남고 Delivery는 생성하지 않는다. 이는 오류가
 아니라 발송 대상이 없는 정상 상황이다.
@@ -73,10 +100,12 @@ PATCH  /api/v1/notification-subscriptions/{subscriptionId}/enabled
 DELETE /api/v1/notification-subscriptions/{subscriptionId}
 
 GET    /api/v1/notification-subscription-types
-GET    /api/v1/notifications
+GET    /api/v1/notifications?page=0&size=20
 ```
 
 DELETE는 소프트 삭제다. `enabled=false`는 일시정지이고 `is_deleted=true`는 삭제 처리다.
+Endpoint DELETE는 해당 Endpoint의 비삭제 Subscription도 함께 소프트 삭제한다. Endpoint 응답의
+Chat ID와 Discord Webhook은 외부로 그대로 반환하지 않고 마스킹한다.
 API Gateway가 JWT를 검증한 뒤 전달하는 `X-User-Id`를 사용자 ID로 사용하며, API는
 본인 소유 데이터만 조회·수정해야 한다.
 
@@ -119,6 +148,7 @@ RabbitMQ Listener와 Direct Exchange·다중 Queue·공용 DLX·DLQ 선언은 �
 
 발송 상태는 도메인 메서드로만 변경한다. `SENT` 또는 `FAILED`로 확정된 Delivery를 다시
 변경하거나 3회 초과로 시도하지 못하게 `InvalidDeliveryStateException`으로 차단한다.
+복구 배치는 Delivery 한 건의 발송에서 오류가 나도 나머지 대상을 계속 처리한다.
 
 ## Database
 
@@ -196,3 +226,40 @@ Provider 실패를 서로 다른 HTTP 상태와 오류 코드로 구분한다. �
 
 예외가 발생하면 운영 로그에는 이벤트·알림·발송을 추적할 수 있는 식별자와 재시도 정보를
 남긴다. JWT·Webhook URL·Chat ID·토큰·민감한 payload 원문은 기록하지 않는다.
+
+### Provider 가짜 서버 테스트와 운영 상태 확인
+
+Telegram·Discord Provider는 실제 Bot Token이나 Webhook을 사용하지 않고
+`MockRestServiceServer`로 HTTP 요청을 검증한다. Telegram은 HTTP 200이라도 응답의
+`ok=false`이면 실패로 처리하며, Discord는 5xx 응답을 `NotificationProviderException`으로
+감싼다. 따라서 채널 발송 코드의 요청 형식과 실패 분기를 실제 외부 서비스 없이 확인할 수
+있다.
+
+운영 환경에는 Actuator의 `/actuator/health`와 `/actuator/info`만 노출한다. Health 상세 정보는
+공개하지 않아 DB·RabbitMQ 연결 정보가 응답에 섞이지 않도록 한다. 발송 로그에는
+`deliveryId`, 채널, 시도 횟수, 실패 예외 종류만 남긴다. Provider 예외의 전체 stack trace나
+원문 메시지를 로그에 기록하지 않아 Discord Webhook·Telegram Chat ID가 노출되지 않도록 한다.
+
+### 로컬 인프라 연결 확인
+
+로컬에서 PostgreSQL과 RabbitMQ를 함께 실행하면 Notification의 전체 저장·소비 흐름을
+검증할 수 있다. PostgreSQL은 Endpoint, Subscription, Notification, Delivery와 발송 상태를
+저장하고, RabbitMQ는 Rule·Cultivation·AI·Auth·Inquiry 서비스가 발행한 이벤트를 Notification
+Consumer까지 전달한다.
+
+```text
+Producer → RabbitMQ Exchange/Queue → Notification Consumer
+         → PostgreSQL 저장 → Delivery 생성·발송 상태 갱신
+```
+
+이 연결 자체가 홈페이지 화면을 자동으로 바꾸는 것은 아니다. 프론트가 Notification API를
+호출하면 PostgreSQL에 저장된 Endpoint·구독·알림 이력이 화면에 표시되고, 다른 서비스가
+실제 이벤트를 발행하면 RabbitMQ를 통해 새 알림이 생성된다. 따라서 화면에서 변화가 보이려면
+프론트 API 연결과 실제 Producer 이벤트가 모두 필요하다.
+
+현재 로컬 검증 환경은 다음과 같다.
+
+- 애플리케이션 DB: `localhost:5432/notification_db`
+- Migration 검증 DB: `localhost:55432/notification_migration_test`
+- RabbitMQ: `localhost:5672`
+- 통합 테스트: Docker PostgreSQL 연결 상태에서 67개 테스트, 실패 0건

@@ -21,10 +21,26 @@ public record EndpointResponse(
                 endpoint.getChannelType().getId(),
                 endpoint.getChannelType().getCode(),
                 endpoint.getChannelType().getDisplayName(),
-                endpoint.getDestination(),
+                maskDestination(endpoint.getChannelType().getCode(), endpoint.getDestination()),
                 endpoint.getDisplayName(),
                 endpoint.isEnabled(),
                 endpoint.getCreatedAt(),
                 endpoint.getUpdatedAt());
+    }
+
+    private static String maskDestination(String channelCode, String destination) {
+        if (destination == null || destination.isBlank()) {
+            return "***";
+        }
+        if ("TELEGRAM".equals(channelCode)) {
+            int exposedLength = Math.min(4, destination.length());
+            return "*".repeat(Math.max(3, destination.length() - exposedLength))
+                    + destination.substring(destination.length() - exposedLength);
+        }
+        if ("DISCORD".equals(channelCode)) {
+            int lastSlash = destination.lastIndexOf('/');
+            return lastSlash < 0 ? "***" : destination.substring(0, lastSlash + 1) + "***";
+        }
+        return "***";
     }
 }
