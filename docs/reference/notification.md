@@ -262,4 +262,31 @@ Producer → RabbitMQ Exchange/Queue → Notification Consumer
 - 애플리케이션 DB: `localhost:5432/notification_db`
 - Migration 검증 DB: `localhost:55432/notification_migration_test`
 - RabbitMQ: `localhost:5672`
-- 통합 테스트: Docker PostgreSQL 연결 상태에서 67개 테스트, 실패 0건
+- 통합 테스트: Docker PostgreSQL 연결 상태에서 Repository 6개 테스트, 실패 0건
+
+## 2026-08-07 전체 검증 결과
+
+원본 `develop` 브랜치에서 전체 검증을 다시 실행했다.
+
+| 검증 항목 | 결과 |
+|---|---|
+| `mvn clean verify` 기본 테스트 | 77개 실행, 실패 0, 오류 0, 스킵 6개 |
+| PostgreSQL Repository 통합 테스트 | 6개 실행, 실패 0, 오류 0 |
+| Flyway Migration | V1~V10 검증·적용 성공, 검증 DB 버전 10 |
+| Controller·Service·Consumer·Provider 테스트 | 전체 통과 |
+| Telegram·Discord 가짜 HTTP Provider 테스트 | 통과 |
+
+통합 테스트는 다음 Docker PostgreSQL 검증 DB에 연결해 실행했다.
+
+```text
+jdbc:postgresql://localhost:55432/notification_migration_test
+```
+
+기본 `mvn clean verify`에서는 외부 DB 의존성을 피하기 위해 Repository 통합 테스트가 스킵되며,
+`notification.integration.enabled=true`를 지정하면 실제 PostgreSQL에서 실행된다. 이번에는
+해당 플래그를 켜서 통합 테스트까지 별도로 통과시켰다.
+
+이번 결과는 Notification 내부의 DB·HTTP·이벤트 처리 흐름이 정상임을 의미한다. 실제 팀 서비스와의
+RabbitMQ 종단 간 연결, 최종 routing key와 Producer payload, 운영 Secret, Gateway·Kubernetes 설정은
+공통 계약 확정 후 별도 검증이 필요하다. 따라서 외부 서비스까지 운영 환경에서 연결 완료되었다는
+의미는 아니다.
