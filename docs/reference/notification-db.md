@@ -54,125 +54,125 @@ notification_delivery ───── 채널별 메시지·상태·재시도 결
 
 ### 핵심 DB 제약
 
-| 대상 | 실제 제약 | 목적 |
-|---|---|---|
-| `notification` | `source_event_id UNIQUE` | 같은 RabbitMQ 이벤트의 중복 저장·발송 방지 |
-| `notification_delivery` | `UNIQUE(notification_id, notification_subscription_id)` | 같은 원본 이벤트를 같은 구독으로 두 번 발송하지 않음 |
-| `notification_delivery` | `CHECK(status IN ('PENDING', 'SENDING', 'SENT', 'FAILED'))` | 허용되지 않은 발송 상태 저장 방지 |
-| `notification_delivery` | `CHECK(attempt_count BETWEEN 0 AND 3)` | 확정된 최대 3회 발송 정책 강제 |
-| `notification_subscription` | partial UNIQUE, `WHERE is_deleted = FALSE` | 비삭제 상태의 같은 구독 조합은 하나만 유지 |
-| `notification_endpoint` | partial UNIQUE, `WHERE is_deleted = FALSE` | 같은 사용자의 같은 채널·수신 경로 중복 등록 방지 |
+| 대상                        | 실제 제약                                                   | 목적                                                 |
+|---------------------------|-----------------------------------------------------------|----------------------------------------------------|
+| `notification`              | `source_event_id UNIQUE`                                    | 같은 RabbitMQ 이벤트의 중복 저장·발송 방지           |
+| `notification_delivery`     | `UNIQUE(notification_id, notification_subscription_id)`     | 같은 원본 이벤트를 같은 구독으로 두 번 발송하지 않음 |
+| `notification_delivery`     | `CHECK(status IN ('PENDING', 'SENDING', 'SENT', 'FAILED'))` | 허용되지 않은 발송 상태 저장 방지                    |
+| `notification_delivery`     | `CHECK(attempt_count BETWEEN 0 AND 3)`                      | 확정된 최대 3회 발송 정책 강제                       |
+| `notification_subscription` | partial UNIQUE, `WHERE is_deleted = FALSE`                  | 비삭제 상태의 같은 구독 조합은 하나만 유지           |
+| `notification_endpoint`     | partial UNIQUE, `WHERE is_deleted = FALSE`                  | 같은 사용자의 같은 채널·수신 경로 중복 등록 방지     |
 
 `enabled=false`는 삭제가 아니라 일시정지다. 따라서 `enabled=false`인 구독도 위 partial
 UNIQUE 대상에 포함되며, 재구독 요청은 새 행 생성 대신 기존 구독을 다시 활성화한다.
 
 ## 3. 테이블 요약
 
-| 테이블 | 역할 |
-|---|---|
-| `channel_type` | Telegram·Discord 채널 기준 정보 |
-| `subscription_target_type` | CULTIVATION·INQUIRY·USER 대상 기준 정보 |
-| `notification_event_type` | 수신 가능한 이벤트 코드와 대상 유형 |
-| `notification_subscription_type` | 사용자가 선택할 구독 카탈로그 |
-| `subscription_channel` | 구독 종류에서 허용하는 채널 |
-| `notification_template` | 이벤트×채널×버전별 메시지 템플릿 |
-| `notification_endpoint` | 사용자의 Telegram Chat ID·Discord Webhook |
-| `notification_subscription` | Endpoint와 이벤트 대상의 구독 연결 |
-| `notification` | RabbitMQ에서 수신한 이벤트 원본 |
-| `notification_delivery` | 구독별 실제 발송 및 재시도 결과 |
+| 테이블                           | 역할                                      |
+|--------------------------------|-----------------------------------------|
+| `channel_type`                   | Telegram·Discord 채널 기준 정보           |
+| `subscription_target_type`       | CULTIVATION·INQUIRY·USER 대상 기준 정보   |
+| `notification_event_type`        | 수신 가능한 이벤트 코드와 대상 유형       |
+| `notification_subscription_type` | 사용자가 선택할 구독 카탈로그             |
+| `subscription_channel`           | 구독 종류에서 허용하는 채널               |
+| `notification_template`          | 이벤트×채널×버전별 메시지 템플릿          |
+| `notification_endpoint`          | 사용자의 Telegram Chat ID·Discord Webhook |
+| `notification_subscription`      | Endpoint와 이벤트 대상의 구독 연결        |
+| `notification`                   | RabbitMQ에서 수신한 이벤트 원본           |
+| `notification_delivery`          | 구독별 실제 발송 및 재시도 결과           |
 
 ## 4. 최종 테이블 명세
 
 ### 4.1 `channel_type`
 
-| 컬럼 | 타입 | NULL | 설명 |
-|---|---|---:|---|
-| `id` | BIGINT IDENTITY | X | PK |
-| `code` | VARCHAR(30) | X | `TELEGRAM`, `DISCORD`, UNIQUE |
-| `display_name` | VARCHAR(100) | X | 화면 표시명 |
-| `is_deleted` | BOOLEAN | X | 기준 채널 소프트 삭제 |
-| `created_at` | TIMESTAMP | X | 생성 시각 |
-| `updated_at` | TIMESTAMP | X | 수정 시각 |
+| 컬럼           | 타입            | NULL | 설명                          |
+|--------------|---------------|---:|-----------------------------|
+| `id`           | BIGINT IDENTITY | X    | PK                            |
+| `code`         | VARCHAR(30)     | X    | `TELEGRAM`, `DISCORD`, UNIQUE |
+| `display_name` | VARCHAR(100)    | X    | 화면 표시명                   |
+| `is_deleted`   | BOOLEAN         | X    | 기준 채널 소프트 삭제         |
+| `created_at`   | TIMESTAMP       | X    | 생성 시각                     |
+| `updated_at`   | TIMESTAMP       | X    | 수정 시각                     |
 
 ### 4.2 `subscription_target_type`
 
-| 컬럼 | 타입 | NULL | 설명 |
-|---|---|---:|---|
-| `id` | BIGINT IDENTITY | X | PK |
-| `target_type` | VARCHAR(30) | X | `CULTIVATION`, `INQUIRY`, `USER`, UNIQUE |
-| `display_name` | VARCHAR(100) | X | 화면 표시명 |
-| `created_at` | TIMESTAMP | X | 생성 시각 |
-| `updated_at` | TIMESTAMP | X | 수정 시각 |
+| 컬럼           | 타입            | NULL | 설명                                     |
+|--------------|---------------|---:|----------------------------------------|
+| `id`           | BIGINT IDENTITY | X    | PK                                       |
+| `target_type`  | VARCHAR(30)     | X    | `CULTIVATION`, `INQUIRY`, `USER`, UNIQUE |
+| `display_name` | VARCHAR(100)    | X    | 화면 표시명                              |
+| `created_at`   | TIMESTAMP       | X    | 생성 시각                                |
+| `updated_at`   | TIMESTAMP       | X    | 수정 시각                                |
 
 ### 4.3 `notification_event_type`
 
-| 컬럼 | 타입 | NULL | 설명 |
-|---|---|---:|---|
-| `id` | BIGINT IDENTITY | X | PK |
-| `code` | VARCHAR(50) | X | 이벤트 코드, UNIQUE |
-| `display_name` | VARCHAR(150) | X | 이벤트 표시명 |
-| `description` | VARCHAR(500) | O | 설명 |
-| `target_type` | BIGINT | X | `subscription_target_type.id` FK |
-| `created_at` | TIMESTAMP | X | 생성 시각 |
-| `updated_at` | TIMESTAMP | X | 수정 시각 |
+| 컬럼           | 타입            | NULL | 설명                             |
+|--------------|---------------|---:|--------------------------------|
+| `id`           | BIGINT IDENTITY | X    | PK                               |
+| `code`         | VARCHAR(50)     | X    | 이벤트 코드, UNIQUE              |
+| `display_name` | VARCHAR(150)    | X    | 이벤트 표시명                    |
+| `description`  | VARCHAR(500)    | O    | 설명                             |
+| `target_type`  | BIGINT          | X    | `subscription_target_type.id` FK |
+| `created_at`   | TIMESTAMP       | X    | 생성 시각                        |
+| `updated_at`   | TIMESTAMP       | X    | 수정 시각                        |
 
 `target_type`은 문자열이 아니라 FK ID를 저장한다. 컬럼명은 초기 Migration과의 호환을
 위해 유지하며 의미는 `target_type_id`와 같다.
 
 ### 4.4 `notification_subscription_type`
 
-| 컬럼 | 타입 | NULL | 설명 |
-|---|---|---:|---|
-| `id` | BIGINT IDENTITY | X | PK |
-| `notification_event_type_id` | BIGINT | X | 이벤트 유형 FK |
-| `subscription_target_type_id` | BIGINT | X | 대상 유형 FK |
-| `notification_subscription_name` | VARCHAR(20) | X | 구독 표시명 |
-| `description` | VARCHAR(500) | O | 구독 설명 |
-| `created_at` | TIMESTAMP | X | 생성 시각 |
-| `updated_at` | TIMESTAMP | X | 수정 시각 |
+| 컬럼                             | 타입            | NULL | 설명           |
+|--------------------------------|---------------|---:|--------------|
+| `id`                             | BIGINT IDENTITY | X    | PK             |
+| `notification_event_type_id`     | BIGINT          | X    | 이벤트 유형 FK |
+| `subscription_target_type_id`    | BIGINT          | X    | 대상 유형 FK   |
+| `notification_subscription_name` | VARCHAR(20)     | X    | 구독 표시명    |
+| `description`                    | VARCHAR(500)    | O    | 구독 설명      |
+| `created_at`                     | TIMESTAMP       | X    | 생성 시각      |
+| `updated_at`                     | TIMESTAMP       | X    | 수정 시각      |
 
 `(notification_event_type_id, subscription_target_type_id)`는 UNIQUE다.
 
 ### 4.5 `subscription_channel`
 
-| 컬럼 | 타입 | NULL | 설명 |
-|---|---|---:|---|
-| `id` | BIGINT IDENTITY | X | PK |
-| `notification_subscription_type_id` | BIGINT | X | 구독 종류 FK |
-| `channel_type_id` | BIGINT | X | 채널 FK |
-| `created_at` | TIMESTAMP | X | 생성 시각 |
+| 컬럼                                | 타입            | NULL | 설명         |
+|-----------------------------------|---------------|---:|------------|
+| `id`                                | BIGINT IDENTITY | X    | PK           |
+| `notification_subscription_type_id` | BIGINT          | X    | 구독 종류 FK |
+| `channel_type_id`                   | BIGINT          | X    | 채널 FK      |
+| `created_at`                        | TIMESTAMP       | X    | 생성 시각    |
 
 `(notification_subscription_type_id, channel_type_id)`는 UNIQUE다. 구독 생성 Service는
 이 테이블을 확인해 해당 구독이 Endpoint 채널을 지원하는지 검증한다.
 
 ### 4.6 `notification_template`
 
-| 컬럼 | 타입 | NULL | 설명 |
-|---|---|---:|---|
-| `id` | BIGINT IDENTITY | X | PK |
-| `notification_event_type_id` | BIGINT | X | 이벤트 유형 FK |
-| `channel_type_id` | BIGINT | X | 채널 FK |
-| `body_template` | TEXT | X | `{{variable}}` 형식 메시지 |
-| `version` | INTEGER | X | 템플릿 버전 |
-| `created_at` | TIMESTAMP | X | 생성 시각 |
-| `updated_at` | TIMESTAMP | X | 수정 시각 |
+| 컬럼                         | 타입            | NULL | 설명                       |
+|----------------------------|---------------|---:|--------------------------|
+| `id`                         | BIGINT IDENTITY | X    | PK                         |
+| `notification_event_type_id` | BIGINT          | X    | 이벤트 유형 FK             |
+| `channel_type_id`            | BIGINT          | X    | 채널 FK                    |
+| `body_template`              | TEXT            | X    | `{{variable}}` 형식 메시지 |
+| `version`                    | INTEGER         | X    | 템플릿 버전                |
+| `created_at`                 | TIMESTAMP       | X    | 생성 시각                  |
+| `updated_at`                 | TIMESTAMP       | X    | 수정 시각                  |
 
 `(notification_event_type_id, channel_type_id, version)`는 UNIQUE다. 발송 생성 시 같은
 이벤트·채널의 가장 높은 버전을 선택한다.
 
 ### 4.7 `notification_endpoint`
 
-| 컬럼 | 타입 | NULL | 설명 |
-|---|---|---:|---|
-| `id` | BIGINT IDENTITY | X | PK |
-| `user_id` | BIGINT | X | Auth 사용자 ID, 소프트 참조 |
-| `channel_type_id` | BIGINT | X | 채널 FK |
-| `display_name` | VARCHAR(100) | X | 사용자 지정 이름 |
-| `destination` | VARCHAR(500) | X | Telegram Chat ID 또는 Discord Webhook |
-| `enabled` | BOOLEAN | X | 일시 사용 여부 |
-| `is_deleted` | BOOLEAN | X | 소프트 삭제 여부 |
-| `created_at` | TIMESTAMP | X | 생성 시각 |
-| `updated_at` | TIMESTAMP | X | 수정 시각 |
+| 컬럼              | 타입            | NULL | 설명                                  |
+|-----------------|---------------|---:|-------------------------------------|
+| `id`              | BIGINT IDENTITY | X    | PK                                    |
+| `user_id`         | BIGINT          | X    | Auth 사용자 ID, 소프트 참조           |
+| `channel_type_id` | BIGINT          | X    | 채널 FK                               |
+| `display_name`    | VARCHAR(100)    | X    | 사용자 지정 이름                      |
+| `destination`     | VARCHAR(500)    | X    | Telegram Chat ID 또는 Discord Webhook |
+| `enabled`         | BOOLEAN         | X    | 일시 사용 여부                        |
+| `is_deleted`      | BOOLEAN         | X    | 소프트 삭제 여부                      |
+| `created_at`      | TIMESTAMP       | X    | 생성 시각                             |
+| `updated_at`      | TIMESTAMP       | X    | 수정 시각                             |
 
 `enabled=false`는 다시 켤 수 있는 일시정지다. `is_deleted=true`는 일반 목록에서 제외하는
 삭제다. 발송 대상은 두 값이 모두 활성 상태여야 한다.
@@ -183,16 +183,16 @@ index가 있다. 따라서 삭제되지 않은 동일 Telegram Chat ID 또는 �
 
 ### 4.8 `notification_subscription`
 
-| 컬럼 | 타입 | NULL | 설명 |
-|---|---|---:|---|
-| `id` | BIGINT IDENTITY | X | PK |
-| `notification_subscription_type_id` | BIGINT | X | 구독 종류 FK |
-| `notification_endpoint_id` | BIGINT | X | 사용자 Endpoint FK |
-| `target_id` | BIGINT | X | cultivationId·inquiryId·userId |
-| `enabled` | BOOLEAN | X | 일시 구독 여부 |
-| `is_deleted` | BOOLEAN | X | 소프트 삭제 여부 |
-| `created_at` | TIMESTAMP | X | 생성 시각 |
-| `updated_at` | TIMESTAMP | X | 수정 시각 |
+| 컬럼                                | 타입            | NULL | 설명                           |
+|-----------------------------------|---------------|---:|------------------------------|
+| `id`                                | BIGINT IDENTITY | X    | PK                             |
+| `notification_subscription_type_id` | BIGINT          | X    | 구독 종류 FK                   |
+| `notification_endpoint_id`          | BIGINT          | X    | 사용자 Endpoint FK             |
+| `target_id`                         | BIGINT          | X    | cultivationId·inquiryId·userId |
+| `enabled`                           | BOOLEAN         | X    | 일시 구독 여부                 |
+| `is_deleted`                        | BOOLEAN         | X    | 소프트 삭제 여부               |
+| `created_at`                        | TIMESTAMP       | X    | 생성 시각                      |
+| `updated_at`                        | TIMESTAMP       | X    | 수정 시각                      |
 
 `target_id`는 다른 MSA DB의 PK이므로 물리 FK를 만들지 않는다. 대상 의미는
 `notification_subscription_type.subscription_target_type_id`로 판단한다.
@@ -208,11 +208,13 @@ index가 있다. 따라서 삭제되지 않은 동일 Telegram Chat ID 또는 �
 비삭제 구독에는 다음 partial UNIQUE index를 적용한다.
 
 ```sql
-UNIQUE (
-  notification_subscription_type_id,
-  notification_endpoint_id,
-  target_id
-) WHERE is_deleted = FALSE
+CREATE UNIQUE INDEX uq_non_deleted_notification_subscription
+    ON notification_subscription (
+        notification_subscription_type_id,
+        notification_endpoint_id,
+        target_id
+    )
+    WHERE is_deleted = FALSE;
 ```
 
 따라서 일시정지된 구독을 다시 신청하면 새 행을 만들지 않고 기존 행의 `enabled=true`로
@@ -221,12 +223,12 @@ UNIQUE (
 
 ### 4.9 `notification`
 
-| 컬럼 | 타입 | NULL | 설명 |
-|---|---|---:|---|
-| `id` | BIGINT IDENTITY | X | PK |
-| `source_event_id` | UUID | X | Producer eventId, UNIQUE |
-| `event_payload` | JSONB | X | 이벤트 상세 데이터 |
-| `created_at` | TIMESTAMP | X | 생성 시각 |
+| 컬럼              | 타입            | NULL | 설명                     |
+|-----------------|---------------|---:|------------------------|
+| `id`              | BIGINT IDENTITY | X    | PK                       |
+| `source_event_id` | UUID            | X    | Producer eventId, UNIQUE |
+| `event_payload`   | JSONB           | X    | 이벤트 상세 데이터       |
+| `created_at`      | TIMESTAMP       | X    | 생성 시각                |
 
 `source_event_id` UNIQUE가 RabbitMQ 재전송에 따른 중복 발송을 방지한다. 동시에 같은
 이벤트가 들어와 UNIQUE 충돌이 나더라도, 이미 저장된 eventId가 확인되면 Consumer는 이를
@@ -235,20 +237,20 @@ UNIQUE (
 
 ### 4.10 `notification_delivery`
 
-| 컬럼 | 타입 | NULL | 설명 |
-|---|---|---:|---|
-| `id` | BIGINT IDENTITY | X | PK |
-| `notification_id` | BIGINT | X | 알림 원본 FK |
-| `notification_subscription_id` | BIGINT | X | 실제 수신 구독 FK |
-| `notification_template_id` | BIGINT | X | 채널별 사용 템플릿 FK |
-| `status` | VARCHAR(20) | X | `PENDING`, `SENDING`, `SENT`, `FAILED` |
-| `provider_message_id` | VARCHAR(200) | O | Telegram·Discord 응답 ID |
-| `rendered_message` | TEXT | X | 변수 치환이 끝난 최종 메시지 |
-| `attempt_count` | SMALLINT | X | 발송 시도 수, 0~3 |
-| `error` | TEXT | O | 최종 실패 원인 |
-| `sent_at` | TIMESTAMP | O | 발송 성공 시각 |
-| `created_at` | TIMESTAMP | X | 생성 시각 |
-| `updated_at` | TIMESTAMP | X | 수정 시각 |
+| 컬럼                           | 타입            | NULL | 설명                                   |
+|------------------------------|---------------|---:|--------------------------------------|
+| `id`                           | BIGINT IDENTITY | X    | PK                                     |
+| `notification_id`              | BIGINT          | X    | 알림 원본 FK                           |
+| `notification_subscription_id` | BIGINT          | X    | 실제 수신 구독 FK                      |
+| `notification_template_id`     | BIGINT          | X    | 채널별 사용 템플릿 FK                  |
+| `status`                       | VARCHAR(20)     | X    | `PENDING`, `SENDING`, `SENT`, `FAILED` |
+| `provider_message_id`          | VARCHAR(200)    | O    | Telegram·Discord 응답 ID               |
+| `rendered_message`             | TEXT            | X    | 변수 치환이 끝난 최종 메시지           |
+| `attempt_count`                | SMALLINT        | X    | 발송 시도 수, 0~3                      |
+| `error`                        | TEXT            | O    | 최종 실패 원인                         |
+| `sent_at`                      | TIMESTAMP       | O    | 발송 성공 시각                         |
+| `created_at`                   | TIMESTAMP       | X    | 생성 시각                              |
+| `updated_at`                   | TIMESTAMP       | X    | 수정 시각                              |
 
 `(notification_id, notification_subscription_id)`는 UNIQUE다. 템플릿 FK는
 `notification`이 아니라 `notification_delivery`에 둔다. 한 원본 이벤트에서도
@@ -323,15 +325,15 @@ Migration을 수정하지 않고 새 Migration을 추가한다.
 
 ## 7. Index
 
-| Index | 목적 |
-|---|---|
-| `uq_notification_source_event` | 동일 eventId 중복 처리 방지 |
-| `uq_non_deleted_notification_subscription` | 비삭제 구독 중복 방지 |
-| `idx_notification_created` | 최신 알림 조회 |
-| `idx_notification_delivery_status` | 상태·재시도 대상 조회 |
-| `idx_endpoint_user_enabled` | 사용자 활성 Endpoint 조회 |
-| `idx_endpoint_user_active` | 삭제 여부까지 포함한 Endpoint 조회 |
-| `idx_delivery_template` | 템플릿별 발송 이력 조회 |
+| Index                                      | 목적                               |
+|------------------------------------------|----------------------------------|
+| `uq_notification_source_event`             | 동일 eventId 중복 처리 방지        |
+| `uq_non_deleted_notification_subscription` | 비삭제 구독 중복 방지              |
+| `idx_notification_created`                 | 최신 알림 조회                     |
+| `idx_notification_delivery_status`         | 상태·재시도 대상 조회              |
+| `idx_endpoint_user_enabled`                | 사용자 활성 Endpoint 조회          |
+| `idx_endpoint_user_active`                 | 삭제 여부까지 포함한 Endpoint 조회 |
+| `idx_delivery_template`                    | 템플릿별 발송 이력 조회            |
 
 ## 8. 보안과 MSA 경계
 
@@ -347,18 +349,18 @@ Migration을 수정하지 않고 새 Migration을 추가한다.
 
 ## 9. Migration 이력
 
-| 버전 | 내용 |
-|---|---|
-| `V1` | 10개 테이블·기본 FK·제약·Index 생성 |
-| `V2` | 채널·대상·이벤트·구독 종류·템플릿 Seed |
-| `V3` | Template FK를 Notification에서 Delivery로 이동 |
-| `V4` | Endpoint `is_deleted`와 활성 조회 Index 추가 |
-| `V5` | 활성 구독 partial UNIQUE 정책 조정 |
-| `V6` | 일시정지 구독 재사용을 위해 비삭제 구독 UNIQUE로 최종 보정 |
-| `V7` | `notification.message` 제거. 채널별 최종 발송 문구는 Delivery에만 보관 |
-| `V8` | 장치 ON/OFF 제어 성공 이벤트·구독 종류·채널·템플릿 Seed 추가 |
-| `V9` | 비삭제 Endpoint의 사용자·채널·수신 경로 UNIQUE 제약 추가 |
-| `V10` | 조건부 선점 상태를 표현하기 위해 Delivery `SENDING` 상태 허용 |
+| 버전  | 내용                                                                   |
+|-----|----------------------------------------------------------------------|
+| `V1`  | 10개 테이블·기본 FK·제약·Index 생성                                    |
+| `V2`  | 채널·대상·이벤트·구독 종류·템플릿 Seed                                 |
+| `V3`  | Template FK를 Notification에서 Delivery로 이동                         |
+| `V4`  | Endpoint `is_deleted`와 활성 조회 Index 추가                           |
+| `V5`  | 활성 구독 partial UNIQUE 정책 조정                                     |
+| `V6`  | 일시정지 구독 재사용을 위해 비삭제 구독 UNIQUE로 최종 보정             |
+| `V7`  | `notification.message` 제거. 채널별 최종 발송 문구는 Delivery에만 보관 |
+| `V8`  | 장치 ON/OFF 제어 성공 이벤트·구독 종류·채널·템플릿 Seed 추가           |
+| `V9`  | 비삭제 Endpoint의 사용자·채널·수신 경로 UNIQUE 제약 추가               |
+| `V10` | 조건부 선점 상태를 표현하기 위해 Delivery `SENDING` 상태 허용          |
 
 Flyway가 적용한 Migration 파일은 수정하지 않는다. 변경이 필요하면 `V10` 이후 파일로
 추가한다.

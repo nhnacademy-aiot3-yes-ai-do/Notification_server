@@ -17,7 +17,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "notification_endpoint")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class NotificationEndpoint extends AuditEntity {
+public class
+NotificationEndpoint extends AuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
