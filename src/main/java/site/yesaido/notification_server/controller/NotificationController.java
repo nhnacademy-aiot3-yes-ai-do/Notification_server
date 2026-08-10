@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import site.yesaido.notification_server.dto.delivery.DeliveryPageResponse;
 import site.yesaido.notification_server.service.NotificationQueryService;
+import site.yesaido.notification_server.validation.ValidationMessages;
 
 @Validated
 @RestController
@@ -24,7 +25,7 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<DeliveryPageResponse> findAll(
             @RequestHeader("X-User-Id")
-            @Positive(message = "사용자 ID는 1 이상이어야 합니다.") Long userId,
+            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0")
             @Min(value = 0, message = "페이지는 0 이상이어야 합니다.") int page,
             @org.springframework.web.bind.annotation.RequestParam(defaultValue = "20")
