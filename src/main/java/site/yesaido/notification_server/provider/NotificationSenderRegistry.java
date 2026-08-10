@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
-import site.yesaido.notification_server.exception.UnsupportedNotificationChannelException;
+import site.yesaido.notification_server.exception.provider.UnsupportedNotificationSenderException;
 
 @Component
 public class NotificationSenderRegistry {
@@ -23,7 +23,7 @@ public class NotificationSenderRegistry {
     public NotificationSender get(String channelCode) {
         NotificationSender sender = senders.get(channelCode.toUpperCase(Locale.ROOT));
         if (sender == null) {
-            throw new UnsupportedNotificationChannelException(
+            throw new UnsupportedNotificationSenderException(
                     "지원하지 않는 알림 채널입니다: " + channelCode);
         }
         return sender;

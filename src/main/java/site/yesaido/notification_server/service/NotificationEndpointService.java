@@ -6,11 +6,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.yesaido.notification_server.domain.ChannelType;
 import site.yesaido.notification_server.domain.NotificationEndpoint;
+import site.yesaido.notification_server.domain.NotificationSubscription;
 import site.yesaido.notification_server.dto.endpoint.EndpointCreateRequest;
 import site.yesaido.notification_server.dto.endpoint.EndpointResponse;
 import site.yesaido.notification_server.dto.endpoint.EndpointUpdateRequest;
-import site.yesaido.notification_server.exception.DuplicateNotificationResourceException;
-import site.yesaido.notification_server.exception.NotificationNotFoundException;
+import site.yesaido.notification_server.exception.endpoint.DuplicateNotificationEndpointException;
+import site.yesaido.notification_server.exception.endpoint.NotificationChannelNotFoundException;
+import site.yesaido.notification_server.exception.endpoint.NotificationEndpointNotFoundException;
 import site.yesaido.notification_server.provider.NotificationSenderRegistry;
 import site.yesaido.notification_server.repository.ChannelTypeRepository;
 import site.yesaido.notification_server.repository.NotificationEndpointRepository;
@@ -29,14 +31,15 @@ public class NotificationEndpointService {
     @Transactional
     public EndpointResponse create(Long userId, EndpointCreateRequest request) {
         ChannelType channel = channelTypeRepository.findByIdAndDeletedFalse(request.channelTypeId())
-                .orElseThrow(() -> new NotificationNotFoundException("알림 채널을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotificationChannelNotFoundException(
+                        "channel id:%s".formatted(request.channelTypeId())));
         senderRegistry.get(channel.getCode()).validateDestination(request.destination());
 
         boolean duplicate = endpointRepository
                 .existsByUserIdAndChannelType_IdAndDestinationAndDeletedFalse(
                         userId, channel.getId(), request.destination());
         if (duplicate) {
-            throw new DuplicateNotificationResourceException("이미 등록된 알림 수신 경로입니다.");
+            throw new DuplicateNotificationEndpointException("destination:%s".formatted(request.destination()));
         }
 
         NotificationEndpoint endpoint = new NotificationEndpoint(
@@ -66,7 +69,7 @@ public class NotificationEndpointService {
                         request.destination(),
                         endpointId);
         if (duplicate) {
-            throw new DuplicateNotificationResourceException("이미 등록된 알림 수신 경로입니다.");
+            throw new DuplicateNotificationEndpointException("destination:%s".formatted(request.destination()));
         }
         endpoint.update(request.destination(), request.displayName());
         return EndpointResponse.from(endpoint);
@@ -84,12 +87,12 @@ public class NotificationEndpointService {
         NotificationEndpoint endpoint = findOwnedEndpoint(userId, endpointId);
         endpoint.softDelete();
         subscriptionRepository.findAllByEndpoint_IdAndDeletedFalse(endpointId)
-                .forEach(subscription -> subscription.softDelete());
+                .forEach(NotificationSubscription::softDelete);
     }
 
     private NotificationEndpoint findOwnedEndpoint(Long userId, Long endpointId) {
         return endpointRepository.findByIdAndUserIdAndDeletedFalse(endpointId, userId)
-                .orElseThrow(() -> new NotificationNotFoundException(
-                        "알림 수신 경로를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotificationEndpointNotFoundException(
+                        "user id:%d, endpoint id:%d".formatted(userId, endpointId)));
     }
 }

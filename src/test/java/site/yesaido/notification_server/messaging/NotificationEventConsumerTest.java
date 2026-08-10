@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.dao.DataIntegrityViolationException;
+import site.yesaido.notification_server.exception.messaging.InvalidDomainEventException;
 import site.yesaido.notification_server.service.DeliveryDispatchService;
 import site.yesaido.notification_server.service.EventProcessingResult;
 import site.yesaido.notification_server.service.NotificationEventService;

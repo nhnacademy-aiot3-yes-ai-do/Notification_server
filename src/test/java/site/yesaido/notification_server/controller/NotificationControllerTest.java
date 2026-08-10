@@ -1,6 +1,5 @@
 package site.yesaido.notification_server.controller;
 
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -56,7 +55,7 @@ class NotificationControllerTest {
     void rejectsMissingUserHeader() throws Exception {
         mockMvc.perform(get("/api/v1/notifications"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(jsonPath("$.detail").value("필수 헤더가 누락되었습니다: X-User-Id"));
     }
 
     @Test
@@ -65,6 +64,6 @@ class NotificationControllerTest {
                         .header("X-User-Id", "7")
                         .param("size", "101"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(jsonPath("$.detail").value("페이지 크기는 1 이상 100 이하여야 합니다."));
     }
 }

@@ -9,7 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import site.yesaido.notification_server.exception.InvalidDeliveryStateException;
+import site.yesaido.notification_server.exception.delivery.DeliveryAttemptLimitExceededException;
+import site.yesaido.notification_server.exception.delivery.DeliveryNotPendingException;
+import site.yesaido.notification_server.exception.delivery.DeliveryNotSendingException;
 
 class NotificationDeliveryTest {
 
@@ -71,7 +73,7 @@ class NotificationDeliveryTest {
         delivery.claimForDispatch();
         delivery.markSent("telegram-message-1");
 
-        assertThrows(InvalidDeliveryStateException.class,
+        assertThrows(DeliveryNotSendingException.class,
                 () -> delivery.markFailed("late timeout"));
     }
 
@@ -86,7 +88,7 @@ class NotificationDeliveryTest {
 
         assertEquals(3, delivery.getAttemptCount());
         assertFalse(delivery.canRetry());
-        assertThrows(InvalidDeliveryStateException.class, delivery::increaseAttemptCount);
+        assertThrows(DeliveryAttemptLimitExceededException.class, delivery::increaseAttemptCount);
     }
 
     @Test
@@ -96,7 +98,7 @@ class NotificationDeliveryTest {
         delivery.claimForDispatch();
 
         assertEquals(DeliveryStatus.SENDING, delivery.getStatus());
-        assertThrows(InvalidDeliveryStateException.class, delivery::claimForDispatch);
+        assertThrows(DeliveryNotPendingException.class, delivery::claimForDispatch);
     }
 
     private NotificationDelivery createDelivery() {

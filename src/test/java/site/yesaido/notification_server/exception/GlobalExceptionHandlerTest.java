@@ -1,67 +1,232 @@
 package site.yesaido.notification_server.exception;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
-import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import site.yesaido.notification_server.exception.basic.client.*;
+import site.yesaido.notification_server.exception.basic.server.CustomServerException;
+import site.yesaido.notification_server.exception.basic.server.ServerErrorLevel;
+
+import java.util.Objects;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class GlobalExceptionHandlerTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
-    @Test
-    void returnsProblemDetailForMissingResource() {
-        MockHttpServletRequest request = request("/api/v1/notifications/11");
+    @Nested
+    @DisplayName("400 Bad Request")
+    class BadRequest {
 
-        ResponseEntity<ProblemDetail> response = handler.handleNotFound(
-                new NotificationNotFoundException("알림을 찾을 수 없습니다."), request);
+        @Test
+        @DisplayName("Bad Request Exception")
+        void handleBadRequestException() {
+            String message = "test-message";
+            BadRequestException exception = new BadRequestException(message);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getDetail()).isEqualTo("알림을 찾을 수 없습니다.");
-        assertThat(response.getBody().getProperties())
-                .containsEntry("code", "NOTIFICATION_RESOURCE_NOT_FOUND")
-                .containsEntry("path", "/api/v1/notifications/11");
+            ErrorResponse response = handler.handleBadRequestException(exception);
+
+            Assertions.assertAll(
+                    () -> Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode()),
+                    () -> Assertions.assertEquals(message, Objects.requireNonNull(response.getBody()).getDetail())
+            );
+        }
+
+        @Test
+        @DisplayName("Method Argument Not Valid Exception")
+        void handleMethodArgumentNotValidException() {
+            BindingResult bindingResult = mock(BindingResult.class);
+            FieldError fieldError = new FieldError("objectName", "field", "test-message");
+
+            when(bindingResult.getFieldError()).thenReturn(fieldError);
+            MethodArgumentNotValidException exception = new MethodArgumentNotValidException(null, bindingResult);
+
+            ErrorResponse response = handler.handleMethodArgumentNotValidException(exception);
+
+            Assertions.assertAll(
+                    () -> Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode()),
+                    () -> Assertions.assertEquals("test-message", Objects.requireNonNull(response.getBody()).getDetail())
+            );
+        }
+
+        @Test
+        @DisplayName("Missing Request Header Exception")
+        void handleMissingRequestHeaderException() {
+            MissingRequestHeaderException exception = new MissingRequestHeaderException("X-Test-Header", null);
+
+            ErrorResponse response = handler.handleMissingRequestHeaderException(exception);
+
+            Assertions.assertAll(
+                    () -> Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode()),
+                    () -> Assertions.assertEquals("필수 헤더가 누락되었습니다: X-Test-Header", Objects.requireNonNull(response.getBody()).getDetail())
+            );
+        }
+
+        @Test
+        @DisplayName("Max Upload Size Exceeded Exception")
+        void handleMaxUploadSizeExceededException() {
+            MaxUploadSizeExceededException exception = mock(MaxUploadSizeExceededException.class);
+
+            ErrorResponse response = handler.handleMaxUploadSizeExceededException(exception);
+
+            Assertions.assertAll(
+                    () -> Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode()),
+                    () -> Assertions.assertEquals(
+                            "사진 파일 크기는 10MB를 초과할 수 없습니다.",
+                            Objects.requireNonNull(response.getBody()).getDetail()
+                    )
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("401 Unauthorized")
+    class Unauthorized {
+
+        @Test
+        @DisplayName("Unauthorized Exception")
+        void handleUnauthorizedException() {
+            String message = "test-message";
+            UnauthorizedException exception = new UnauthorizedException(message);
+
+            ErrorResponse response = handler.handleUnauthorizedException(exception);
+
+            Assertions.assertAll(
+                    () -> Assertions.assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode()),
+                    () -> Assertions.assertEquals(message, Objects.requireNonNull(response.getBody()).getDetail())
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("403 Forbidden")
+    class Forbidden {
+
+        @Test
+        @DisplayName("Forbidden Exception")
+        void handleForbiddenException() {
+            String message = "test-message";
+            ForbiddenException exception = new ForbiddenException(message);
+
+            ErrorResponse response = handler.handleForbiddenExceptionException(exception);
+
+            Assertions.assertAll(
+                    () -> Assertions.assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode()),
+                    () -> Assertions.assertEquals(message, Objects.requireNonNull(response.getBody()).getDetail())
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("404 Not Found")
+    class NotFound {
+
+        @Test
+        @DisplayName("Not Found Exception")
+        void handleNotFoundException() {
+            String message = "test-message";
+            NotFoundException exception = new NotFoundException(message);
+
+            ErrorResponse response = handler.handleNotFoundExceptionException(exception);
+
+            Assertions.assertAll(
+                    () -> Assertions.assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode()),
+                    () -> Assertions.assertEquals(message, Objects.requireNonNull(response.getBody()).getDetail())
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("409 Conflict")
+    class Conflict {
+
+        @Test
+        @DisplayName("Conflict Exception")
+        void handleConflictException() {
+            String message = "test-message";
+            ConflictException exception = new ConflictException(message);
+
+            ErrorResponse response = handler.handleConflictException(exception);
+
+            Assertions.assertAll(
+                    () -> Assertions.assertEquals(HttpStatus.CONFLICT, response.getStatusCode()),
+                    () -> Assertions.assertEquals(message, Objects.requireNonNull(response.getBody()).getDetail())
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("415 Unsupported Media Type")
+    class UnsupportedMediaType {
+
+        @Test
+        @DisplayName("Unsupported Media Type Exception")
+        void handleUnsupportedMediaTypeException() {
+            String message = "test-message";
+            UnsupportedMediaTypeException exception = new UnsupportedMediaTypeException(message);
+
+            ErrorResponse response = handler.handleUnsupportedMediaTypeException(exception);
+
+            Assertions.assertAll(
+                    () -> Assertions.assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, response.getStatusCode()),
+                    () -> Assertions.assertEquals(message, Objects.requireNonNull(response.getBody()).getDetail())
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("500 Custom Server")
+    class CustomServer {
+
+        @Test
+        @DisplayName("Custom Server Exception - WARN")
+        void handleCustomServerExceptionWarn() {
+            String message = "test-message";
+            ServerErrorLevel level = ServerErrorLevel.WARN_LEVEL;
+            CustomServerException exception = new CustomServerException(message, level);
+
+            ErrorResponse response = handler.handleServerException(exception);
+
+            Assertions.assertAll(
+                    () -> Assertions.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode()),
+                    () -> Assertions.assertEquals(message, Objects.requireNonNull(response.getBody()).getDetail())
+            );
+        }
+
+        @Test
+        @DisplayName("Custom Server Exception - ERROR")
+        void handleCustomServerExceptionError() {
+            String message = "test-message";
+            ServerErrorLevel level = ServerErrorLevel.ERROR_LEVEL;
+            CustomServerException exception = new CustomServerException(message, level);
+
+            ErrorResponse response = handler.handleServerException(exception);
+
+            Assertions.assertAll(
+                    () -> Assertions.assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode()),
+                    () -> Assertions.assertEquals(message, Objects.requireNonNull(response.getBody()).getDetail())
+            );
+        }
     }
 
     @Test
-    void returnsFieldMessageForValidationFailure() {
-        MockHttpServletRequest request = request("/api/v1/notification-endpoints");
-        BindException exception = new BindException(new Object(), "request");
-        exception.addError(new FieldError(
-                "request", "destination", "알림 수신 주소를 입력해 주세요."));
+    @DisplayName("500 Server Exception")
+    void handleServerException() {
+        String message = "test-message";
+        RuntimeException exception = new RuntimeException(message);
 
-        ResponseEntity<ProblemDetail> response = handler.handleValidation(exception, request);
+        ErrorResponse response = handler.handleException(exception);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getDetail())
-                .isEqualTo("destination: 알림 수신 주소를 입력해 주세요.");
-        assertThat(response.getBody().getProperties())
-                .containsEntry("code", "INVALID_REQUEST");
-    }
-
-    @Test
-    void hidesInternalMessageForUnexpectedFailure() {
-        MockHttpServletRequest request = request("/api/v1/notifications");
-
-        ResponseEntity<ProblemDetail> response = handler.handleUnexpected(
-                new RuntimeException("database password leaked"), request);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getDetail()).isEqualTo("서버 내부 오류가 발생했습니다.");
-        assertThat(response.getBody().getDetail()).doesNotContain("password");
-    }
-
-    private MockHttpServletRequest request(String path) {
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setRequestURI(path);
-        return request;
+        Assertions.assertEquals(message, Objects.requireNonNull(response.getBody()).getDetail());
     }
 }

@@ -7,7 +7,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
 import site.yesaido.notification_server.config.NotificationProperties;
-import site.yesaido.notification_server.exception.NotificationProviderException;
+import site.yesaido.notification_server.exception.provider.TelegramNotificationProviderException;
 
 class NotificationSenderTest {
 
@@ -19,7 +19,7 @@ class NotificationSenderTest {
         assertThatThrownBy(() -> sender.validateDestination("not-a-chat-id"))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> sender.send("123456789", "message"))
-                .isInstanceOf(NotificationProviderException.class)
+                .isInstanceOf(TelegramNotificationProviderException.class)
                 .hasMessageContaining("Token");
     }
 

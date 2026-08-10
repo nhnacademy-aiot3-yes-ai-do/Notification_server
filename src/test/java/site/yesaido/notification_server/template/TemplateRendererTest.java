@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import site.yesaido.notification_server.exception.TemplateRenderingException;
+import site.yesaido.notification_server.exception.template.NotificationTemplateVariableMissingException;
 import site.yesaido.notification_server.messaging.DomainEvent;
 
 class TemplateRendererTest {
@@ -35,8 +35,8 @@ class TemplateRendererTest {
         DomainEvent event = event("{}");
 
         assertThatThrownBy(() -> renderer.render("{{missing}}", event))
-                .isInstanceOf(TemplateRenderingException.class)
-                .hasMessageContaining("missing");
+                .isInstanceOf(NotificationTemplateVariableMissingException.class)
+                .hasMessage("알림 템플릿에 필요한 변수가 없습니다");
     }
 
     private DomainEvent event(String payload) {

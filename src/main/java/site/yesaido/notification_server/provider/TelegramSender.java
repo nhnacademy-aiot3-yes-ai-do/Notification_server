@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import site.yesaido.notification_server.config.NotificationProperties;
-import site.yesaido.notification_server.exception.NotificationProviderException;
+import site.yesaido.notification_server.exception.provider.TelegramNotificationProviderException;
 
 @Component
 public class TelegramSender implements NotificationSender {
@@ -36,7 +36,7 @@ public class TelegramSender implements NotificationSender {
     public ProviderSendResult send(String destination, String message) {
         validateDestination(destination);
         if (botToken == null || botToken.isBlank()) {
-            throw new NotificationProviderException("Telegram Bot Token이 설정되지 않았습니다.");
+            throw new TelegramNotificationProviderException("Telegram Bot Token이 설정되지 않았습니다.");
         }
 
         try {
@@ -50,7 +50,7 @@ public class TelegramSender implements NotificationSender {
                 String description = descriptionValue == null
                         ? "알 수 없는 Telegram API 오류입니다."
                         : String.valueOf(descriptionValue);
-                throw new NotificationProviderException("Telegram 메시지 발송에 실패했습니다: "
+                throw new TelegramNotificationProviderException("Telegram 메시지 발송에 실패했습니다: "
                         + description);
             }
             Object result = response.get("result");
@@ -59,10 +59,10 @@ public class TelegramSender implements NotificationSender {
                     : null;
             String messageId = rawMessageId == null ? null : String.valueOf(rawMessageId);
             return new ProviderSendResult(messageId);
-        } catch (NotificationProviderException exception) {
+        } catch (TelegramNotificationProviderException exception) {
             throw exception;
         } catch (RuntimeException exception) {
-            throw new NotificationProviderException("Telegram 메시지 발송에 실패했습니다.", exception);
+            throw new TelegramNotificationProviderException("Telegram 메시지 발송에 실패했습니다.", exception);
         }
     }
 }

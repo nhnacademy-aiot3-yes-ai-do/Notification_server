@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import site.yesaido.notification_server.exception.InvalidDeliveryStateException;
+import site.yesaido.notification_server.exception.delivery.DeliveryAttemptLimitExceededException;
+import site.yesaido.notification_server.exception.delivery.DeliveryClaimAttemptLimitExceededException;
+import site.yesaido.notification_server.exception.delivery.DeliveryNotPendingException;
+import site.yesaido.notification_server.exception.delivery.DeliveryNotSendingException;
 
 @Getter
 @Entity
@@ -94,7 +97,7 @@ public class NotificationDelivery extends AuditEntity {
     public void increaseAttemptCount() {
         requireSending();
         if (attemptCount >= MAX_ATTEMPT_COUNT) {
-            throw new InvalidDeliveryStateException("최대 발송 시도 횟수를 초과할 수 없습니다.");
+            throw new DeliveryAttemptLimitExceededException("최대 발송 시도 횟수를 초과할 수 없습니다.");
         }
         this.attemptCount++;
     }
@@ -111,7 +114,8 @@ public class NotificationDelivery extends AuditEntity {
     public void claimForDispatch() {
         requirePending();
         if (attemptCount >= MAX_ATTEMPT_COUNT) {
-            throw new InvalidDeliveryStateException("최대 발송 시도 횟수를 초과한 발송은 선점할 수 없습니다.");
+            throw new DeliveryClaimAttemptLimitExceededException(
+                    "최대 발송 시도 횟수를 초과한 발송은 선점할 수 없습니다.");
         }
         this.status = DeliveryStatus.SENDING;
     }
@@ -124,14 +128,14 @@ public class NotificationDelivery extends AuditEntity {
 
     private void requirePending() {
         if (status != DeliveryStatus.PENDING) {
-            throw new InvalidDeliveryStateException(
+            throw new DeliveryNotPendingException(
                     "대기 상태의 발송만 변경할 수 있습니다. 현재 상태: " + status);
         }
     }
 
     private void requireSending() {
         if (status != DeliveryStatus.SENDING) {
-            throw new InvalidDeliveryStateException(
+            throw new DeliveryNotSendingException(
                     "발송 중 상태의 발송만 변경할 수 있습니다. 현재 상태: " + status);
         }
     }

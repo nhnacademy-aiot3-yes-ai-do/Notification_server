@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import site.yesaido.notification_server.domain.ChannelType;
 import site.yesaido.notification_server.domain.NotificationEndpoint;
 import site.yesaido.notification_server.dto.endpoint.EndpointCreateRequest;
-import site.yesaido.notification_server.exception.DuplicateNotificationResourceException;
+import site.yesaido.notification_server.exception.endpoint.DuplicateNotificationEndpointException;
 import site.yesaido.notification_server.provider.NotificationSender;
 import site.yesaido.notification_server.provider.NotificationSenderRegistry;
 import site.yesaido.notification_server.repository.ChannelTypeRepository;
@@ -72,7 +72,7 @@ class NotificationEndpointServiceTest {
 
         assertThatThrownBy(() -> service.create(
                 7L, new EndpointCreateRequest(1L, "123456", "내 텔레그램")))
-                .isInstanceOf(DuplicateNotificationResourceException.class);
+                .isInstanceOf(DuplicateNotificationEndpointException.class);
 
         verify(endpointRepository, never()).save(org.mockito.ArgumentMatchers.any(
                 NotificationEndpoint.class));
