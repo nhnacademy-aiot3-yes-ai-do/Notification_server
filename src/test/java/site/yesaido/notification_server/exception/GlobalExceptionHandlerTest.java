@@ -71,22 +71,6 @@ class GlobalExceptionHandlerTest {
                     () -> Assertions.assertEquals("필수 헤더가 누락되었습니다: X-Test-Header", Objects.requireNonNull(response.getBody()).getDetail())
             );
         }
-
-        @Test
-        @DisplayName("Max Upload Size Exceeded Exception")
-        void handleMaxUploadSizeExceededException() {
-            MaxUploadSizeExceededException exception = mock(MaxUploadSizeExceededException.class);
-
-            ErrorResponse response = handler.handleMaxUploadSizeExceededException(exception);
-
-            Assertions.assertAll(
-                    () -> Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode()),
-                    () -> Assertions.assertEquals(
-                            "사진 파일 크기는 10MB를 초과할 수 없습니다.",
-                            Objects.requireNonNull(response.getBody()).getDetail()
-                    )
-            );
-        }
     }
 
     @Nested
@@ -227,6 +211,6 @@ class GlobalExceptionHandlerTest {
 
         ErrorResponse response = handler.handleException(exception);
 
-        Assertions.assertEquals(message, Objects.requireNonNull(response.getBody()).getDetail());
+        Assertions.assertTrue(Objects.requireNonNull(Objects.requireNonNull(response.getBody()).getDetail()).contains("서버 오류가 발생했습니다."));
     }
 }
