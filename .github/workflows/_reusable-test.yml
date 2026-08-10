@@ -42,4 +42,4 @@ jobs:
           cache: maven
       - uses: ./.github/actions/setup-test-env
       - name: Test and coverage check
-        run: ./mvn -B clean verify
+        run: ./mvnw -B clean verify
