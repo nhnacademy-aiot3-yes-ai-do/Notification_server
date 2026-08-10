@@ -126,18 +126,21 @@ API Gateway가 JWT를 검증한 뒤 전달하는 `X-User-Id`를 사용자 ID로 
 | 수확 완료 | `yes-nhn.notification.harvest.queue` |
 | 재배 종료 | `yes-nhn.notification.cultivation-finished.queue` |
 
-Routing Key는 아직 최종 합의하지 않았다. `application.yml`은 로컬 실행을 위해 Queue명과
-같은 값을 기본 Routing Key로 사용하지만, 이 값은 Producer 계약 확정 후 교체해야 한다.
-Producer별 payload 필드명도 최종 합의 전까지 공통 Parser에서 과도하게 제한하지 않는다.
+각 Queue의 Routing Key는 현재 Queue명과 동일하게 고정한다. Exchange·Queue·Routing Key는
+`NotificationRabbitConstants`에서만 관리해, 환경변수마다 서로 다른 토폴로지가 만들어지는 일을
+막는다. 연결 주소와 인증 정보(`RABBITMQ_HOST`, `RABBITMQ_PORT`, 사용자명·비밀번호)만 `.env`로
+관리한다. 기본 vhost(`/`)를 쓰므로 별도 `RABBITMQ_VHOST` 설정은 두지 않는다. Producer별 payload
+필드명은 최종 합의 전까지 공통 Parser에서 과도하게 제한하지 않는다.
 
-공용 Dead Letter Exchange와 Queue는 `yes-nhn.dlx`, `yes-nhn.dlq`를 사용한다.
+공용 Dead Letter Exchange와 Queue는 `yes-nhn.dlx`, `yes-nhn.dlq`를 사용한다. DLX는 fanout
+Exchange이므로 실패 메시지는 Routing Key 없이 공용 DLQ로 전달된다.
 Notification은 공용 DLQ를 자동으로 소비하지 않으며, 관리자가 RabbitMQ Management
 화면에서 원인을 확인한 뒤 수동으로 처리·삭제한다.
 
 계약 확정 전 준비 작업으로 `DomainEventParser`가 공통 envelope의 JSON 역직렬화와
 필수값을 검증한다. 임시 수확 완료 JSON, 필수 필드 누락, 잘못된 `targetId`, 잘못된 JSON을
 테스트하지만, 아직 미확정인 Producer별 payload 구조는 공통 Parser에서 제한하지 않는다.
-RabbitMQ Listener와 Direct Exchange·다중 Queue·공용 DLX·DLQ 선언은 구현했다.
+RabbitMQ Listener와 Direct Exchange·다중 Queue·fanout 공용 DLX·DLQ 선언은 구현했다.
 
 ## 외부 채널
 

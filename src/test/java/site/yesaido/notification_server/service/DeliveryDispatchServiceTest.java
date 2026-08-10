@@ -101,18 +101,10 @@ class DeliveryDispatchServiceTest {
 
     private NotificationProperties properties() {
         return new NotificationProperties(
-                new NotificationProperties.Rabbit(
-                        "events",
-                        route(), route(), route(), route(),
-                        route(), route(), route(), route(),
-                        "dlx", "dlq", "failed"),
                 new NotificationProperties.Provider(
                         new NotificationProperties.Telegram("https://api.telegram.org", ""),
                         new NotificationProperties.Discord(List.of("discord.com"))),
                 new NotificationProperties.Retry(Duration.ofMillis(1)));
     }
 
-    private NotificationProperties.EventRoute route() {
-        return new NotificationProperties.EventRoute("queue", "routing-key");
-    }
 }

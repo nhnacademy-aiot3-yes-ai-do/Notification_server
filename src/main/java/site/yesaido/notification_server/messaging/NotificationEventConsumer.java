@@ -6,6 +6,7 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import site.yesaido.notification_server.config.NotificationRabbitConstants;
 import site.yesaido.notification_server.exception.EventContractException;
 import site.yesaido.notification_server.exception.NotificationNotFoundException;
 import site.yesaido.notification_server.exception.TemplateRenderingException;
@@ -33,14 +34,14 @@ public class NotificationEventConsumer {
     }
 
     @RabbitListener(queues = {
-            "${notification.rabbit.threshold.queue}",
-            "${notification.rabbit.action.queue}",
-            "${notification.rabbit.daily.queue}",
-            "${notification.rabbit.login.queue}",
-            "${notification.rabbit.question.queue}",
-            "${notification.rabbit.answer.queue}",
-            "${notification.rabbit.harvest.queue}",
-            "${notification.rabbit.cultivation-finished.queue}"
+            NotificationRabbitConstants.THRESHOLD_QUEUE,
+            NotificationRabbitConstants.ACTION_QUEUE,
+            NotificationRabbitConstants.DAILY_QUEUE,
+            NotificationRabbitConstants.LOGIN_QUEUE,
+            NotificationRabbitConstants.QUESTION_QUEUE,
+            NotificationRabbitConstants.ANSWER_QUEUE,
+            NotificationRabbitConstants.HARVEST_QUEUE,
+            NotificationRabbitConstants.CULTIVATION_FINISHED_QUEUE
     })
     public void consume(String message) {
         DomainEvent event = null;

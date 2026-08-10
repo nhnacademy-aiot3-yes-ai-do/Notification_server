@@ -61,10 +61,7 @@ class TelegramSenderHttpTest {
     }
 
     private NotificationProperties properties() {
-        NotificationProperties.EventRoute route = new NotificationProperties.EventRoute("queue", "key");
         return new NotificationProperties(
-                new NotificationProperties.Rabbit("events", route, route, route, route,
-                        route, route, route, route, "dlx", "dlq", "failed"),
                 new NotificationProperties.Provider(
                         new NotificationProperties.Telegram("https://telegram.test", "test-token"),
                         new NotificationProperties.Discord(List.of("discord.com"))),

@@ -3,9 +3,11 @@ package site.yesaido.notification_server.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import org.springframework.amqp.core.Binding;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
 
 class NotificationRabbitConfigTest {
@@ -14,10 +16,9 @@ class NotificationRabbitConfigTest {
 
     @Test
     void notificationExchange에_용도별_queue_8개를_선언한다() {
-        NotificationProperties properties = properties();
-        DirectExchange exchange = config.notificationEventExchange(properties);
+        DirectExchange exchange = config.notificationEventExchange();
 
-        Declarables topology = config.notificationEventQueues(exchange, properties);
+        Declarables topology = config.notificationEventQueues(exchange);
 
         assertThat(exchange.getName()).isEqualTo("yes-nhn.notification.exchange");
         assertThat(exchange.getType()).isEqualTo("direct");
@@ -26,38 +27,33 @@ class NotificationRabbitConfigTest {
                 .map(Queue.class::cast)
                 .extracting(Queue::getName)
                 .containsExactlyInAnyOrder(
-                        "threshold.queue",
-                        "action.queue",
-                        "daily.queue",
-                        "login.queue",
-                        "question.queue",
-                        "answer.queue",
-                        "harvest.queue",
-                        "cultivation-finished.queue");
+                        NotificationRabbitConstants.THRESHOLD_QUEUE,
+                        NotificationRabbitConstants.ACTION_QUEUE,
+                        NotificationRabbitConstants.DAILY_QUEUE,
+                        NotificationRabbitConstants.LOGIN_QUEUE,
+                        NotificationRabbitConstants.QUESTION_QUEUE,
+                        NotificationRabbitConstants.ANSWER_QUEUE,
+                        NotificationRabbitConstants.HARVEST_QUEUE,
+                        NotificationRabbitConstants.CULTIVATION_FINISHED_QUEUE);
+        assertThat(topology.getDeclarables())
+                .filteredOn(Queue.class::isInstance)
+                .map(Queue.class::cast)
+                .allSatisfy(queue -> assertThat(queue.getArguments())
+                        .containsEntry("x-dead-letter-exchange",
+                                NotificationRabbitConstants.DEAD_LETTER_EXCHANGE)
+                        .doesNotContainKey("x-dead-letter-routing-key"));
     }
 
-    private NotificationProperties properties() {
-        return new NotificationProperties(
-                new NotificationProperties.Rabbit(
-                        "yes-nhn.notification.exchange",
-                        route("threshold"),
-                        route("action"),
-                        route("daily"),
-                        route("login"),
-                        route("question"),
-                        route("answer"),
-                        route("harvest"),
-                        route("cultivation-finished"),
-                        "yes-nhn.dlx",
-                        "yes-nhn.dlq",
-                        "yes-nhn.dlq"),
-                new NotificationProperties.Provider(
-                        new NotificationProperties.Telegram("https://api.telegram.org", ""),
-                        new NotificationProperties.Discord(List.of("discord.com"))),
-                new NotificationProperties.Retry(java.time.Duration.ZERO));
-    }
+    @Test
+    void notificationDlx는_공용Dlq로_보내는_fanoutExchange다() {
+        FanoutExchange deadLetterExchange = config.notificationDeadLetterExchange();
+        Queue deadLetterQueue = config.notificationDeadLetterQueue();
+        Binding binding = config.notificationDeadLetterBinding(deadLetterQueue, deadLetterExchange);
 
-    private NotificationProperties.EventRoute route(String name) {
-        return new NotificationProperties.EventRoute(name + ".queue", name + ".routing-key");
+        assertThat(deadLetterExchange.getName())
+                .isEqualTo(NotificationRabbitConstants.DEAD_LETTER_EXCHANGE);
+        assertThat(deadLetterExchange.getType()).isEqualTo("fanout");
+        assertThat(deadLetterQueue.getName()).isEqualTo(NotificationRabbitConstants.DEAD_LETTER_QUEUE);
+        assertThat(binding.getExchange()).isEqualTo(NotificationRabbitConstants.DEAD_LETTER_EXCHANGE);
     }
 }
