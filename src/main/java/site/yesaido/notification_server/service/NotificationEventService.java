@@ -45,11 +45,11 @@ public class NotificationEventService {
 
         NotificationEventType eventType = eventTypeRepository.findByCode(event.eventType())
                 .orElseThrow(() -> new NotificationEventTypeNotFoundException(
-                        "등록되지 않은 알림 이벤트 유형입니다: " + event.eventType()));
+                        "이벤트 유형: %s".formatted(event.eventType())));
         String expectedTargetType = eventType.getTargetType().getTargetType();
         if (!expectedTargetType.equals(event.targetType())) {
             throw new NotificationEventTargetTypeMismatchException(
-                    "이벤트 대상 유형이 기준 정보와 일치하지 않습니다: " + event.targetType());
+                    "기존 이벤트:%s, 대상 이벤트:%s ".formatted(expectedTargetType, event.targetType()));
         }
 
         List<NotificationSubscription> subscriptions =
@@ -86,6 +86,6 @@ public class NotificationEventService {
                         eventType.getId(),
                         subscription.getEndpoint().getChannelType().getId())
                 .orElseThrow(() -> new NotificationTemplateNotFoundException(
-                        "이벤트와 채널에 맞는 알림 템플릿을 찾을 수 없습니다."));
+                        "event id:%d".formatted(eventType.getId())));
     }
 }

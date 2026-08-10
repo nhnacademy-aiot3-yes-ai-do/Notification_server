@@ -80,7 +80,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({Exception.class})
     public ErrorResponse handleException(Exception e) {
         log.warn("{}", e.getMessage());
-        return createResponseEntity(e, HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        return createResponseEntity(e, HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다.");
     }
 
     private ErrorResponse createResponseEntity(Exception e, HttpStatus status, String message) {
@@ -101,11 +101,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MissingRequestHeaderException.class)
     public ErrorResponse handleMissingRequestHeaderException(MissingRequestHeaderException e) {
         return ErrorResponse.create(e, HttpStatus.BAD_REQUEST, "필수 헤더가 누락되었습니다: " + e.getHeaderName());
-    }
-
-    @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ErrorResponse handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
-        return ErrorResponse.create(e, HttpStatus.BAD_REQUEST, "사진 파일 크기는 10MB를 초과할 수 없습니다.");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

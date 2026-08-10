@@ -39,7 +39,7 @@ public class NotificationEndpointService {
                 .existsByUserIdAndChannelType_IdAndDestinationAndDeletedFalse(
                         userId, channel.getId(), request.destination());
         if (duplicate) {
-            throw new DuplicateNotificationEndpointException("destination:%s".formatted(request.destination()));
+            throw new DuplicateNotificationEndpointException("userId:%d, channelId:%d".formatted(userId, channel.getId()));
         }
 
         NotificationEndpoint endpoint = new NotificationEndpoint(
@@ -69,7 +69,7 @@ public class NotificationEndpointService {
                         request.destination(),
                         endpointId);
         if (duplicate) {
-            throw new DuplicateNotificationEndpointException("destination:%s".formatted(request.destination()));
+            throw new DuplicateNotificationEndpointException("userId:%d, endpointId:%d".formatted(userId, endpointId));
         }
         endpoint.update(request.destination(), request.displayName());
         return EndpointResponse.from(endpoint);
