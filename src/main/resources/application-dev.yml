@@ -9,6 +9,13 @@ spring:
       discovery:
         enabled: false
 
+  datasource:
+    url: jdbc:postgresql://localhost:5432/notification_db?currentSchema=notification&stringtype=unspecified
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
