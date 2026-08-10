@@ -15,7 +15,7 @@ import site.yesaido.notification_server.domain.NotificationEventType;
 import site.yesaido.notification_server.domain.NotificationSubscription;
 import site.yesaido.notification_server.domain.NotificationTemplate;
 import site.yesaido.notification_server.exception.EventContractException;
-import site.yesaido.notification_server.exception.NotificationNotFoundException;
+import site.yesaido.notification_server.exception.NotificationTemplateMissingException;
 import site.yesaido.notification_server.messaging.DomainEvent;
 import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
 import site.yesaido.notification_server.repository.NotificationEventTypeRepository;
@@ -84,7 +84,7 @@ public class NotificationEventService {
                 .findFirstByEventType_IdAndChannelType_IdOrderByVersionDesc(
                         eventType.getId(),
                         subscription.getEndpoint().getChannelType().getId())
-                .orElseThrow(() -> new NotificationNotFoundException(
-                        "이벤트와 채널에 맞는 알림 템플릿을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotificationTemplateMissingException(
+                        eventType.getId(), subscription.getEndpoint().getChannelType().getId()));
     }
 }

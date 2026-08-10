@@ -170,7 +170,7 @@ GET /api/v1/notifications?page=0&size=20
   "status": 404,
   "title": "Not Found",
   "detail": "알림 수신 경로를 찾을 수 없습니다.",
-  "code": "NOTIFICATION_RESOURCE_NOT_FOUND",
+  "code": "ENDPOINT_NOT_FOUND",
   "path": "/api/v1/notification-endpoints/1"
 }
 ```
@@ -178,11 +178,19 @@ GET /api/v1/notifications?page=0&size=20
 프론트는 오류 문구를 `detail`, 프로그램 분기는 `code`로 처리한다. `message` 필드는 반환하지
 않으므로 사용하면 안 된다.
 
-| HTTP | 코드                                   | 의미                            |
-|-----:|----------------------------------------|---------------------------------|
-|  400 | `INVALID_REQUEST`                      | 필수값·형식 오류                |
-|  400 | `UNSUPPORTED_NOTIFICATION_CHANNEL`     | 지원하지 않는 채널 조합         |
-|  404 | `NOTIFICATION_RESOURCE_NOT_FOUND`      | 없거나 사용자 소유가 아닌 리소스 |
-|  409 | `NOTIFICATION_RESOURCE_CONFLICT`       | Endpoint·구독 중복              |
-|  502 | `NOTIFICATION_PROVIDER_FAILURE`        | 외부 채널 요청 실패             |
-|  500 | `INTERNAL_SERVER_ERROR`                | 예상하지 못한 서버 오류         |
+| HTTP | 코드 | 의미 |
+|-----:|------|------|
+| 400 | `INVALID_REQUEST` | 필수값·형식 오류 |
+| 404 | `CHANNEL_TYPE_NOT_FOUND` | 알림 채널 종류 없음 |
+| 404 | `ENDPOINT_NOT_FOUND` | 없거나 본인 소유가 아닌 알림 수신 경로 |
+| 404 | `SUBSCRIPTION_TYPE_NOT_FOUND` | 알림 구독 종류 없음 |
+| 404 | `SUBSCRIPTION_NOT_FOUND` | 없거나 본인 소유가 아닌 알림 구독 |
+| 404 | `TARGET_NOT_FOUND` | 현재 사용자에게 허용되지 않은 USER 대상 |
+| 409 | `ENDPOINT_ALREADY_EXISTS` | 같은 활성 수신 경로가 이미 존재 |
+| 500 | `INTERNAL_SERVER_ERROR` | 예상하지 못한 서버 오류 |
+
+`TARGET_NOT_FOUND`는 현재 USER 대상의 정보 노출을 줄이기 위해 404로 응답한다. 재배·문의
+대상 소유권 API가 확정되면 팀 정책에 따라 `403 TARGET_ACCESS_DENIED`로 바꿀지 별도 합의한다.
+
+RabbitMQ Consumer, 템플릿 렌더링, Telegram·Discord 발송 과정의 실패는 HTTP 요청의 오류가
+아니다. 이 실패들은 `ProblemDetail` 응답 대신 Consumer 로그·재시도·최종 DLQ 처리로 관리한다.

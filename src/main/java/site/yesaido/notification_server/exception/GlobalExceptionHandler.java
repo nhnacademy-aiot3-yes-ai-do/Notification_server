@@ -6,7 +6,6 @@ import java.time.OffsetDateTime;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -24,26 +23,17 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(NotificationNotFoundException.class)
-    ResponseEntity<ProblemDetail> handleNotFound(
-            NotificationNotFoundException exception,
+    @ExceptionHandler(NotificationApiException.class)
+    ResponseEntity<ProblemDetail> handleNotificationApiException(
+            NotificationApiException exception,
             HttpServletRequest request
     ) {
-        return response(HttpStatus.NOT_FOUND, "NOTIFICATION_RESOURCE_NOT_FOUND",
-                exception.getMessage(), request);
-    }
-
-    @ExceptionHandler({
-        DuplicateNotificationResourceException.class,
-        DataIntegrityViolationException.class
-    })
-    ResponseEntity<ProblemDetail> handleConflict(
-            RuntimeException exception,
-            HttpServletRequest request
-    ) {
-        log.warn("Notification resource conflict: path={}", request.getRequestURI());
-        return response(HttpStatus.CONFLICT, "NOTIFICATION_RESOURCE_CONFLICT",
-                "이미 존재하거나 현재 상태와 충돌하는 요청입니다.", request);
+        NotificationErrorCode errorCode = exception.getErrorCode();
+        if (errorCode.getStatus() == HttpStatus.CONFLICT) {
+            log.warn("Notification API conflict: code={}, path={}",
+                    errorCode.getCode(), request.getRequestURI());
+        }
+        return response(errorCode.getStatus(), errorCode.getCode(), errorCode.getMessage(), request);
     }
 
     @ExceptionHandler({
@@ -102,7 +92,7 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         log.error("Unexpected notification API error: path={}, failureType={}",
-                request.getRequestURI(), exception.getClass().getSimpleName());
+                request.getRequestURI(), exception.getClass().getSimpleName(), exception);
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR",
                 "서버 내부 오류가 발생했습니다.", request);
     }

@@ -10,7 +10,10 @@ import site.yesaido.notification_server.domain.NotificationSubscriptionType;
 import site.yesaido.notification_server.dto.subscription.SubscriptionCreateRequest;
 import site.yesaido.notification_server.dto.subscription.SubscriptionResponse;
 import site.yesaido.notification_server.dto.subscription.SubscriptionTypeResponse;
-import site.yesaido.notification_server.exception.NotificationNotFoundException;
+import site.yesaido.notification_server.exception.EndpointNotFoundException;
+import site.yesaido.notification_server.exception.NotificationTargetNotFoundException;
+import site.yesaido.notification_server.exception.SubscriptionNotFoundException;
+import site.yesaido.notification_server.exception.SubscriptionTypeNotFoundException;
 import site.yesaido.notification_server.exception.UnsupportedNotificationChannelException;
 import site.yesaido.notification_server.repository.NotificationEndpointRepository;
 import site.yesaido.notification_server.repository.NotificationSubscriptionRepository;
@@ -31,12 +34,10 @@ public class NotificationSubscriptionService {
     public SubscriptionResponse create(Long userId, SubscriptionCreateRequest request) {
         NotificationEndpoint endpoint = endpointRepository
                 .findByIdAndUserIdAndDeletedFalse(request.endpointId(), userId)
-                .orElseThrow(() -> new NotificationNotFoundException(
-                        "알림 수신 경로를 찾을 수 없습니다."));
+                .orElseThrow(EndpointNotFoundException::new);
         NotificationSubscriptionType type = subscriptionTypeRepository
                 .findById(request.subscriptionTypeId())
-                .orElseThrow(() -> new NotificationNotFoundException(
-                        "알림 구독 종류를 찾을 수 없습니다."));
+                .orElseThrow(SubscriptionTypeNotFoundException::new);
         validateUserTarget(userId, request.targetId(), type);
 
         boolean channelSupported = subscriptionChannelRepository
@@ -89,8 +90,7 @@ public class NotificationSubscriptionService {
     private NotificationSubscription findOwnedSubscription(Long userId, Long subscriptionId) {
         return subscriptionRepository
                 .findByIdAndEndpoint_UserIdAndDeletedFalse(subscriptionId, userId)
-                .orElseThrow(() -> new NotificationNotFoundException(
-                        "알림 구독을 찾을 수 없습니다."));
+                .orElseThrow(SubscriptionNotFoundException::new);
     }
 
     private void validateUserTarget(
@@ -104,7 +104,7 @@ public class NotificationSubscriptionService {
          * 임의 호출이나 DB 직접 조회를 하지 않는다.
          */
         if ("USER".equals(type.getTargetType().getTargetType()) && !userId.equals(targetId)) {
-            throw new NotificationNotFoundException("알림 대상을 찾을 수 없습니다.");
+            throw new NotificationTargetNotFoundException();
         }
     }
 }

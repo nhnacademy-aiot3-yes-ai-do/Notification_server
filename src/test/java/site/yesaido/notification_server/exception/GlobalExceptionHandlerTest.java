@@ -15,18 +15,32 @@ class GlobalExceptionHandlerTest {
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @Test
-    void returnsProblemDetailForMissingResource() {
+    void returnsProblemDetailForMissingEndpoint() {
         MockHttpServletRequest request = request("/api/v1/notifications/11");
 
-        ResponseEntity<ProblemDetail> response = handler.handleNotFound(
-                new NotificationNotFoundException("알림을 찾을 수 없습니다."), request);
+        ResponseEntity<ProblemDetail> response = handler.handleNotificationApiException(
+                new EndpointNotFoundException(), request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getDetail()).isEqualTo("알림을 찾을 수 없습니다.");
+        assertThat(response.getBody().getDetail()).isEqualTo("알림 수신 경로를 찾을 수 없습니다.");
         assertThat(response.getBody().getProperties())
-                .containsEntry("code", "NOTIFICATION_RESOURCE_NOT_FOUND")
+                .containsEntry("code", "ENDPOINT_NOT_FOUND")
                 .containsEntry("path", "/api/v1/notifications/11");
+    }
+
+    @Test
+    void returnsSpecificConflictCodeForDuplicateEndpoint() {
+        MockHttpServletRequest request = request("/api/v1/notification-endpoints");
+
+        ResponseEntity<ProblemDetail> response = handler.handleNotificationApiException(
+                new DuplicateEndpointException(), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getProperties())
+                .containsEntry("code", "ENDPOINT_ALREADY_EXISTS")
+                .containsEntry("path", "/api/v1/notification-endpoints");
     }
 
     @Test

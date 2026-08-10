@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import site.yesaido.notification_server.domain.NotificationDelivery;
-import site.yesaido.notification_server.exception.NotificationNotFoundException;
+import site.yesaido.notification_server.exception.DeliveryNotFoundException;
 import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
 
 @Service
@@ -73,8 +73,7 @@ public class DeliveryStateService {
 
     private NotificationDelivery findDelivery(Long deliveryId) {
         return deliveryRepository.findById(deliveryId)
-                .orElseThrow(() -> new NotificationNotFoundException(
-                        "발송 이력을 찾을 수 없습니다."));
+                .orElseThrow(() -> new DeliveryNotFoundException(deliveryId));
     }
 
     private String sanitize(String error) {

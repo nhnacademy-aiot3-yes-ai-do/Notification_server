@@ -7,7 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import site.yesaido.notification_server.exception.EventContractException;
-import site.yesaido.notification_server.exception.NotificationNotFoundException;
+import site.yesaido.notification_server.exception.NotificationTemplateMissingException;
 import site.yesaido.notification_server.exception.TemplateRenderingException;
 import site.yesaido.notification_server.service.DeliveryDispatchService;
 import site.yesaido.notification_server.service.EventProcessingResult;
@@ -65,7 +65,7 @@ public class NotificationEventConsumer {
         } catch (InvalidDomainEventException | EventContractException exception) {
             log.warn("Notification event contract rejected: {}", eventMetadata(event), exception);
             throw reject(exception);
-        } catch (TemplateRenderingException | NotificationNotFoundException exception) {
+        } catch (TemplateRenderingException | NotificationTemplateMissingException exception) {
             log.error("Notification event configuration failed: {}", eventMetadata(event), exception);
             throw reject(exception);
         } catch (RuntimeException exception) {

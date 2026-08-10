@@ -16,7 +16,7 @@ import site.yesaido.notification_server.domain.NotificationSubscription;
 import site.yesaido.notification_server.domain.NotificationSubscriptionType;
 import site.yesaido.notification_server.domain.SubscriptionTargetType;
 import site.yesaido.notification_server.dto.subscription.SubscriptionCreateRequest;
-import site.yesaido.notification_server.exception.NotificationNotFoundException;
+import site.yesaido.notification_server.exception.NotificationTargetNotFoundException;
 import site.yesaido.notification_server.exception.UnsupportedNotificationChannelException;
 import site.yesaido.notification_server.repository.NotificationEndpointRepository;
 import site.yesaido.notification_server.repository.NotificationSubscriptionRepository;
@@ -88,7 +88,7 @@ class NotificationSubscriptionServiceTest {
 
         assertThatThrownBy(() -> service.create(
                 7L, new SubscriptionCreateRequest(22L, 11L, 8L)))
-                .isInstanceOf(NotificationNotFoundException.class);
+                .isInstanceOf(NotificationTargetNotFoundException.class);
     }
 
     private NotificationEndpoint endpoint(Long id, Long channelId, String channelCode) {

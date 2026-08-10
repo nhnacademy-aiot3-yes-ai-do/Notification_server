@@ -218,11 +218,15 @@ Notification Service는 JWT를 다시 검증하거나 claim을 직접 해석하�
 `X-User-Id`를 신뢰하지 않고, 검증한 JWT의 `sub` 값으로 덮어써야 한다.
 
 모든 Controller는 `ResponseEntity`로 HTTP 상태를 명시한다. 생성은 `201 Created`, 조회·수정은
-`200 OK`, 삭제는 `204 No Content`를 사용한다. 공통 예외는 `@RestControllerAdvice`와 Spring의
-`ProblemDetail`로 응답하며, `title`, `detail`, `status`에 더해 `code`, `timestamp`, `path`를
-제공한다. 사용자 ID 형식 오류, 소유 데이터 없음, 중복 리소스, 지원하지 않는 채널, 외부
-Provider 실패를 서로 다른 HTTP 상태와 오류 코드로 구분한다. 팀 공통 오류 형식이 확정되면
-이 확장 필드 이름만 맞춘다.
+`200 OK`, 삭제는 `204 No Content`를 사용한다. HTTP API에서 발생하는 채널·Endpoint·구독 종류·구독
+없음과 Endpoint 중복은 각각 의미가 있는 예외와 오류 코드로 분리하고, `@RestControllerAdvice`가
+Spring의 `ProblemDetail`로 변환한다. 응답은 `title`, `detail`, `status`와 함께 `code`, `timestamp`,
+`path`를 제공한다.
+
+반면 Consumer의 템플릿 누락, Provider 통신 실패, Delivery 상태 전이 실패는 HTTP API 예외가 아니다.
+이들은 Consumer 로그, 재시도, 최종 DLQ 처리의 대상이며 API 오류 코드로 억지로 섞지 않는다. USER
+대상 접근 거부는 현재 정보 노출을 줄이기 위해 `TARGET_NOT_FOUND`(404)로 응답한다. CULTIVATION·INQUIRY
+권한 계약이 확정되면 `403 TARGET_ACCESS_DENIED` 전환 여부를 팀에서 결정한다.
 
 예외가 발생하면 운영 로그에는 이벤트·알림·발송을 추적할 수 있는 식별자와 재시도 정보를
 남긴다. JWT·Webhook URL·Chat ID·토큰·민감한 payload 원문은 기록하지 않는다.
