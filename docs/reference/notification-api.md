@@ -128,7 +128,8 @@ GET /api/v1/notification-subscription-types
 GET /api/v1/notifications?page=0&size=20
 ```
 
-알림 이력은 최신 생성일 순으로 반환한다. `page`는 0 이상, `size`는 1~100이다.
+알림 이력은 최신 생성일 순으로 반환한다. `page`는 0 이상이며, `size`의 기본값은 20개다.
+요청한 `size`가 100을 넘으면 서버는 최대 100개로 제한한다.
 프론트는 첫 화면에서 `page=0&size=20`을 사용하고 `hasNext=true`일 때만 다음 페이지를
 요청하면 된다. `message`는 해당 채널에 실제로 렌더링된 알림 문구이므로 화면에 바로 표시할 수 있다.
 
