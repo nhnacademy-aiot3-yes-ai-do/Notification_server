@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,20 +24,23 @@ class DomainEventParserTest {
     }
 
     @Test
-    void 임시_수확완료_JSON을_공통이벤트로_변환한다() {
-        String eventId = "2e7c2e2e-6c0a-4c9d-a1ad-123456789abc";
+    void 합의된_수확완료_JSON을_공통이벤트로_변환한다() {
+        String eventId = "b3f1c2a4-6c0a-4c9d-a1ad-123456789abc";
         String message = """
                 {
                   "eventId": "%s",
                   "eventType": "HARVEST_COMPLETED",
-                  "producer": "cultivation-service",
+                  "producer": "cultivation-server",
                   "targetType": "CULTIVATION",
-                  "targetId": 101,
-                  "occurredAt": "2026-07-30T10:00:00+09:00",
+                  "targetId": 1,
+                  "occurredAt": "2026-08-11T14:30:00",
                   "payload": {
-                    "harvestId": 55,
-                    "quantity": 1200,
-                    "unit": "g"
+                    "cultivationId": 1,
+                    "cultivationName": "Cultivation1",
+                    "userId": 100,
+                    "harvestId": 5,
+                    "harvestWeight": 2.5,
+                    "harvestedAt": "2026-08-11T14:30:00"
                   }
                 }
                 """.formatted(eventId);
@@ -45,11 +49,14 @@ class DomainEventParserTest {
 
         assertEquals(UUID.fromString(eventId), event.eventId());
         assertEquals("HARVEST_COMPLETED", event.eventType());
-        assertEquals("cultivation-service", event.producer());
+        assertEquals("cultivation-server", event.producer());
         assertEquals("CULTIVATION", event.targetType());
-        assertEquals(101L, event.targetId());
-        assertEquals(55L, event.payload().get("harvestId").longValue());
-        assertEquals(1200, event.payload().get("quantity").intValue());
+        assertEquals(1L, event.targetId());
+        assertEquals(LocalDateTime.parse("2026-08-11T14:30:00"), event.occurredAt());
+        assertEquals("Cultivation1", event.payload().get("cultivationName").textValue());
+        assertEquals(5L, event.payload().get("harvestId").longValue());
+        assertEquals(2.5, event.payload().get("harvestWeight").doubleValue());
+        assertEquals("2026-08-11T14:30:00", event.payload().get("harvestedAt").textValue());
     }
 
     @Test
@@ -61,7 +68,7 @@ class DomainEventParserTest {
                   "producer": "rule-engine",
                   "targetType": "CULTIVATION",
                   "targetId": 101,
-                  "occurredAt": "2026-08-06T09:30:00+09:00",
+                  "occurredAt": "2026-08-06T09:30:00",
                   "payload": {
                     "cultivationName": "느타리 1번",
                     "sensorType": "TEMPERATURE",
@@ -91,7 +98,7 @@ class DomainEventParserTest {
                   "producer": "ai-service",
                   "targetType": "CULTIVATION",
                   "targetId": 101,
-                  "occurredAt": "2026-08-06T10:00:00+09:00",
+                  "occurredAt": "2026-08-06T10:00:00",
                   "payload": {
                     "cultivationName": "느타리 1번",
                     "feedbackId": 82,
@@ -117,7 +124,7 @@ class DomainEventParserTest {
                   "producer": "future-service",
                   "targetType": "FUTURE_TARGET",
                   "targetId": 1,
-                  "occurredAt": "2026-07-30T10:00:00Z",
+                  "occurredAt": "2026-07-30T10:00:00",
                   "payload": {}
                 }
                 """;
@@ -136,7 +143,7 @@ class DomainEventParserTest {
                   "producer": "cultivation-service",
                   "targetType": "CULTIVATION",
                   "targetId": 101,
-                  "occurredAt": "2026-07-30T10:00:00Z",
+                  "occurredAt": "2026-07-30T10:00:00",
                   "payload": {}
                 }
                 """;
@@ -159,7 +166,7 @@ class DomainEventParserTest {
                   "producer": "cultivation-service",
                   "targetType": "CULTIVATION",
                   "targetId": 0,
-                  "occurredAt": "2026-07-30T10:00:00Z",
+                  "occurredAt": "2026-07-30T10:00:00",
                   "payload": {}
                 }
                 """;

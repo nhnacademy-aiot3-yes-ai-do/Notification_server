@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import site.yesaido.notification_server.exception.template.NotificationTemplateVariableMissingException;
@@ -39,6 +39,21 @@ class TemplateRendererTest {
                 .hasMessage("알림 템플릿에 필요한 변수가 없습니다");
     }
 
+    @Test
+    void rendersAgreedHarvestWeightVariable() {
+        DomainEvent event = event("""
+                {
+                  "cultivationName": "Cultivation1",
+                  "harvestWeight": 2.5
+                }
+                """);
+
+        String result = renderer.render(
+                "[수확 완료] {{cultivationName}}의 수확량: {{harvestWeight}}g", event);
+
+        assertThat(result).isEqualTo("[수확 완료] Cultivation1의 수확량: 2.5g");
+    }
+
     private DomainEvent event(String payload) {
         try {
             return new DomainEvent(
@@ -47,7 +62,7 @@ class TemplateRendererTest {
                     "rule-server",
                     "CULTIVATION",
                     101L,
-                    OffsetDateTime.parse("2026-07-31T10:00:00+09:00"),
+                    LocalDateTime.parse("2026-07-31T10:00:00"),
                     objectMapper.readTree(payload));
         } catch (Exception exception) {
             throw new IllegalStateException(exception);

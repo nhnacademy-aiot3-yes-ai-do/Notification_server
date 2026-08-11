@@ -1,7 +1,7 @@
 package site.yesaido.notification_server.messaging;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -15,7 +15,7 @@ public record DomainEvent(
         String producer,
         String targetType,
         Long targetId,
-        OffsetDateTime occurredAt,
+        LocalDateTime occurredAt,
         JsonNode payload
 ) {
 

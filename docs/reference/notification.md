@@ -123,12 +123,45 @@ API Gateway가 JWT를 검증한 뒤 전달하는 `X-User-Id`를 사용자 ID로 
 | 로그인 성공 | `yes-nhn.notification.login.queue` |
 | 문의 등록 | `yes-nhn.notification.question.queue` |
 | 문의 답변 완료 | `yes-nhn.notification.answer.queue` |
-| 수확 완료 | `yes-nhn.notification.harvest.queue` |
+| 수확 완료 | `yes-nhn.notification.done.queue` |
 | 재배 종료 | `yes-nhn.notification.cultivation-finished.queue` |
 
-Routing Key는 아직 최종 합의하지 않았다. `application.yml`은 로컬 실행을 위해 Queue명과
-같은 값을 기본 Routing Key로 사용하지만, 이 값은 Producer 계약 확정 후 교체해야 한다.
-Producer별 payload 필드명도 최종 합의 전까지 공통 Parser에서 과도하게 제한하지 않는다.
+수확 완료 이벤트는 `yes-nhn.notification.done.queue`를 Queue와 Routing Key로 함께
+사용한다. 나머지 이벤트의 Routing Key와 Producer별 payload 필드명은 최종 합의 전까지
+공통 Parser에서 과도하게 제한하지 않는다.
+
+### 공통 이벤트 시간 형식
+
+팀 합의에 따라 서비스 간 공통 이벤트의 `occurredAt`과 payload 내부의 업무 시각(예:
+`harvestedAt`)은 모두 `LocalDateTime` 문자열로 전달한다. 형식은
+`2026-08-11T14:30:00`이며, 오프셋(`+09:00`)이나 지역명은 붙이지 않는다. 모든 서비스는
+`Asia/Seoul` 기준으로 이 값을 해석한다.
+
+수확 완료 이벤트의 확정된 외피 예시는 다음과 같다. `eventId`는 Cultivation Service가
+발급하고, `eventType`은 `HARVEST_COMPLETED`, `producer`는 `cultivation-server`를 쓴다.
+
+```json
+{
+  "eventId": "b3f1c2a4-0000-0000-0000-000000000000",
+  "eventType": "HARVEST_COMPLETED",
+  "producer": "cultivation-server",
+  "targetType": "CULTIVATION",
+  "targetId": 1,
+  "occurredAt": "2026-08-11T14:30:00",
+  "payload": {
+    "cultivationId": 1,
+    "cultivationName": "Cultivation1",
+    "userId": 100,
+    "harvestId": 5,
+    "harvestWeight": 2.5,
+    "harvestedAt": "2026-08-11T14:30:00"
+  }
+}
+```
+
+`TypeId`는 Spring AMQP 내부 역직렬화 메타데이터이며 Notification의 서비스 간 이벤트
+계약 필드는 아니다. Notification은 공통 외피의 `eventType`으로 이벤트를 구분한다.
+수확 완료 템플릿도 Producer payload와 동일하게 `{{harvestWeight}}` 변수를 사용한다.
 
 공용 Dead Letter Exchange와 Queue는 `yes-nhn.dlx`, `yes-nhn.dlq`를 사용한다.
 Notification은 공용 DLQ를 자동으로 소비하지 않으며, 관리자가 RabbitMQ Management
