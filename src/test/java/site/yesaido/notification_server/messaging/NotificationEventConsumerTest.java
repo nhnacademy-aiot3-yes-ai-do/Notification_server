@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -78,7 +78,7 @@ class NotificationEventConsumerTest {
                 "rule-server",
                 "CULTIVATION",
                 101L,
-                OffsetDateTime.parse("2026-07-31T10:00:00+09:00"),
+                LocalDateTime.parse("2026-07-31T10:00:00"),
                 new ObjectMapper().createObjectNode());
     }
 }
