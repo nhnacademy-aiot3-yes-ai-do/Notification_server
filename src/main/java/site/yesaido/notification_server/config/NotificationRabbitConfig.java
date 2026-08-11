@@ -25,6 +25,9 @@ public class NotificationRabbitConfig {
 
     @Bean
     FanoutExchange notificationDeadLetterExchange() {
+        // Migration note: If yes-nhn.dlx already exists as a DirectExchange on the broker,
+        // it must be manually deleted before deploying this version (see docs/reference/notification.md
+        // "기존 DLX 전환 안내"). RabbitMQ cannot auto-convert exchange types.
         return new FanoutExchange(NotificationRabbitConstants.DEAD_LETTER_EXCHANGE, true, false);
     }
 
