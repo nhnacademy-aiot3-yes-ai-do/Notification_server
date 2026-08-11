@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import site.yesaido.notification_server.exception.messaging.InvalidDomainEventException;
 
 class DomainEventParserTest {
 

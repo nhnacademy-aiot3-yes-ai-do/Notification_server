@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import site.yesaido.notification_server.config.NotificationProperties;
-import site.yesaido.notification_server.exception.NotificationProviderException;
+import site.yesaido.notification_server.exception.provider.DiscordNotificationProviderException;
+import site.yesaido.notification_server.exception.provider.TelegramNotificationProviderException;
 import site.yesaido.notification_server.messaging.DeadLetterPublisher;
 import site.yesaido.notification_server.provider.NotificationSender;
 import site.yesaido.notification_server.provider.NotificationSenderRegistry;
@@ -33,8 +34,8 @@ class DeliveryDispatchServiceTest {
         when(stateService.claimForDispatch(7L)).thenReturn(Optional.of(command));
         when(registry.get("TELEGRAM")).thenReturn(sender);
         when(sender.send("12345", "메시지"))
-                .thenThrow(new NotificationProviderException("temporary"))
-                .thenThrow(new NotificationProviderException("temporary"))
+                .thenThrow(new TelegramNotificationProviderException("temporary"))
+                .thenThrow(new TelegramNotificationProviderException("temporary"))
                 .thenReturn(new ProviderSendResult("99"));
 
         service.dispatch(7L);
@@ -55,7 +56,7 @@ class DeliveryDispatchServiceTest {
         when(stateService.claimForDispatch(7L)).thenReturn(Optional.of(command));
         when(registry.get("DISCORD")).thenReturn(sender);
         when(sender.send(command.destination(), command.message()))
-                .thenThrow(new NotificationProviderException("provider down"));
+                .thenThrow(new DiscordNotificationProviderException("provider down"));
 
         service.dispatch(7L);
 
@@ -85,7 +86,7 @@ class DeliveryDispatchServiceTest {
         when(stateService.claimForDispatch(7L)).thenReturn(Optional.of(command));
         when(registry.get("TELEGRAM")).thenReturn(sender);
         when(sender.send("12345", "메시지"))
-                .thenThrow(new NotificationProviderException("last chance failed"));
+                .thenThrow(new TelegramNotificationProviderException("last chance failed"));
 
         service.dispatch(7L);
 

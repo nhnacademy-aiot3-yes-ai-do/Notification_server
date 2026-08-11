@@ -1,123 +1,110 @@
 package site.yesaido.notification_server.exception;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.ConstraintViolationException;
-import java.time.OffsetDateTime;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.validation.BindException;
-import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.HandlerMethodValidationException;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import site.yesaido.notification_server.exception.basic.client.*;
+import site.yesaido.notification_server.exception.basic.server.CustomServerException;
+import site.yesaido.notification_server.exception.basic.server.ServerErrorLevel;
 
+import java.util.Objects;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-
-    @ExceptionHandler(NotificationNotFoundException.class)
-    ResponseEntity<ProblemDetail> handleNotFound(
-            NotificationNotFoundException exception,
-            HttpServletRequest request
-    ) {
-        return response(HttpStatus.NOT_FOUND, "NOTIFICATION_RESOURCE_NOT_FOUND",
-                exception.getMessage(), request);
+    //400 Bad Request
+    @ExceptionHandler({BadRequestException.class})
+    public ErrorResponse handleBadRequestException(BadRequestException e) {
+        clientErrorPrint(e.getLogContent());
+        return createResponseEntity(e, BadRequestException.getCode(), e.getMessage());
     }
 
-    @ExceptionHandler({
-        DuplicateNotificationResourceException.class,
-        DataIntegrityViolationException.class
-    })
-    ResponseEntity<ProblemDetail> handleConflict(
-            RuntimeException exception,
-            HttpServletRequest request
-    ) {
-        log.warn("Notification resource conflict: path={}", request.getRequestURI());
-        return response(HttpStatus.CONFLICT, "NOTIFICATION_RESOURCE_CONFLICT",
-                "이미 존재하거나 현재 상태와 충돌하는 요청입니다.", request);
+    //401 Unauthorized
+    @ExceptionHandler({UnauthorizedException.class})
+    public ErrorResponse handleUnauthorizedException(UnauthorizedException e) {
+        clientErrorPrint(e.getLogContent());
+        return createResponseEntity(e, UnauthorizedException.getCode(), e.getMessage());
     }
 
-    @ExceptionHandler({
-        MethodArgumentNotValidException.class,
-        BindException.class
-    })
-    ResponseEntity<ProblemDetail> handleValidation(
-            BindException exception,
-            HttpServletRequest request
-    ) {
-        String message = exception.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.joining(", "));
-        return response(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", message, request);
+    //403 Forbidden
+    @ExceptionHandler({ForbiddenException.class})
+    public ErrorResponse handleForbiddenExceptionException(ForbiddenException e) {
+        clientErrorPrint(e.getLogContent());
+        return createResponseEntity(e, ForbiddenException.getCode(), e.getMessage());
     }
 
-    @ExceptionHandler({
-        IllegalArgumentException.class,
-        HttpMessageNotReadableException.class,
-        ConstraintViolationException.class,
-        MissingRequestHeaderException.class,
-        MethodArgumentTypeMismatchException.class,
-        HandlerMethodValidationException.class
-    })
-    ResponseEntity<ProblemDetail> handleBadRequest(
-            Exception exception,
-            HttpServletRequest request
-    ) {
-        return response(HttpStatus.BAD_REQUEST, "INVALID_REQUEST",
-                "요청 형식이나 값이 올바르지 않습니다.", request);
+    //404 Not Found
+    @ExceptionHandler({NotFoundException.class})
+    public ErrorResponse handleNotFoundExceptionException(NotFoundException e) {
+        clientErrorPrint(e.getLogContent());
+        return createResponseEntity(e, NotFoundException.getCode(), e.getMessage());
     }
 
-    @ExceptionHandler(UnsupportedNotificationChannelException.class)
-    ResponseEntity<ProblemDetail> handleUnsupportedChannel(
-            UnsupportedNotificationChannelException exception,
-            HttpServletRequest request
-    ) {
-        return response(HttpStatus.BAD_REQUEST, "UNSUPPORTED_NOTIFICATION_CHANNEL",
-                exception.getMessage(), request);
+    //409 Conflict
+    @ExceptionHandler({ConflictException.class})
+    public ErrorResponse handleConflictException(ConflictException e) {
+        clientErrorPrint(e.getLogContent());
+        return createResponseEntity(e, ConflictException.getCode(), e.getMessage());
     }
 
-    @ExceptionHandler(NotificationProviderException.class)
-    ResponseEntity<ProblemDetail> handleProvider(
-            NotificationProviderException exception,
-            HttpServletRequest request
-    ) {
-        log.error("Notification provider request failed: path={}, failureType={}",
-                request.getRequestURI(), exception.getClass().getSimpleName());
-        return response(HttpStatus.BAD_GATEWAY, "NOTIFICATION_PROVIDER_FAILURE",
-                "외부 알림 채널 요청에 실패했습니다.", request);
+    //415 Unsupported Media Type
+    @ExceptionHandler({UnsupportedMediaTypeException.class})
+    public ErrorResponse handleUnsupportedMediaTypeException(UnsupportedMediaTypeException e) {
+        clientErrorPrint(e.getLogContent());
+        return createResponseEntity(e, UnsupportedMediaTypeException.getCode(), e.getMessage());
     }
 
-    @ExceptionHandler(Exception.class)
-    ResponseEntity<ProblemDetail> handleUnexpected(
-            Exception exception,
-            HttpServletRequest request
-    ) {
-        log.error("Unexpected notification API error: path={}, failureType={}",
-                request.getRequestURI(), exception.getClass().getSimpleName());
-        return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR",
-                "서버 내부 오류가 발생했습니다.", request);
+    private void clientErrorPrint(String logContent) {
+        log.info("{}", logContent);
     }
 
-    private ResponseEntity<ProblemDetail> response(
-            HttpStatus status,
-            String code,
-            String message,
-            HttpServletRequest request
-    ) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, message);
-        problem.setTitle(status.getReasonPhrase());
-        problem.setProperty("code", code);
-        problem.setProperty("timestamp", OffsetDateTime.now());
-        problem.setProperty("path", request.getRequestURI());
-        return ResponseEntity.status(status).body(problem);
+    //500 Custom Server Exception
+    @ExceptionHandler({CustomServerException.class})
+    public ErrorResponse handleServerException(CustomServerException e) {
+        if(e.getErrorLevel().equals(ServerErrorLevel.WARN_LEVEL)) {
+            log.warn("{}", e.getLogContent());
+        } else {
+            log.error("{}", e.getLogContent());
+        }
+
+        return createResponseEntity(e, CustomServerException.getStatus(), e.getMessage());
+    }
+
+    //500 Server Exception
+    @ExceptionHandler({Exception.class})
+    public ErrorResponse handleException(Exception e) {
+        log.warn("{}", e.getMessage());
+        return createResponseEntity(e, HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다.");
+    }
+
+    private ErrorResponse createResponseEntity(Exception e, HttpStatus status, String message) {
+        return ErrorResponse.create(e, status, message);
+    }
+
+
+    // Spring
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ErrorResponse handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        FieldError fieldError = e.getBindingResult().getFieldError();
+        String defaultMessage = (fieldError != null) ? fieldError.getDefaultMessage() : null;
+        String message = Objects.requireNonNullElse(defaultMessage, "잘못된 요청입니다.");
+
+        return ErrorResponse.create(e, HttpStatus.BAD_REQUEST, message);
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ErrorResponse handleMissingRequestHeaderException(MissingRequestHeaderException e) {
+        return ErrorResponse.create(e, HttpStatus.BAD_REQUEST, "필수 헤더가 누락되었습니다: " + e.getHeaderName());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ErrorResponse handleIllegalArgumentException(IllegalArgumentException e) {
+        return ErrorResponse.create(e, HttpStatus.BAD_REQUEST, e.getMessage());
     }
 }

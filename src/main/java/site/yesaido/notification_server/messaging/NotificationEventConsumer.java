@@ -6,9 +6,11 @@ import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import site.yesaido.notification_server.exception.EventContractException;
-import site.yesaido.notification_server.exception.NotificationNotFoundException;
-import site.yesaido.notification_server.exception.TemplateRenderingException;
+import site.yesaido.notification_server.exception.messaging.InvalidDomainEventException;
+import site.yesaido.notification_server.exception.event.NotificationEventTargetTypeMismatchException;
+import site.yesaido.notification_server.exception.event.NotificationEventTypeNotFoundException;
+import site.yesaido.notification_server.exception.template.NotificationTemplateNotFoundException;
+import site.yesaido.notification_server.exception.template.NotificationTemplateVariableMissingException;
 import site.yesaido.notification_server.service.DeliveryDispatchService;
 import site.yesaido.notification_server.service.EventProcessingResult;
 import site.yesaido.notification_server.service.NotificationEventService;
@@ -62,10 +64,13 @@ public class NotificationEventConsumer {
             }
             log.error("Notification event persistence failed: {}", eventMetadata(event), exception);
             throw reject(exception);
-        } catch (InvalidDomainEventException | EventContractException exception) {
+        } catch (InvalidDomainEventException
+                 | NotificationEventTypeNotFoundException
+                 | NotificationEventTargetTypeMismatchException exception) {
             log.warn("Notification event contract rejected: {}", eventMetadata(event), exception);
             throw reject(exception);
-        } catch (TemplateRenderingException | NotificationNotFoundException exception) {
+        } catch (NotificationTemplateVariableMissingException
+                 | NotificationTemplateNotFoundException exception) {
             log.error("Notification event configuration failed: {}", eventMetadata(event), exception);
             throw reject(exception);
         } catch (RuntimeException exception) {

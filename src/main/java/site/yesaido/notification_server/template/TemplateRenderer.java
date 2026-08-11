@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
-import site.yesaido.notification_server.exception.TemplateRenderingException;
+import site.yesaido.notification_server.exception.template.NotificationTemplateVariableMissingException;
 import site.yesaido.notification_server.messaging.DomainEvent;
 
 @Component
@@ -31,7 +31,7 @@ public class TemplateRenderer {
             String name = matcher.group(1);
             String value = variables.get(name);
             if (value == null) {
-                throw new TemplateRenderingException(
+                throw new NotificationTemplateVariableMissingException(
                         "템플릿 변수 값을 찾을 수 없습니다: " + name);
             }
             matcher.appendReplacement(result, Matcher.quoteReplacement(value));

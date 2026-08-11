@@ -35,7 +35,6 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
-    virtual-host: ${RABBITMQ_VHOST:/}
     listener:
       simple:
         default-requeue-rejected: false
@@ -83,9 +82,6 @@ notification:
     pending-delivery-min-age: ${NOTIFICATION_PENDING_DELIVERY_MIN_AGE:PT30S}
     sending-claim-timeout: ${NOTIFICATION_SENDING_CLAIM_TIMEOUT:PT5M}
     pending-delivery-batch-size: ${NOTIFICATION_PENDING_DELIVERY_BATCH_SIZE:100}
-
-server:
-  port: ${SERVER_PORT:8080}
 
 eureka:
   client:

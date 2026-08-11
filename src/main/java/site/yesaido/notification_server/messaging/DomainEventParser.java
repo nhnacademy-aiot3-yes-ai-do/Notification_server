@@ -3,6 +3,7 @@ package site.yesaido.notification_server.messaging;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
+import site.yesaido.notification_server.exception.messaging.InvalidDomainEventException;
 
 /**
  * RabbitMQ 메시지 문자열을 공통 이벤트로 변환하고 공통 필드를 검증한다.
