@@ -169,6 +169,17 @@ Fanout Exchange이므로 원래 Queue의 Routing Key와 무관하게 공용 DLQ�
 Notification은 공용 DLQ를 자동으로 소비하지 않으며, 관리자가 RabbitMQ Management
 화면에서 원인을 확인한 뒤 수동으로 처리·삭제한다.
 
+### 기존 DLX 전환 안내
+
+기존 RabbitMQ 브로커에 같은 이름의 `yes-nhn.dlx`가 **Direct Exchange**로 이미 선언되어
+있다면, Fanout으로 타입을 자동 변경할 수 없다. 이 상태에서 새 애플리케이션을 실행하면
+RabbitMQ가 `PRECONDITION_FAILED (406)`을 반환하며 기동을 막는다.
+
+브로커 관리자와 조율해 기존 `yes-nhn.dlx` **Exchange만** 삭제한 뒤, 새 버전의
+Notification Service를 실행해 Fanout Exchange와 `yes-nhn.dlq` Binding을 다시 선언한다.
+`yes-nhn.dlq` Queue와 그 안의 메시지는 삭제하지 않는다. 공유·배포 브로커에서는 이 전환을
+서비스 재기동 전에 한 번만 수행한다.
+
 계약 확정 전 준비 작업으로 `DomainEventParser`가 공통 envelope의 JSON 역직렬화와
 필수값을 검증한다. 임시 수확 완료 JSON, 필수 필드 누락, 잘못된 `targetId`, 잘못된 JSON을
 테스트하지만, 아직 미확정인 Producer별 payload 구조는 공통 Parser에서 제한하지 않는다.

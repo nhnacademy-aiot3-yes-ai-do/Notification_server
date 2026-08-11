@@ -128,7 +128,7 @@ mvn \
 
 ## 아직 외부 합의가 필요한 항목
 
-- RabbitMQ routing key, vhost, ACK/NACK와 Consumer 재시도 세부 방식
+- RabbitMQ vhost, ACK/NACK와 Consumer 재시도 세부 방식
 - Producer별 실제 이벤트 JSON payload
 - Config allowlist와 Kubernetes Deployment의 최종 서비스명
 - Gateway의 `X-User-Id` 전달 및 외부 직접 접근 차단 방식
