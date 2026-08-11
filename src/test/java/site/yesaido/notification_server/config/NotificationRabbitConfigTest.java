@@ -2,8 +2,9 @@ package site.yesaido.notification_server.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
+import org.springframework.amqp.core.FanoutExchange;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
@@ -14,10 +15,9 @@ class NotificationRabbitConfigTest {
 
     @Test
     void notificationExchange에_용도별_queue_8개를_선언한다() {
-        NotificationProperties properties = properties();
-        DirectExchange exchange = config.notificationEventExchange(properties);
+        DirectExchange exchange = config.notificationEventExchange();
 
-        Declarables topology = config.notificationEventQueues(exchange, properties);
+        Declarables topology = config.notificationEventQueues(exchange);
 
         assertThat(exchange.getName()).isEqualTo("yes-nhn.notification.exchange");
         assertThat(exchange.getType()).isEqualTo("direct");
@@ -26,38 +26,35 @@ class NotificationRabbitConfigTest {
                 .map(Queue.class::cast)
                 .extracting(Queue::getName)
                 .containsExactlyInAnyOrder(
-                        "threshold.queue",
-                        "action.queue",
-                        "daily.queue",
-                        "login.queue",
-                        "question.queue",
-                        "answer.queue",
-                        "harvest.queue",
-                        "cultivation-finished.queue");
+                        "yes-nhn.notification.threshold.queue",
+                        "yes-nhn.notification.action.queue",
+                        "yes-nhn.notification.daily.queue",
+                        "yes-nhn.notification.login.queue",
+                        "yes-nhn.notification.question.queue",
+                        "yes-nhn.notification.answer.queue",
+                        "yes-nhn.notification.done.queue",
+                        "yes-nhn.notification.cultivation-finished.queue");
     }
 
-    private NotificationProperties properties() {
-        return new NotificationProperties(
-                new NotificationProperties.Rabbit(
-                        "yes-nhn.notification.exchange",
-                        route("threshold"),
-                        route("action"),
-                        route("daily"),
-                        route("login"),
-                        route("question"),
-                        route("answer"),
-                        route("harvest"),
-                        route("cultivation-finished"),
-                        "yes-nhn.dlx",
-                        "yes-nhn.dlq",
-                        "yes-nhn.dlq"),
-                new NotificationProperties.Provider(
-                        new NotificationProperties.Telegram("https://api.telegram.org", ""),
-                        new NotificationProperties.Discord(List.of("discord.com"))),
-                new NotificationProperties.Retry(java.time.Duration.ZERO));
+    @Test
+    void deadLetterExchange는_fanout으로_선언한다() {
+        FanoutExchange deadLetterExchange = config.notificationDeadLetterExchange();
+
+        assertThat(deadLetterExchange.getName()).isEqualTo("yes-nhn.dlx");
+        assertThat(deadLetterExchange.getType()).isEqualTo("fanout");
     }
 
-    private NotificationProperties.EventRoute route(String name) {
-        return new NotificationProperties.EventRoute(name + ".queue", name + ".routing-key");
+    @Test
+    void notificationQueue는_같은이름의_routingKey로_directExchange에_연결한다() {
+        DirectExchange exchange = config.notificationEventExchange();
+        Declarables topology = config.notificationEventQueues(exchange);
+
+        assertThat(topology.getDeclarables())
+                .filteredOn(Binding.class::isInstance)
+                .map(Binding.class::cast)
+                .allSatisfy(binding -> {
+                    assertThat(binding.getExchange()).isEqualTo(NotificationRabbitConstants.EVENT_EXCHANGE);
+                    assertThat(binding.getRoutingKey()).isEqualTo(binding.getDestination());
+                });
     }
 }

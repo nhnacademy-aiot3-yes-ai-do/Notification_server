@@ -126,8 +126,9 @@ API Gateway가 JWT를 검증한 뒤 전달하는 `X-User-Id`를 사용자 ID로 
 | 수확 완료 | `yes-nhn.notification.done.queue` |
 | 재배 종료 | `yes-nhn.notification.cultivation-finished.queue` |
 
-수확 완료 이벤트는 `yes-nhn.notification.done.queue`를 Queue와 Routing Key로 함께
-사용한다. 나머지 이벤트의 Routing Key와 Producer별 payload 필드명은 최종 합의 전까지
+Direct Exchange에서는 모든 Notification Queue 이름을 같은 이름의 Routing Key로 사용한다.
+따라서 수확 완료 Producer도 `yes-nhn.notification.done.queue`를 Queue와 Routing Key로
+함께 사용한다. 수확 완료 payload는 아래 계약으로 확정됐고, 나머지 Producer별 payload는
 공통 Parser에서 과도하게 제한하지 않는다.
 
 ### 공통 이벤트 시간 형식
@@ -163,14 +164,22 @@ API Gateway가 JWT를 검증한 뒤 전달하는 `X-User-Id`를 사용자 ID로 
 계약 필드는 아니다. Notification은 공통 외피의 `eventType`으로 이벤트를 구분한다.
 수확 완료 템플릿도 Producer payload와 동일하게 `{{harvestWeight}}` 변수를 사용한다.
 
-공용 Dead Letter Exchange와 Queue는 `yes-nhn.dlx`, `yes-nhn.dlq`를 사용한다.
+공용 Dead Letter Exchange와 Queue는 `yes-nhn.dlx`, `yes-nhn.dlq`를 사용한다. DLX는
+Fanout Exchange이므로 원래 Queue의 Routing Key와 무관하게 공용 DLQ로 전달된다.
 Notification은 공용 DLQ를 자동으로 소비하지 않으며, 관리자가 RabbitMQ Management
 화면에서 원인을 확인한 뒤 수동으로 처리·삭제한다.
 
 계약 확정 전 준비 작업으로 `DomainEventParser`가 공통 envelope의 JSON 역직렬화와
 필수값을 검증한다. 임시 수확 완료 JSON, 필수 필드 누락, 잘못된 `targetId`, 잘못된 JSON을
 테스트하지만, 아직 미확정인 Producer별 payload 구조는 공통 Parser에서 제한하지 않는다.
-RabbitMQ Listener와 Direct Exchange·다중 Queue·공용 DLX·DLQ 선언은 구현했다.
+RabbitMQ Listener와 Direct Exchange·다중 Queue·Fanout DLX·DLQ 선언은 구현했다. Exchange와
+Queue·Routing Key 이름은 코드 상수로 고정하고, host·port·계정·vhost만 개인 `.env`에서 읽는다.
+
+2026년 8월 11일 로컬 검증에서 PostgreSQL Flyway V11, `yes-nhn.notification.exchange`의 Direct
+Binding, `yes-nhn.notification.done.queue`의 동일 Routing Key, `yes-nhn.dlx`의 Fanout DLX 선언을
+실제 RabbitMQ 브로커에서 확인했다. 수확 완료 JSON은 `DomainEventParserTest`에서 공통 외피와
+`harvestWeight`·`LocalDateTime` payload를 검증한다. 실제 Cultivation Server가 발행하는 시나리오는
+두 서비스를 함께 실행해 연결 회의 후 한 번 더 확인한다.
 
 ## 외부 채널
 
@@ -195,7 +204,7 @@ RabbitMQ Listener와 Direct Exchange·다중 Queue·공용 DLX·DLQ 선언은 �
 
 ## 아직 확정할 항목
 
-- RabbitMQ routing key·vhost·ACK/NACK와 Consumer 재시도 세부 방식
+- RabbitMQ vhost·ACK/NACK와 Consumer 재시도 세부 방식
 - Producer별 실제 JSON payload
 - Cultivation·Inquiry 대상 소유권 확인 API와 공동 재배자 구독 범위
 - Telegram·Discord 테스트 계정·Secret 전달 방식과 Provider 세부 방식
@@ -214,7 +223,7 @@ RabbitMQ Listener와 Direct Exchange·다중 Queue·공용 DLX·DLQ 선언은 �
 
 ### 회의 후 실제 값으로 연결할 범위
 
-- 각 큐의 최종 routing key, RabbitMQ vhost, ACK/NACK·재전달 규칙
+- RabbitMQ vhost, ACK/NACK·재전달 규칙
 - Rule·Cultivation·AI·Auth·Inquiry Producer가 보내는 최종 JSON 값과 필수 payload 필드
 - Telegram Bot Token, Discord Webhook 등 Secret의 운영 전달·관리 방식
 - 재배/문의 대상에 대한 소유권 확인 API와 가족 공동 재배자의 구독 가능 범위

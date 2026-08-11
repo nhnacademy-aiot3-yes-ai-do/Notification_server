@@ -8,6 +8,7 @@ import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -18,49 +19,42 @@ import org.springframework.context.annotation.Configuration;
 public class NotificationRabbitConfig {
 
     @Bean
-    DirectExchange notificationEventExchange(NotificationProperties properties) {
-        return new DirectExchange(properties.rabbit().exchange(), true, false);
+    DirectExchange notificationEventExchange() {
+        return new DirectExchange(NotificationRabbitConstants.EVENT_EXCHANGE, true, false);
     }
 
     @Bean
-    DirectExchange notificationDeadLetterExchange(NotificationProperties properties) {
-        return new DirectExchange(properties.rabbit().deadLetterExchange(), true, false);
+    FanoutExchange notificationDeadLetterExchange() {
+        return new FanoutExchange(NotificationRabbitConstants.DEAD_LETTER_EXCHANGE, true, false);
     }
 
     @Bean
-    Declarables notificationEventQueues(
-            DirectExchange notificationEventExchange,
-            NotificationProperties properties
-    ) {
-        List<Declarable> declarables = new ArrayList<>();
+    Declarables notificationEventQueues(DirectExchange notificationEventExchange) {
         Map<String, Object> arguments = Map.of(
-                "x-dead-letter-exchange", properties.rabbit().deadLetterExchange(),
-                "x-dead-letter-routing-key", properties.rabbit().deadLetterRoutingKey());
-
-        for (NotificationProperties.EventRoute route : properties.rabbit().eventRoutes()) {
-            Queue queue = new Queue(route.queue(), true, false, false, arguments);
-            Binding binding = BindingBuilder.bind(queue)
-                    .to(notificationEventExchange)
-                    .with(route.routingKey());
+                "x-dead-letter-exchange", NotificationRabbitConstants.DEAD_LETTER_EXCHANGE,
+                "x-dead-letter-routing-key", NotificationRabbitConstants.DEAD_LETTER_QUEUE);
+        List<Declarable> declarables = new ArrayList<>();
+        for (String queueName : NotificationRabbitConstants.EVENT_QUEUES) {
+            Queue queue = new Queue(queueName, true, false, false, arguments);
             declarables.add(queue);
-            declarables.add(binding);
+            declarables.add(BindingBuilder.bind(queue)
+                    .to(notificationEventExchange)
+                    .with(queueName));
         }
         return new Declarables(declarables);
     }
 
     @Bean
-    Queue notificationDeadLetterQueue(NotificationProperties properties) {
-        return new Queue(properties.rabbit().deadLetterQueue(), true);
+    Queue notificationDeadLetterQueue() {
+        return new Queue(NotificationRabbitConstants.DEAD_LETTER_QUEUE, true);
     }
 
     @Bean
     Binding notificationDeadLetterBinding(
             Queue notificationDeadLetterQueue,
-            DirectExchange notificationDeadLetterExchange,
-            NotificationProperties properties
+            FanoutExchange notificationDeadLetterExchange
     ) {
         return BindingBuilder.bind(notificationDeadLetterQueue)
-                .to(notificationDeadLetterExchange)
-                .with(properties.rabbit().deadLetterRoutingKey());
+                .to(notificationDeadLetterExchange);
     }
 }

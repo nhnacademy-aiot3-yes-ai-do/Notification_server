@@ -34,11 +34,11 @@ Notification Service는 다른 서비스가 RabbitMQ로 발행한 이벤트를 �
   - `yes-nhn.notification.login.queue`
   - `yes-nhn.notification.question.queue`
   - `yes-nhn.notification.answer.queue`
-  - `yes-nhn.notification.harvest.queue`
+  - `yes-nhn.notification.done.queue`
   - `yes-nhn.notification.cultivation-finished.queue`
-- 운영 Routing Key는 아직 팀 합의 전이다. `application.yml`의 Queue명과 같은 기본
-  Routing Key는 로컬 실행용이며 운영 계약으로 간주하지 않는다.
-- 공용 Dead Letter Exchange와 Queue는 각각 `yes-nhn.dlx`, `yes-nhn.dlq`를 사용한다.
+- Direct Exchange에서는 각 Queue 이름을 같은 이름의 Routing Key로 사용한다.
+- 공용 Dead Letter Exchange와 Queue는 각각 `yes-nhn.dlx`, `yes-nhn.dlq`를 사용하며,
+  DLX는 Fanout Exchange로 선언한다.
 - Notification은 공용 DLQ를 자동 소비하지 않는다. 관리자가 RabbitMQ Management UI에서
   원인을 확인한 뒤 메시지를 수동 처리·삭제한다.
 - 센서 계열의 `yes-nhn.sensor.exchange`만 여러 Consumer에게 같은 데이터를 전달하기 위해
