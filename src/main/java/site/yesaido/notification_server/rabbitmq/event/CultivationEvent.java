@@ -1,5 +1,6 @@
 package site.yesaido.notification_server.rabbitmq.event;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 public class CultivationEvent {
@@ -9,7 +10,7 @@ public class CultivationEvent {
             long cultivationId,
             String cultivationName,
             long harvestId,
-            long harvestQuantity,
+            BigDecimal harvestQuantity,
             OffsetDateTime harvestedAt
     ) {}
 
@@ -17,7 +18,8 @@ public class CultivationEvent {
     public record SensorDataUnavailableEvent (
         long cultivationId,
         String deviceName,
-        String message
+        String message,
+        OffsetDateTime occurredAt
     ) {}
 
     // 멤버 초대

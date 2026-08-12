@@ -16,7 +16,7 @@ public class RuleEngineEvent {
             String sensorType,
             Double value,
             @JsonProperty("time")
-            LocalDateTime measuredAt,
+            OffsetDateTime measuredAt,
             String unit,
             long cultivationId
     ) {}
