@@ -78,6 +78,19 @@ public class NotificationDelivery extends AuditEntity {
         this.attemptCount = 0;
     }
 
+    /**
+     * RabbitMQ 저장 리팩터링 단계에서만 사용한다. Delivery와 템플릿 이력은 만들되
+     * 아직 Provider 발송 대상(PENDING)으로 전환하지 않아 기존 스케줄러가 전송하지 않는다.
+     */
+    public static NotificationDelivery prepare(Notification notification,
+                                               NotificationSubscription subscription,
+                                               NotificationTemplate template,
+                                               String renderedMessage) {
+        NotificationDelivery delivery = new NotificationDelivery(notification, subscription, template, renderedMessage);
+        delivery.status = DeliveryStatus.CREATED;
+        return delivery;
+    }
+
     /** 외부 발송에 성공했을 때만 호출한다. */
     public void markSent(String providerMessageId) {
         requireSending();

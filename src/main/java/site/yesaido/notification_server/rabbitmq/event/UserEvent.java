@@ -2,10 +2,12 @@ package site.yesaido.notification_server.rabbitmq.event;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public class UserEvent {
     // 로그인 성공 여부
     public record UserLoginAttemptedEvent (
+            UUID eventId,
             long userId,
             String nickname,
             boolean succeeded,
@@ -15,6 +17,7 @@ public class UserEvent {
 
     // 비밀번호 변경
     public record UserPasswordChangeAttemptedEvent (
+            UUID eventId,
             long userId,
             String nickname,
             boolean succeeded,
@@ -23,6 +26,7 @@ public class UserEvent {
 
     // 휴먼 계정 해제 알림
     public record UserAccountReactivationAttemptedEvent (
+            UUID eventId,
             long userId,
             String nickname,
             boolean succeeded,
@@ -31,6 +35,7 @@ public class UserEvent {
 
     // 문의 사항
     public record InquirySubmittedEvent (
+            UUID eventId,
             long sendUserId,
             List<Long> receiveUserIds, // 관리자들에게 보내야 할때 List, 응답이면 그냥 단일
             long inquiryId,

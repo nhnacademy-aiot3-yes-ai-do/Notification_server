@@ -27,7 +27,7 @@ class NotificationDeliveryTest {
                 7L, channelType, "123456", "내 Telegram");
         NotificationSubscription subscription = new NotificationSubscription(
                 subscriptionType, endpoint, 12L);
-        Notification notification = new Notification(UUID.randomUUID(), Map.of("sensorId", 3));
+        Notification notification = new Notification(UUID.randomUUID(), eventType, Map.of("sensorId", 3));
         NotificationTemplate template = new NotificationTemplate(
                 eventType, channelType, "센서 오류: {sensorId}", 1);
 
@@ -110,7 +110,7 @@ class NotificationDeliveryTest {
                 eventType, targetType, "센서 오류 알림", "센서 오류가 발생하면 알림을 보냅니다.");
         NotificationEndpoint endpoint = new NotificationEndpoint(7L, channelType, "123456", "내 Telegram");
         NotificationSubscription subscription = new NotificationSubscription(subscriptionType, endpoint, 12L);
-        Notification notification = new Notification(UUID.randomUUID(), Map.of("sensorId", 3));
+        Notification notification = new Notification(UUID.randomUUID(), eventType, Map.of("sensorId", 3));
         NotificationTemplate template = new NotificationTemplate(eventType, channelType, "센서 오류", 1);
         return new NotificationDelivery(notification, subscription, template, "센서 오류");
     }

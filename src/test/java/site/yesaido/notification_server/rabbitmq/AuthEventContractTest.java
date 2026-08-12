@@ -3,6 +3,7 @@ package site.yesaido.notification_server.rabbitmq;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
@@ -17,7 +18,7 @@ class AuthEventContractTest {
         properties.setContentType(AuthEventContract.CONTENT_TYPE);
         properties.setHeader(AuthEventContract.TYPE_ID_HEADER, AuthEventContract.LOGIN_ATTEMPTED_TYPE_ID);
         Message message = new Message(("""
-                {"userId":1,"nickname":"tester","succeeded":true,
+                {"eventId":"11111111-1111-1111-1111-111111111111","userId":1,"nickname":"tester","succeeded":true,
                  "loginLocation":"Seoul","occurredAt":"2026-08-11T12:00:00+09:00"}
                 """).getBytes(StandardCharsets.UTF_8), properties);
 
@@ -26,5 +27,7 @@ class AuthEventContractTest {
         assertThat(event).isInstanceOf(UserEvent.UserLoginAttemptedEvent.class);
         assertThat((UserEvent.UserLoginAttemptedEvent) event).extracting(UserEvent.UserLoginAttemptedEvent::nickname)
                 .isEqualTo("tester");
+        assertThat((UserEvent.UserLoginAttemptedEvent) event).extracting(UserEvent.UserLoginAttemptedEvent::eventId)
+                .isEqualTo(UUID.fromString("11111111-1111-1111-1111-111111111111"));
     }
 }

@@ -2,8 +2,8 @@ package site.yesaido.notification_server.rabbitmq.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 public class RuleEngineEvent {
 
@@ -23,6 +23,7 @@ public class RuleEngineEvent {
 
     // 임계값 초과 및 회복 알림
     public record ThresholdStatusChangedEvent (
+            UUID eventId,
             SensorDataDto sensorData,
             ThresholdStatus status,
             OffsetDateTime occurredAt
@@ -35,6 +36,7 @@ public class RuleEngineEvent {
 
     // 자동화 키고 끄고 알림
     public record AutomationStateChangedEvent (
+            UUID eventId,
             long cultivationId,
             String actuatorType,
             String message,

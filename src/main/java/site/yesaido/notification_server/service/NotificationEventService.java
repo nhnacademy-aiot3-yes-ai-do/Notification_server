@@ -59,7 +59,7 @@ public class NotificationEventService {
         Map<String, Object> payload = objectMapper.convertValue(
                 event.payload(), new TypeReference<>() {});
         Notification notification = notificationRepository.save(
-                new Notification(event.eventId(), payload));
+                new Notification(event.eventId(), eventType, payload));
 
         List<Long> deliveryIds = new ArrayList<>();
         for (NotificationSubscription subscription : subscriptions) {

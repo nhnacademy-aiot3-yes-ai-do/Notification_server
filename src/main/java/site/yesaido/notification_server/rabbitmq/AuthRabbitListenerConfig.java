@@ -8,8 +8,8 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import java.util.Map;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
-import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.DefaultJacksonJavaTypeMapper;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import site.yesaido.notification_server.rabbitmq.event.UserEvent;
@@ -18,8 +18,8 @@ import site.yesaido.notification_server.rabbitmq.event.UserEvent;
 public class AuthRabbitListenerConfig {
 
     @Bean
-    public Jackson2JsonMessageConverter authEventMessageConverter() {
-        DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
+    public JacksonJsonMessageConverter authEventMessageConverter() {
+        DefaultJacksonJavaTypeMapper typeMapper = new DefaultJacksonJavaTypeMapper();
         typeMapper.setTrustedPackages("site.yesaido.notification_server.rabbitmq.event");
         typeMapper.setIdClassMapping(Map.of(
                 LOGIN_ATTEMPTED_TYPE_ID, UserEvent.UserLoginAttemptedEvent.class,
@@ -27,7 +27,7 @@ public class AuthRabbitListenerConfig {
                 ACCOUNT_REACTIVATION_ATTEMPTED_TYPE_ID, UserEvent.UserAccountReactivationAttemptedEvent.class
         ));
 
-        Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+        JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter();
         converter.setJavaTypeMapper(typeMapper);
         return converter;
     }
@@ -35,7 +35,7 @@ public class AuthRabbitListenerConfig {
     @Bean
     public SimpleRabbitListenerContainerFactory authRabbitListenerContainerFactory(
             ConnectionFactory connectionFactory,
-            Jackson2JsonMessageConverter authEventMessageConverter
+            JacksonJsonMessageConverter authEventMessageConverter
     ) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
