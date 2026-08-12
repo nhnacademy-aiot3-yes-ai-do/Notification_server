@@ -1,4 +1,4 @@
-package site.yesaido.notification_server.event;
+package site.yesaido.notification_server.rabbitmq.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

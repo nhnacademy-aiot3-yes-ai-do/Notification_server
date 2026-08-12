@@ -1,0 +1,32 @@
+package site.yesaido.notification_server.rabbitmq;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Arrays;
+import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+
+class NotificationRabbitMQConsumerClassificationTest {
+
+    @Test
+    void 도메인_consumer는_큐별_listener를_가진다() {
+        assertThat(methodQueues(RuleEngineRabbitMQConsumer.class))
+                .containsExactlyInAnyOrder("yes-nhn.notification.threshold.queue", "yes-nhn.notification.action.queue");
+        assertThat(methodQueues(AiRabbitMQConsumer.class))
+                .containsExactlyInAnyOrder("yes-nhn.notification.daily.queue", "yes-nhn.notification.cultivation-complete.queue");
+        assertThat(methodQueues(CultivationRabbitMQConsumer.class))
+                .containsExactlyInAnyOrder("yes-nhn.notification.harvest.queue", "yes-nhn.notification.sensor.queue", "yes-nhn.notification.member.queue");
+        assertThat(UserRabbitMQConsumer.AuthConsumer.class.getAnnotation(RabbitListener.class).queues())
+                .containsExactly("yes-nhn.notification.auth.queue");
+        assertThat(methodQueues(UserRabbitMQConsumer.class))
+                .containsExactly("yes-nhn.notification.inquiry.queue");
+    }
+
+    private String[] methodQueues(Class<?> consumerType) {
+        return Arrays.stream(consumerType.getDeclaredMethods())
+                .map(method -> method.getAnnotation(RabbitListener.class))
+                .filter(annotation -> annotation != null)
+                .flatMap(annotation -> Arrays.stream(annotation.queues()))
+                .toArray(String[]::new);
+    }
+}
