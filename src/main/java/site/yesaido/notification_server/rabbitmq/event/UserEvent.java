@@ -31,8 +31,9 @@ public class UserEvent {
 
     // 문의 사항
     public record InquirySubmittedEvent (
-            long userId,
-            List<Long> inquiryIds, // 관리자들에게 보내야 할때 List, 응답이면 그냥 단일
+            long sendUserId,
+            List<Long> receiveUserIds, // 관리자들에게 보내야 할때 List, 응답이면 그냥 단일
+            long inquiryId,
             String title,
             String category,
             String inquiryUrl,
