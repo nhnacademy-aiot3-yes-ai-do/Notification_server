@@ -1,7 +1,7 @@
 package site.yesaido.notification_server.exception.provider;
 
-import site.yesaido.notification_server.exception.basic.server.CustomServerException;
-import site.yesaido.notification_server.exception.basic.server.ServerErrorLevel;
+import site.yesaido.common.exception.server.CustomServerException;
+import site.yesaido.common.exception.server.ServerErrorLevel;
 
 public class DiscordNotificationProviderException extends CustomServerException {
     public DiscordNotificationProviderException(String message) {

@@ -1,6 +1,6 @@
 package site.yesaido.notification_server.exception.event;
 
-import site.yesaido.notification_server.exception.basic.client.BadRequestException;
+import site.yesaido.common.exception.client.BadRequestException;
 
 public class NotificationEventTypeNotFoundException extends BadRequestException {
     private static final String DEFAULT_MESSAGE = "등록되지 않은 알림 이벤트 유형입니다";

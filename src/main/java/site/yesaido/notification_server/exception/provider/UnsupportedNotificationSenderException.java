@@ -1,6 +1,6 @@
 package site.yesaido.notification_server.exception.provider;
 
-import site.yesaido.notification_server.exception.basic.client.BadRequestException;
+import site.yesaido.common.exception.client.BadRequestException;
 
 public class UnsupportedNotificationSenderException extends BadRequestException {
     private static final String DEFAULT_MESSAGE = "지원하지 않는 알림 발송자입니다";

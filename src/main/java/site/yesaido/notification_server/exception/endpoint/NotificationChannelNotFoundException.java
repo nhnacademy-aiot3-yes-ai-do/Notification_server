@@ -1,6 +1,6 @@
 package site.yesaido.notification_server.exception.endpoint;
 
-import site.yesaido.notification_server.exception.basic.client.NotFoundException;
+import site.yesaido.common.exception.client.NotFoundException;
 
 public class NotificationChannelNotFoundException extends NotFoundException {
     private static final String DEFAULT_MESSAGE = "알림 채널을 찾을 수 없습니다";

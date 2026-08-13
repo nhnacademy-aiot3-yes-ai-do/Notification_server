@@ -1,7 +1,7 @@
 package site.yesaido.notification_server.exception.messaging;
 
-import site.yesaido.notification_server.exception.basic.server.CustomServerException;
-import site.yesaido.notification_server.exception.basic.server.ServerErrorLevel;
+import site.yesaido.common.exception.server.CustomServerException;
+import site.yesaido.common.exception.server.ServerErrorLevel;
 
 /**
  * RabbitMQ에서 받은 문자열을 유효한 공통 이벤트로 변환할 수 없을 때 발생한다.
