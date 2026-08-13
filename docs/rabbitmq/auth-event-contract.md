@@ -13,9 +13,11 @@ Notification의 신규 Auth Consumer가 활성화되는 시점에 Auth 담당자
 
 | `__TypeId__` | JSON 필드 |
 | --- | --- |
-| `user.login-attempted` | `userId`(number), `nickname`(string), `succeeded`(boolean), `loginLocation`(string), `occurredAt`(ISO-8601 offset datetime) |
-| `user.password-change-attempted` | `userId`(number), `nickname`(string), `succeeded`(boolean), `occurredAt`(ISO-8601 offset datetime) |
-| `user.account-reactivation-attempted` | `userId`(number), `nickname`(string), `succeeded`(boolean), `occurredAt`(ISO-8601 offset datetime) |
+| `user.login-attempted` | `eventId`(UUID string), `userId`(number), `nickname`(string), `succeeded`(boolean), `loginLocation`(string), `occurredAt`(ISO-8601 offset datetime) |
+| `user.password-change-attempted` | `eventId`(UUID string), `userId`(number), `nickname`(string), `succeeded`(boolean), `occurredAt`(ISO-8601 offset datetime) |
+| `user.account-reactivation-attempted` | `eventId`(UUID string), `userId`(number), `nickname`(string), `succeeded`(boolean), `occurredAt`(ISO-8601 offset datetime) |
+
+`eventId`는 producer가 이벤트를 만들 때 한 번 생성한 UUID이며, 동일 이벤트를 재발행할 때도 반드시 같은 값을 사용해야 합니다. Notification은 이 값을 멱등성 키로 사용하므로 생략하거나 재발행마다 새 UUID를 만들면 안 됩니다.
 
 ## Login 발행 예시
 
@@ -30,6 +32,7 @@ Body:
 
 ```json
 {
+  "eventId": "2c2fcd99-bbc3-4b85-ab4e-1df816b4f80b",
   "userId": 1,
   "nickname": "tester",
   "succeeded": true,

@@ -82,6 +82,17 @@ class NotificationDeliveryTest {
     }
 
     @Test
+    void RabbitMQ_fanout_실패시도횟수가_범위를_벗어나면_전용예외를_던진다() {
+        NotificationDelivery source = createDelivery();
+
+        assertThrows(
+                site.yesaido.notification_server.rabbitmq.exception.RabbitMqFanoutAttemptCountInvalidException.class,
+                () -> NotificationDelivery.failForRabbitMqFanout(
+                        source.getNotification(), source.getSubscription(), null,
+                        (short) 0, "template not found"));
+    }
+
+    @Test
     void 성공한_발송은_실패상태로_되돌릴_수_없다() {
         NotificationDelivery delivery = createDelivery();
         delivery.claimForDispatch();

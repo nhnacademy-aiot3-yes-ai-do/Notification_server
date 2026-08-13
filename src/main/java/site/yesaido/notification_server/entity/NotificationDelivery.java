@@ -19,6 +19,7 @@ import site.yesaido.notification_server.exception.delivery.DeliveryAttemptLimitE
 import site.yesaido.notification_server.exception.delivery.DeliveryClaimAttemptLimitExceededException;
 import site.yesaido.notification_server.exception.delivery.DeliveryNotPendingException;
 import site.yesaido.notification_server.exception.delivery.DeliveryNotSendingException;
+import site.yesaido.notification_server.rabbitmq.exception.RabbitMqFanoutAttemptCountInvalidException;
 
 @Getter
 @Entity
@@ -96,7 +97,7 @@ public class NotificationDelivery extends AuditEntity {
             Notification notification, NotificationSubscription subscription,
             NotificationTemplate template, short attemptCount, String error) {
         if (attemptCount < 1 || attemptCount > MAX_ATTEMPT_COUNT) {
-            throw new IllegalArgumentException("RabbitMQ fan-out 실패 횟수는 1부터 최대 시도 횟수 사이여야 합니다.");
+            throw new RabbitMqFanoutAttemptCountInvalidException(attemptCount, MAX_ATTEMPT_COUNT);
         }
         NotificationDelivery delivery = new NotificationDelivery(notification, subscription, template, "");
         delivery.status = DeliveryStatus.FAILED;

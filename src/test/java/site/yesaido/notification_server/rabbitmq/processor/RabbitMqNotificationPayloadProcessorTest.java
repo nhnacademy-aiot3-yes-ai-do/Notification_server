@@ -1,6 +1,7 @@
 package site.yesaido.notification_server.rabbitmq.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -61,6 +62,15 @@ class RabbitMqNotificationPayloadProcessorTest {
         assertThat(command.payload()).isEqualTo(Map.of(
                 "cultivationName", "토마토 A동",
                 "harvestWeight", new BigDecimal("12.50")));
+    }
+
+    @Test
+    void 수확량이_없으면_수확완료_이벤트_계약_예외를_던진다() {
+        CultivationEvent.HarvestCompletedEvent event = new CultivationEvent.HarvestCompletedEvent(
+                UUID.randomUUID(), 2L, 7L, "토마토 A동", 8L, null, OCCURRED_AT);
+
+        assertThatThrownBy(() -> cultivationProcessor.process(event))
+                .isInstanceOf(site.yesaido.notification_server.rabbitmq.exception.RabbitMqHarvestQuantityMissingException.class);
     }
 
     @Test
