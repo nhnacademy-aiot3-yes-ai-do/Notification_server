@@ -3,8 +3,8 @@ package site.yesaido.notification_server.rabbitmq.exception;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import site.yesaido.notification_server.exception.basic.server.CustomServerException;
-import site.yesaido.notification_server.exception.basic.server.ServerErrorLevel;
+import site.yesaido.common.exception.server.CustomServerException;
+import site.yesaido.common.exception.server.ServerErrorLevel;
 
 class NotificationEventContractExceptionTest {
 

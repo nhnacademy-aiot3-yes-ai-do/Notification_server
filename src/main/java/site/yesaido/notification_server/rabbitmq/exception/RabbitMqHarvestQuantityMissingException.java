@@ -1,7 +1,8 @@
 package site.yesaido.notification_server.rabbitmq.exception;
 
-import site.yesaido.notification_server.exception.basic.server.CustomServerException;
-import site.yesaido.notification_server.exception.basic.server.ServerErrorLevel;
+
+import site.yesaido.common.exception.server.CustomServerException;
+import site.yesaido.common.exception.server.ServerErrorLevel;
 
 /** 수확 완료 RabbitMQ 이벤트에 알림 템플릿의 필수 수확량이 없는 producer 계약 위반이다. */
 public class RabbitMqHarvestQuantityMissingException extends CustomServerException {
