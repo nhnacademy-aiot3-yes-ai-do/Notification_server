@@ -46,35 +46,6 @@ spring:
         default-requeue-rejected: false
 
 notification:
-  rabbit:
-    exchange: ${NOTIFICATION_EVENT_EXCHANGE:yes-nhn.notification.exchange}
-    threshold:
-      queue: ${NOTIFICATION_THRESHOLD_QUEUE:yes-nhn.notification.threshold.queue}
-      routing-key: ${NOTIFICATION_THRESHOLD_ROUTING_KEY:yes-nhn.notification.threshold.queue}
-    action:
-      queue: ${NOTIFICATION_ACTION_QUEUE:yes-nhn.notification.action.queue}
-      routing-key: ${NOTIFICATION_ACTION_ROUTING_KEY:yes-nhn.notification.action.queue}
-    daily:
-      queue: ${NOTIFICATION_DAILY_QUEUE:yes-nhn.notification.daily.queue}
-      routing-key: ${NOTIFICATION_DAILY_ROUTING_KEY:yes-nhn.notification.daily.queue}
-    login:
-      queue: ${NOTIFICATION_LOGIN_QUEUE:yes-nhn.notification.login.queue}
-      routing-key: ${NOTIFICATION_LOGIN_ROUTING_KEY:yes-nhn.notification.login.queue}
-    question:
-      queue: ${NOTIFICATION_QUESTION_QUEUE:yes-nhn.notification.question.queue}
-      routing-key: ${NOTIFICATION_QUESTION_ROUTING_KEY:yes-nhn.notification.question.queue}
-    answer:
-      queue: ${NOTIFICATION_ANSWER_QUEUE:yes-nhn.notification.answer.queue}
-      routing-key: ${NOTIFICATION_ANSWER_ROUTING_KEY:yes-nhn.notification.answer.queue}
-    harvest:
-      queue: ${NOTIFICATION_HARVEST_QUEUE:yes-nhn.notification.done.queue}
-      routing-key: ${NOTIFICATION_HARVEST_ROUTING_KEY:yes-nhn.notification.done.queue}
-    cultivation-finished:
-      queue: ${NOTIFICATION_CULTIVATION_FINISHED_QUEUE:yes-nhn.notification.cultivation-finished.queue}
-      routing-key: ${NOTIFICATION_CULTIVATION_FINISHED_ROUTING_KEY:yes-nhn.notification.cultivation-finished.queue}
-    dead-letter-exchange: ${NOTIFICATION_DLX:yes-nhn.dlx}
-    dead-letter-queue: ${NOTIFICATION_DLQ:yes-nhn.dlq}
-    dead-letter-routing-key: ${NOTIFICATION_DLQ_ROUTING_KEY:yes-nhn.dlq}
   provider:
     telegram:
       base-url: ${TELEGRAM_API_BASE_URL:https://api.telegram.org}

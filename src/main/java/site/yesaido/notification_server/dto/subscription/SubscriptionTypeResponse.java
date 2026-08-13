@@ -1,6 +1,6 @@
 package site.yesaido.notification_server.dto.subscription;
 
-import site.yesaido.notification_server.domain.NotificationSubscriptionType;
+import site.yesaido.notification_server.entity.NotificationSubscriptionType;
 
 public record SubscriptionTypeResponse(
         Long id,

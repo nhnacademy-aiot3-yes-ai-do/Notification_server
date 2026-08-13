@@ -1,6 +1,6 @@
 package site.yesaido.notification_server.repository;
 
-import site.yesaido.notification_server.domain.NotificationEndpoint;
+import site.yesaido.notification_server.entity.NotificationEndpoint;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
