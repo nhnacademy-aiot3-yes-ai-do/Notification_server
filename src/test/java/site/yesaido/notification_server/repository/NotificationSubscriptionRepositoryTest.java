@@ -3,10 +3,10 @@ package site.yesaido.notification_server.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import site.yesaido.notification_server.domain.ChannelType;
-import site.yesaido.notification_server.domain.NotificationEndpoint;
-import site.yesaido.notification_server.domain.NotificationSubscription;
-import site.yesaido.notification_server.domain.NotificationSubscriptionType;
+import site.yesaido.notification_server.entity.ChannelType;
+import site.yesaido.notification_server.entity.NotificationEndpoint;
+import site.yesaido.notification_server.entity.NotificationSubscription;
+import site.yesaido.notification_server.entity.NotificationSubscriptionType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;

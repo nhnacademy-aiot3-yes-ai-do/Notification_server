@@ -1,0 +1,42 @@
+package site.yesaido.notification_server.rabbitmq.persistence;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import site.yesaido.notification_server.entity.Notification;
+import site.yesaido.notification_server.entity.NotificationEventType;
+import site.yesaido.notification_server.repository.NotificationRepository;
+
+@Service
+@RequiredArgsConstructor
+public class RabbitMqNotificationCreationService {
+
+    private final NotificationRepository notificationRepository;
+    private final ObjectMapper objectMapper;
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public RabbitMqNotificationCreationResult createIfAbsent(
+            UUID eventId, NotificationEventType eventType, Map<String, Object> payload) {
+        boolean created = notificationRepository.insertIfAbsent(eventId, eventType.getId(), writePayload(payload)) == 1;
+        Notification notification = notificationRepository.findBySourceEventId(eventId)
+                .orElseThrow(() -> new IllegalStateException("notification을 조회할 수 없습니다: " + eventId));
+        return new RabbitMqNotificationCreationResult(notification.getId(), created);
+    }
+
+    private String writePayload(Map<String, Object> payload) {
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalArgumentException("RabbitMQ notification payload을 JSON으로 변환할 수 없습니다", exception);
+        }
+    }
+
+    public record RabbitMqNotificationCreationResult(Long notificationId, boolean created) {
+
+    }
+}

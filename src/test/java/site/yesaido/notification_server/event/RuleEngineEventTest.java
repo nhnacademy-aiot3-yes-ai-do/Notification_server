@@ -3,6 +3,7 @@ package site.yesaido.notification_server.event;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Test;
+import site.yesaido.notification_server.rabbitmq.event.RuleEngineEvent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -23,7 +24,7 @@ class RuleEngineEventTest {
                   "sensorType": "TEMPERATURE",
                   "unit": "°C",
                   "value": 23.5,
-                  "time": "2026-08-11T12:30:00",
+                  "time": "2026-08-11T12:30:00+09:00",
                   "cultivationId": 101
                 }
                 """;

@@ -10,9 +10,10 @@ import static org.mockito.Mockito.when;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import site.yesaido.notification_server.domain.ChannelType;
-import site.yesaido.notification_server.domain.NotificationEndpoint;
+import site.yesaido.notification_server.entity.ChannelType;
+import site.yesaido.notification_server.entity.NotificationEndpoint;
 import site.yesaido.notification_server.dto.endpoint.EndpointCreateRequest;
+import site.yesaido.notification_server.entity.NotificationSubscription;
 import site.yesaido.notification_server.exception.endpoint.DuplicateNotificationEndpointException;
 import site.yesaido.notification_server.provider.NotificationSender;
 import site.yesaido.notification_server.provider.NotificationSenderRegistry;
@@ -81,8 +82,8 @@ class NotificationEndpointServiceTest {
     @Test
     void deletingEndpointAlsoSoftDeletesActiveSubscriptions() {
         NotificationEndpoint endpoint = mock(NotificationEndpoint.class);
-        var firstSubscription = mock(site.yesaido.notification_server.domain.NotificationSubscription.class);
-        var secondSubscription = mock(site.yesaido.notification_server.domain.NotificationSubscription.class);
+        var firstSubscription = mock(NotificationSubscription.class);
+        var secondSubscription = mock(NotificationSubscription.class);
         when(endpointRepository.findByIdAndUserIdAndDeletedFalse(10L, 7L))
                 .thenReturn(Optional.of(endpoint));
         when(subscriptionRepository.findAllByEndpoint_IdAndDeletedFalse(10L))

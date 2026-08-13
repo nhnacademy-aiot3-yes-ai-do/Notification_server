@@ -9,6 +9,7 @@ public final class RabbitMQConstants {
     public static final String DLX_NAME = "yes-nhn.dlx";
     public static final String DLX_KEY = "x-dead-letter-exchange";
     public static final String DLQ_QUEUE = "yes-nhn.dlq";
+    public static final String DLQ_ROUTING_KEY = DLQ_QUEUE;
 
     // Exchange
     public static final String NOTIFICATION_EXCHANGE = "yes-nhn.notification.exchange";

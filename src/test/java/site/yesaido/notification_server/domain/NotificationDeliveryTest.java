@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import site.yesaido.notification_server.entity.*;
 import site.yesaido.notification_server.exception.delivery.DeliveryAttemptLimitExceededException;
 import site.yesaido.notification_server.exception.delivery.DeliveryNotPendingException;
 import site.yesaido.notification_server.exception.delivery.DeliveryNotSendingException;
@@ -65,6 +66,19 @@ class NotificationDeliveryTest {
 
         assertEquals(DeliveryStatus.FAILED, delivery.getStatus());
         assertEquals("provider timeout", delivery.getError());
+    }
+
+    @Test
+    void RabbitMQ_fanout_최종실패는_template이_없어도_실패이력으로_생성된다() {
+        NotificationDelivery delivery = NotificationDelivery.failForRabbitMqFanout(
+                createDelivery().getNotification(), createDelivery().getSubscription(), null,
+                (short) 2, "template not found");
+
+        assertEquals(DeliveryStatus.FAILED, delivery.getStatus());
+        assertEquals(2, delivery.getAttemptCount());
+        assertEquals("template not found", delivery.getError());
+        assertEquals("", delivery.getRenderedMessage());
+        assertEquals(null, delivery.getTemplate());
     }
 
     @Test

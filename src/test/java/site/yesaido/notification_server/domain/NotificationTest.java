@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import site.yesaido.notification_server.entity.Notification;
+import site.yesaido.notification_server.entity.NotificationEventType;
 
 class NotificationTest {
 
