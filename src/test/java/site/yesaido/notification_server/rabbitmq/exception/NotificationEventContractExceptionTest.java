@@ -1,4 +1,4 @@
-package site.yesaido.notification_server.exception.event;
+package site.yesaido.notification_server.rabbitmq.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
