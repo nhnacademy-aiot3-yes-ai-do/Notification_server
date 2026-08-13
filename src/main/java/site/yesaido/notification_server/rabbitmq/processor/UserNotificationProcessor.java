@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import site.yesaido.notification_server.rabbitmq.event.UserEvent;
 import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
 import site.yesaido.notification_server.rabbitmq.contract.NotificationEventDefinition;
+import site.yesaido.notification_server.rabbitmq.exception.RabbitMqInquiryRecipientMissingException;
 
 @Component
 public class UserNotificationProcessor {
@@ -33,10 +34,14 @@ public class UserNotificationProcessor {
     }
 
     public RabbitMqNotificationCommand process(UserEvent.InquirySubmittedEvent event) {
+        if (event.receiveUserIds() == null || event.receiveUserIds().isEmpty()) {
+            throw new RabbitMqInquiryRecipientMissingException(event.inquiryId());
+        }
         NotificationEventDefinition definition = event.inquiryType() == UserEvent.InquiryType.ANSWER
                 ? NotificationEventDefinition.INQUIRY_ANSWERED : NotificationEventDefinition.INQUIRY_SUBMITTED;
         return new RabbitMqNotificationCommand(event.eventId(), definition.code(), definition.targetType(),
-                event.inquiryId(), event.occurredAt(), Map.of("inquiryTitle", valueOrUnavailable(event.title())));
+                event.inquiryId(), event.occurredAt(), Map.of("inquiryTitle", valueOrUnavailable(event.title())),
+                event.receiveUserIds());
     }
 
     private RabbitMqNotificationCommand userCommand(UUID eventId, NotificationEventDefinition definition,

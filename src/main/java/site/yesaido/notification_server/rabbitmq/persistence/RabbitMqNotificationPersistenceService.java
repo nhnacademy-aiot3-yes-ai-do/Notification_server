@@ -70,8 +70,7 @@ public class RabbitMqNotificationPersistenceService {
         Map<String, Object> payload = payload(command);
         RabbitMqNotificationCreationResult creation =
                 notificationCreationService.createIfAbsent(command.eventId(), eventType, payload);
-        List<NotificationSubscription> subscriptions = subscriptionRepository.findActiveSubscriptions(
-                command.eventCode(), command.targetType(), command.targetId());
+        List<NotificationSubscription> subscriptions = activeSubscriptions(command);
         Map<Long, NotificationTemplate> templatesByChannelTypeId = templatesByChannelTypeId(eventType.getId(), subscriptions);
         List<DeliveryFailure> failures = new ArrayList<>();
         for (NotificationSubscription subscription : subscriptions) {
@@ -80,6 +79,15 @@ public class RabbitMqNotificationPersistenceService {
         }
         retryFailures(command, creation.notificationId(), failures, payload);
         return creation.created() ? RabbitMqPersistenceResult.PERSISTED : RabbitMqPersistenceResult.ALREADY_PROCESSED;
+    }
+
+    private List<NotificationSubscription> activeSubscriptions(RabbitMqNotificationCommand command) {
+        if (command.recipientUserIds().isEmpty()) {
+            return subscriptionRepository.findActiveSubscriptions(
+                    command.eventCode(), command.targetType(), command.targetId());
+        }
+        return subscriptionRepository.findActiveSubscriptionsForRecipientUserIds(
+                command.eventCode(), command.targetType(), command.targetId(), command.recipientUserIds());
     }
 
     private Map<Long, NotificationTemplate> templatesByChannelTypeId(

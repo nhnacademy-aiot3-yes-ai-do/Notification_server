@@ -74,6 +74,16 @@ class RabbitMqNotificationPayloadProcessorTest {
     }
 
     @Test
+    void 문의_수신자가_없으면_문의이벤트_계약_예외를_던진다() {
+        UserEvent.InquirySubmittedEvent event = new UserEvent.InquirySubmittedEvent(
+                UUID.randomUUID(), 2L, java.util.List.of(), 9L,
+                "문의 제목", "GENERAL", "url", UserEvent.InquiryType.ANSWER, OCCURRED_AT);
+
+        assertThatThrownBy(() -> userProcessor.process(event))
+                .isInstanceOf(site.yesaido.notification_server.rabbitmq.exception.RabbitMqInquiryRecipientMissingException.class);
+    }
+
+    @Test
     void AI와_문의와_로그인이_기존템플릿변수만_포함한_payload로_변환된다() {
         RabbitMqNotificationCommand feedback = aiProcessor.process(
                 new AiEvent.DailyFeedbackGeneratedEvent(UUID.randomUUID(), 2L, 7L, "토마토 A동", "url", "성장 중", OCCURRED_AT));
@@ -85,6 +95,7 @@ class RabbitMqNotificationPayloadProcessorTest {
 
         assertThat(feedback.payload()).isEqualTo(Map.of("cultivationName", "토마토 A동", "feedbackSummary", "성장 중"));
         assertThat(inquiry.payload()).isEqualTo(Map.of("inquiryTitle", "문의 제목"));
+        assertThat(inquiry.recipientUserIds()).containsExactly(1L);
         assertThat(login.payload()).isEqualTo(Map.of("provider", "미제공"));
     }
 }

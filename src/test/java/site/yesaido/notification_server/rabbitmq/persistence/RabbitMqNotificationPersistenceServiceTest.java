@@ -64,6 +64,37 @@ class RabbitMqNotificationPersistenceServiceTest {
                 eq(99L), eq(2L), any(), any());
     }
 
+    @Test
+    void 수신자가_지정된_문의는_지정된_사용자의_구독만_조회한다() {
+        NotificationEventTypeRepository eventTypeRepository = mock(NotificationEventTypeRepository.class);
+        NotificationSubscriptionRepository subscriptionRepository = mock(NotificationSubscriptionRepository.class);
+        NotificationTemplateRepository templateRepository = mock(NotificationTemplateRepository.class);
+        RabbitMqNotificationCreationService creationService = mock(RabbitMqNotificationCreationService.class);
+        RabbitMqNotificationDeliveryPersistenceService deliveryService = mock(RabbitMqNotificationDeliveryPersistenceService.class);
+        RabbitMqTemplateRenderer templateRenderer = mock(RabbitMqTemplateRenderer.class);
+        RabbitMqNotificationPersistenceService service = new RabbitMqNotificationPersistenceService(
+                eventTypeRepository, subscriptionRepository, templateRepository, creationService, deliveryService, templateRenderer,
+                new NotificationProperties(null, new NotificationProperties.Retry(Duration.ofMillis(1))));
+        RabbitMqNotificationCommand command = new RabbitMqNotificationCommand(
+                UUID.randomUUID(), "INQUIRY_ANSWERED", "INQUIRY", 9L, null,
+                Map.of("inquiryTitle", "문의"), List.of(101L, 202L));
+        NotificationEventType eventType = eventType("INQUIRY");
+
+        when(eventTypeRepository.findByCode(command.eventCode())).thenReturn(Optional.of(eventType));
+        when(creationService.createIfAbsent(eq(command.eventId()), eq(eventType), any()))
+                .thenReturn(new RabbitMqNotificationCreationResult(99L, true));
+        when(subscriptionRepository.findActiveSubscriptionsForRecipientUserIds(
+                command.eventCode(), command.targetType(), command.targetId(), command.recipientUserIds()))
+                .thenReturn(List.of());
+
+        assertThat(service.persist(command)).isEqualTo(RabbitMqPersistenceResult.PERSISTED);
+
+        verify(subscriptionRepository).findActiveSubscriptionsForRecipientUserIds(
+                "INQUIRY_ANSWERED", "INQUIRY", 9L, List.of(101L, 202L));
+        verify(subscriptionRepository, org.mockito.Mockito.never())
+                .findActiveSubscriptions(any(), any(), any());
+    }
+
     private NotificationEventType eventType(String targetTypeCode) {
         NotificationEventType eventType = mock(NotificationEventType.class);
         SubscriptionTargetType targetType = mock(SubscriptionTargetType.class);
