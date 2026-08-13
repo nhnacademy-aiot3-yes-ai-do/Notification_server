@@ -1,4 +1,4 @@
-package site.yesaido.notification_server.rabbitmq.persistence;
+package site.yesaido.notification_server.rabbitmq.exception;
 
 public class RabbitMqNotificationFailureHistoryPersistenceException extends RuntimeException {
 

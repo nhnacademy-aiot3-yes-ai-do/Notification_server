@@ -1,4 +1,4 @@
-package site.yesaido.notification_server.exception.event;
+package site.yesaido.notification_server.rabbitmq.exception;
 
 import site.yesaido.notification_server.exception.basic.server.CustomServerException;
 import site.yesaido.notification_server.exception.basic.server.ServerErrorLevel;
