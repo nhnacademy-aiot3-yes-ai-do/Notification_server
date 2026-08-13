@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import site.yesaido.notification_server.config.NotificationProperties;
-import site.yesaido.notification_server.domain.NotificationDelivery;
+import site.yesaido.notification_server.entity.NotificationDelivery;
 import site.yesaido.notification_server.messaging.DeadLetterPublisher;
 import site.yesaido.notification_server.provider.NotificationSender;
 import site.yesaido.notification_server.provider.NotificationSenderRegistry;

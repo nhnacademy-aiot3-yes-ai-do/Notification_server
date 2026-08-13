@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import site.yesaido.notification_server.entity.*;
 import site.yesaido.notification_server.exception.delivery.DeliveryAttemptLimitExceededException;
 import site.yesaido.notification_server.exception.delivery.DeliveryNotPendingException;
 import site.yesaido.notification_server.exception.delivery.DeliveryNotSendingException;
@@ -27,7 +28,7 @@ class NotificationDeliveryTest {
                 7L, channelType, "123456", "내 Telegram");
         NotificationSubscription subscription = new NotificationSubscription(
                 subscriptionType, endpoint, 12L);
-        Notification notification = new Notification(UUID.randomUUID(), Map.of("sensorId", 3));
+        Notification notification = new Notification(UUID.randomUUID(), eventType, Map.of("sensorId", 3));
         NotificationTemplate template = new NotificationTemplate(
                 eventType, channelType, "센서 오류: {sensorId}", 1);
 
@@ -65,6 +66,30 @@ class NotificationDeliveryTest {
 
         assertEquals(DeliveryStatus.FAILED, delivery.getStatus());
         assertEquals("provider timeout", delivery.getError());
+    }
+
+    @Test
+    void RabbitMQ_fanout_최종실패는_template이_없어도_실패이력으로_생성된다() {
+        NotificationDelivery delivery = NotificationDelivery.failForRabbitMqFanout(
+                createDelivery().getNotification(), createDelivery().getSubscription(), null,
+                (short) 2, "template not found");
+
+        assertEquals(DeliveryStatus.FAILED, delivery.getStatus());
+        assertEquals(2, delivery.getAttemptCount());
+        assertEquals("template not found", delivery.getError());
+        assertEquals("", delivery.getRenderedMessage());
+        assertEquals(null, delivery.getTemplate());
+    }
+
+    @Test
+    void RabbitMQ_fanout_실패시도횟수가_범위를_벗어나면_전용예외를_던진다() {
+        NotificationDelivery source = createDelivery();
+
+        assertThrows(
+                site.yesaido.notification_server.rabbitmq.exception.RabbitMqFanoutAttemptCountInvalidException.class,
+                () -> NotificationDelivery.failForRabbitMqFanout(
+                        source.getNotification(), source.getSubscription(), null,
+                        (short) 0, "template not found"));
     }
 
     @Test
@@ -110,7 +135,7 @@ class NotificationDeliveryTest {
                 eventType, targetType, "센서 오류 알림", "센서 오류가 발생하면 알림을 보냅니다.");
         NotificationEndpoint endpoint = new NotificationEndpoint(7L, channelType, "123456", "내 Telegram");
         NotificationSubscription subscription = new NotificationSubscription(subscriptionType, endpoint, 12L);
-        Notification notification = new Notification(UUID.randomUUID(), Map.of("sensorId", 3));
+        Notification notification = new Notification(UUID.randomUUID(), eventType, Map.of("sensorId", 3));
         NotificationTemplate template = new NotificationTemplate(eventType, channelType, "센서 오류", 1);
         return new NotificationDelivery(notification, subscription, template, "센서 오류");
     }

@@ -21,7 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import site.yesaido.notification_server.dto.delivery.DeliveryPageResponse;
 import site.yesaido.notification_server.dto.delivery.DeliveryResponse;
-import site.yesaido.notification_server.domain.DeliveryStatus;
+import site.yesaido.notification_server.entity.DeliveryStatus;
 import site.yesaido.notification_server.exception.GlobalExceptionHandler;
 import site.yesaido.notification_server.service.NotificationQueryService;
 

@@ -3,7 +3,7 @@ package site.yesaido.notification_server.repository;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import site.yesaido.notification_server.domain.NotificationSubscriptionType;
+import site.yesaido.notification_server.entity.NotificationSubscriptionType;
 
 public interface NotificationSubscriptionTypeRepository
         extends JpaRepository<NotificationSubscriptionType, Long> {

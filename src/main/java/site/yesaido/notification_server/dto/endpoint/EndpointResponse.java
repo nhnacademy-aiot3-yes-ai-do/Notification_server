@@ -1,7 +1,7 @@
 package site.yesaido.notification_server.dto.endpoint;
 
 import java.time.LocalDateTime;
-import site.yesaido.notification_server.domain.NotificationEndpoint;
+import site.yesaido.notification_server.entity.NotificationEndpoint;
 
 public record EndpointResponse(
         Long id,

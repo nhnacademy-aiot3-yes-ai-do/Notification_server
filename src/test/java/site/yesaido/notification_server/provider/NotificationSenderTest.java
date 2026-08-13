@@ -38,20 +38,11 @@ class NotificationSenderTest {
 
     private NotificationProperties properties(String telegramToken) {
         return new NotificationProperties(
-                new NotificationProperties.Rabbit(
-                        "events",
-                        route(), route(), route(), route(),
-                        route(), route(), route(), route(),
-                        "dlx", "dlq", "failed"),
                 new NotificationProperties.Provider(
                         new NotificationProperties.Telegram(
                                 "https://api.telegram.org", telegramToken),
                         new NotificationProperties.Discord(
                                 List.of("discord.com", "discordapp.com"))),
                 new NotificationProperties.Retry(Duration.ZERO));
-    }
-
-    private NotificationProperties.EventRoute route() {
-        return new NotificationProperties.EventRoute("queue", "routing-key");
     }
 }
