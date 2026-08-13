@@ -1,21 +1,10 @@
--- Notification은 생성 원인이 된 이벤트 유형을 직접 보관한다.
--- Template은 발송 단위(NotificationDelivery)에만 연결한다.
+-- 운영 notification 테이블을 즉시 전수 스캔하지 않도록, 새 컬럼과 신규 쓰기 보호부터 추가한다.
+-- 기존 row의 backfill과 제약 검증은 후속 migration으로 분리한다.
 ALTER TABLE notification
     ADD COLUMN notification_event_type_id BIGINT;
 
--- V3에서 NotificationDelivery로 이관된 template의 이벤트 유형으로 기존 row를 보정한다.
-UPDATE notification n
-SET notification_event_type_id = (
-    SELECT t.notification_event_type_id
-    FROM notification_delivery d
-    JOIN notification_template t ON t.id = d.notification_template_id
-    WHERE d.notification_id = n.id
-    ORDER BY d.id
-    LIMIT 1
-);
-
--- Delivery가 없던 과거 Notification도 보존한다. LEGACY는 새 RabbitMQ 이벤트 정의가 아니라
--- 과거 이력 전용 전략이며 구독/발송 대상에는 사용하지 않는다.
+-- Delivery가 없던 과거 Notification도 후속 backfill에서 보존할 수 있도록 LEGACY 유형을 먼저 준비한다.
+-- LEGACY는 새 RabbitMQ 이벤트 정의가 아니며 구독/발송 대상으로 사용하지 않는다.
 INSERT INTO subscription_target_type (target_type, display_name)
 VALUES ('LEGACY', '과거 알림 이력')
 ON CONFLICT (target_type) DO NOTHING;
@@ -26,20 +15,16 @@ FROM subscription_target_type t
 WHERE t.target_type = 'LEGACY'
 ON CONFLICT (code) DO NOTHING;
 
--- NOT NULL 제약을 적용하기 전에 delivery로 유추할 수 없는 모든 기존 row를 명시적 LEGACY로 채운다.
-UPDATE notification n
-SET notification_event_type_id = legacy_event_type.id
-FROM notification_event_type legacy_event_type
-WHERE n.notification_event_type_id IS NULL
-  AND legacy_event_type.code = 'LEGACY_NOTIFICATION';
-
-ALTER TABLE notification
-    ALTER COLUMN notification_event_type_id SET NOT NULL;
-
+-- NOT VALID는 신규 INSERT/UPDATE에는 즉시 적용하고, 기존 row 검증은 V18로 미룬다.
 ALTER TABLE notification
     ADD CONSTRAINT fk_notification_event_type
     FOREIGN KEY (notification_event_type_id)
-    REFERENCES notification_event_type (id);
+    REFERENCES notification_event_type (id)
+    NOT VALID;
 
-CREATE INDEX idx_notification_event_type_created
-    ON notification (notification_event_type_id, created_at DESC);
+-- NOT NULL은 NOT VALID를 지원하지 않으므로 동일 조건의 CHECK를 먼저 추가한다.
+-- V17 backfill, V18 VALIDATE 후 V19에서 짧게 NOT NULL로 승격한다.
+ALTER TABLE notification
+    ADD CONSTRAINT chk_notification_event_type_not_null
+    CHECK (notification_event_type_id IS NOT NULL)
+    NOT VALID;
