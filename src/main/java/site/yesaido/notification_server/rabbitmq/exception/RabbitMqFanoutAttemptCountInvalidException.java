@@ -1,7 +1,8 @@
 package site.yesaido.notification_server.rabbitmq.exception;
 
-import site.yesaido.notification_server.exception.basic.server.CustomServerException;
-import site.yesaido.notification_server.exception.basic.server.ServerErrorLevel;
+
+import site.yesaido.common.exception.server.CustomServerException;
+import site.yesaido.common.exception.server.ServerErrorLevel;
 
 /** RabbitMQ fan-out 실패 이력 생성에 전달된 시도 횟수가 정책 범위를 벗어난 경우다. */
 public class RabbitMqFanoutAttemptCountInvalidException extends CustomServerException {

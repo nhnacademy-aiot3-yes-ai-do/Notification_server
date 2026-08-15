@@ -1,7 +1,8 @@
 package site.yesaido.notification_server.rabbitmq.exception;
 
-import site.yesaido.notification_server.exception.basic.server.CustomServerException;
-import site.yesaido.notification_server.exception.basic.server.ServerErrorLevel;
+
+import site.yesaido.common.exception.server.CustomServerException;
+import site.yesaido.common.exception.server.ServerErrorLevel;
 
 /** 문의 RabbitMQ 이벤트에 실제 알림 수신자가 없는 producer 계약 위반이다. */
 public class RabbitMqInquiryRecipientMissingException extends CustomServerException {
