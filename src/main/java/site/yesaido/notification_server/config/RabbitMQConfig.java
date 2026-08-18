@@ -6,6 +6,7 @@ import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Declarable;
 import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.context.annotation.Bean;
@@ -29,8 +30,8 @@ import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFI
 public class RabbitMQConfig {
 
     @Bean
-    public DirectExchange deadLetterExchange() {
-        return new DirectExchange(DLX_NAME, true, false);
+    public FanoutExchange deadLetterExchange() {
+        return new FanoutExchange(DLX_NAME, true, false);
     }
 
     @Bean
@@ -63,8 +64,7 @@ public class RabbitMQConfig {
     @Bean
     public Declarables deadLetterTopology() {
         return new Declarables(BindingBuilder.bind(deadLetterQueue())
-                .to(deadLetterExchange())
-                .with(DLQ_ROUTING_KEY));
+                .to(deadLetterExchange()));
     }
 
     private void addQueueAndBinding(List<Declarable> topology, String queueName) {
