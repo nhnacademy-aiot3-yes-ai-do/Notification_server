@@ -17,7 +17,7 @@ import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFI
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
 
 class RabbitMQConfigTopologyTest {
@@ -25,16 +25,17 @@ class RabbitMQConfigTopologyTest {
     private final RabbitMQConfig config = new RabbitMQConfig();
 
     @Test
-    void directDlx와DlqRoutingKey를선언한다() {
-        DirectExchange dlx = config.deadLetterExchange();
+    void fanoutDlx를선언한다() {
+        FanoutExchange dlx = config.deadLetterExchange();
         Queue dlq = config.deadLetterQueue();
 
         assertThat(dlx.getName()).isEqualTo(DLX_NAME);
-        assertThat(dlx.getType()).isEqualTo("direct");
+        assertThat(dlx.getType()).isEqualTo("fanout");
         assertThat(dlq.getName()).isEqualTo(DLQ_QUEUE);
         assertThat(config.deadLetterTopology().getDeclarables())
                 .anyMatch(declarable -> declarable instanceof Binding binding
-                        && binding.getRoutingKey().equals(DLQ_ROUTING_KEY));
+                        && binding.getExchange().equals(DLX_NAME)
+                        && binding.getRoutingKey().isEmpty());
     }
 
     @Test
