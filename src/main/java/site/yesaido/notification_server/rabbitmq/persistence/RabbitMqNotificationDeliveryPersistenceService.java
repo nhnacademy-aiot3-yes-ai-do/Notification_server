@@ -1,5 +1,7 @@
 package site.yesaido.notification_server.rabbitmq.persistence;
 
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -20,5 +22,11 @@ public class RabbitMqNotificationDeliveryPersistenceService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void persistFailure(Long notificationId, Long subscriptionId, Long templateId, short attemptCount, String error) {
         deliveryRepository.insertFailedFromRabbitMqFanout(notificationId, subscriptionId, templateId, attemptCount, error);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<Long> activateForDispatch(UUID eventId) {
+        deliveryRepository.activateCreatedDeliveries(eventId);
+        return deliveryRepository.findPendingIdsBySourceEventId(eventId);
     }
 }

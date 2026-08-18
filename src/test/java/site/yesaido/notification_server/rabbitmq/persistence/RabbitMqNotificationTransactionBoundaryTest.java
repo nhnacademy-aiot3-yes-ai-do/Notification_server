@@ -13,6 +13,7 @@ class RabbitMqNotificationTransactionBoundaryTest {
     void notificationAndEachDeliveryAreCommittedInIndependentTransactions() throws NoSuchMethodException {
         assertRequiresNew(RabbitMqNotificationCreationService.class, "createIfAbsent");
         assertRequiresNew(RabbitMqNotificationDeliveryPersistenceService.class, "persist");
+        assertRequiresNew(RabbitMqNotificationDeliveryPersistenceService.class, "activateForDispatch");
     }
 
     @Test

@@ -7,17 +7,21 @@ import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
 import site.yesaido.notification_server.rabbitmq.event.RuleEngineEvent;
 import site.yesaido.notification_server.rabbitmq.event.UserEvent;
 import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
+import site.yesaido.notification_server.rabbitmq.persistence.RabbitMqNotificationDeliveryPersistenceService;
 import site.yesaido.notification_server.rabbitmq.persistence.RabbitMqNotificationPersistenceService;
 import site.yesaido.notification_server.rabbitmq.processor.AiNotificationProcessor;
 import site.yesaido.notification_server.rabbitmq.processor.CultivationNotificationProcessor;
 import site.yesaido.notification_server.rabbitmq.processor.RuleEngineNotificationProcessor;
 import site.yesaido.notification_server.rabbitmq.processor.UserNotificationProcessor;
+import site.yesaido.notification_server.service.DeliveryDispatchService;
 
 @Service
 @RequiredArgsConstructor
 public class RabbitMqNotificationFacade {
 
     private final RabbitMqNotificationPersistenceService persistenceService;
+    private final RabbitMqNotificationDeliveryPersistenceService deliveryPersistenceService;
+    private final DeliveryDispatchService dispatchService;
     private final RuleEngineNotificationProcessor ruleEngineProcessor;
     private final AiNotificationProcessor aiProcessor;
     private final CultivationNotificationProcessor cultivationProcessor;
@@ -85,5 +89,7 @@ public class RabbitMqNotificationFacade {
     // 공통
     private void persist(site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand command) {
         persistenceService.persist(command);
+        deliveryPersistenceService.activateForDispatch(command.eventId())
+                .forEach(dispatchService::dispatch);
     }
 }

@@ -2,6 +2,7 @@ package site.yesaido.notification_server.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -133,4 +134,27 @@ public interface NotificationDeliveryRepository extends JpaRepository<Notificati
             @Param("templateId") Long templateId,
             @Param("attemptCount") short attemptCount,
             @Param("error") String error);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            update notification_delivery d
+            set status = 'PENDING', updated_at = current_timestamp
+            where d.status = 'CREATED'
+              and exists (
+                  select 1
+                  from notification n
+                  where n.id = d.notification_id
+                    and n.source_event_id = :eventId
+              )
+            """, nativeQuery = true)
+    int activateCreatedDeliveries(@Param("eventId") UUID eventId);
+
+    @Query("""
+            select d.id
+            from NotificationDelivery d
+            where d.notification.sourceEventId = :eventId
+              and d.status = 'PENDING'
+            order by d.id asc
+            """)
+    List<Long> findPendingIdsBySourceEventId(@Param("eventId") UUID eventId);
 }

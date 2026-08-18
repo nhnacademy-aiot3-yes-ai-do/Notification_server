@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.inOrder;
 
 import java.time.Duration;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import site.yesaido.notification_server.config.NotificationProperties;
 import site.yesaido.notification_server.entity.ChannelType;
 import site.yesaido.notification_server.entity.NotificationEventType;
@@ -56,6 +58,22 @@ class RabbitMqNotificationPersistenceRetryTest {
         service.persistFailure(99L, 1L, null, (short) 3, "실패 사유");
 
         verify(deliveryRepository).insertFailedFromRabbitMqFanout(99L, 1L, null, (short) 3, "실패 사유");
+        verifyNoMoreInteractions(deliveryRepository);
+    }
+
+    @Test
+    void deliveryPersistenceService_activateForDispatch는_CREATED를_PENDING으로_바꾼_후_ID를_조회한다() {
+        NotificationDeliveryRepository deliveryRepository = mock(NotificationDeliveryRepository.class);
+        RabbitMqNotificationDeliveryPersistenceService service =
+                new RabbitMqNotificationDeliveryPersistenceService(deliveryRepository);
+        UUID eventId = UUID.randomUUID();
+        when(deliveryRepository.findPendingIdsBySourceEventId(eventId)).thenReturn(List.of(11L, 12L));
+
+        assertThat(service.activateForDispatch(eventId)).containsExactly(11L, 12L);
+
+        InOrder inOrder = inOrder(deliveryRepository);
+        inOrder.verify(deliveryRepository).activateCreatedDeliveries(eventId);
+        inOrder.verify(deliveryRepository).findPendingIdsBySourceEventId(eventId);
         verifyNoMoreInteractions(deliveryRepository);
     }
 
