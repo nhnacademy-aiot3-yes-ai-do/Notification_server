@@ -1,12 +1,15 @@
 package site.yesaido.notification_server.rabbitmq;
 
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import site.yesaido.notification_server.rabbitmq.event.AiEvent;
 import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
 import site.yesaido.notification_server.rabbitmq.event.RuleEngineEvent;
@@ -31,8 +34,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeThreshold(event, channel, DELIVERY_TAG);
 
-        verify(facade).handle(event);
-        verify(channel).basicAck(DELIVERY_TAG, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -46,7 +51,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeAction(event, channel, DELIVERY_TAG);
 
-        verify(channel).basicNack(DELIVERY_TAG, false, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -60,7 +68,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeThreshold(event, channel, DELIVERY_TAG);
 
-        verify(channel).basicNack(DELIVERY_TAG, false, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -73,8 +84,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeAction(event, channel, DELIVERY_TAG);
 
-        verify(facade).handle(event);
-        verify(channel).basicAck(DELIVERY_TAG, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -87,8 +100,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeDaily(event, channel, DELIVERY_TAG);
 
-        verify(facade).handle(event);
-        verify(channel).basicAck(DELIVERY_TAG, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -102,7 +117,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeCultivationComplete(event, channel, DELIVERY_TAG);
 
-        verify(channel).basicNack(DELIVERY_TAG, false, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -116,7 +134,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeDaily(event, channel, DELIVERY_TAG);
 
-        verify(channel).basicNack(DELIVERY_TAG, false, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -129,8 +150,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeCultivationComplete(event, channel, DELIVERY_TAG);
 
-        verify(facade).handle(event);
-        verify(channel).basicAck(DELIVERY_TAG, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -143,8 +166,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeHarvest(event, channel, DELIVERY_TAG);
 
-        verify(facade).handle(event);
-        verify(channel).basicAck(DELIVERY_TAG, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -158,7 +183,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeSensor(event, channel, DELIVERY_TAG);
 
-        verify(channel).basicNack(DELIVERY_TAG, false, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -172,8 +200,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeMember(event, channel, DELIVERY_TAG);
 
-        verify(facade).handle(event);
-        verify(channel).basicAck(DELIVERY_TAG, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -187,7 +217,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeHarvest(event, channel, DELIVERY_TAG);
 
-        verify(channel).basicNack(DELIVERY_TAG, false, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -200,8 +233,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeSensor(event, channel, DELIVERY_TAG);
 
-        verify(facade).handle(event);
-        verify(channel).basicAck(DELIVERY_TAG, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -216,7 +251,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeMember(event, channel, DELIVERY_TAG);
 
-        verify(channel).basicNack(DELIVERY_TAG, false, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -230,7 +268,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeInquiry(event, channel, DELIVERY_TAG);
 
-        verify(channel).basicNack(DELIVERY_TAG, false, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -243,8 +284,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consumeInquiry(event, channel, DELIVERY_TAG);
 
-        verify(facade).handle(event);
-        verify(channel).basicAck(DELIVERY_TAG, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -258,8 +301,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consume(event, channel, DELIVERY_TAG);
 
-        verify(facade).handle(event);
-        verify(channel).basicAck(DELIVERY_TAG, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -274,7 +319,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consume(event, channel, DELIVERY_TAG);
 
-        verify(channel).basicNack(DELIVERY_TAG, false, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -288,8 +336,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consume(event, channel, DELIVERY_TAG);
 
-        verify(facade).handle(event);
-        verify(channel).basicAck(DELIVERY_TAG, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -304,7 +354,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consume(event, channel, DELIVERY_TAG);
 
-        verify(channel).basicNack(DELIVERY_TAG, false, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -318,8 +371,10 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consume(event, channel, DELIVERY_TAG);
 
-        verify(facade).handle(event);
-        verify(channel).basicAck(DELIVERY_TAG, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 
     @Test
@@ -334,6 +389,9 @@ class NotificationRabbitMQConsumerTest {
 
         consumer.consume(event, channel, DELIVERY_TAG);
 
-        verify(channel).basicNack(DELIVERY_TAG, false, false);
+        InOrder inOrder = inOrder(facade, channel);
+        inOrder.verify(facade).handle(event);
+        inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
+        verifyNoMoreInteractions(facade, channel);
     }
 }
