@@ -3,6 +3,7 @@ package site.yesaido.notification_server.rabbitmq;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import site.yesaido.notification_server.rabbitmq.listener.AiRabbitMQConsumer;
@@ -29,7 +30,7 @@ class NotificationRabbitMQConsumerClassificationTest {
     private String[] methodQueues(Class<?> consumerType) {
         return Arrays.stream(consumerType.getDeclaredMethods())
                 .map(method -> method.getAnnotation(RabbitListener.class))
-                .filter(annotation -> annotation != null)
+                .filter(Objects::nonNull)
                 .flatMap(annotation -> Arrays.stream(annotation.queues()))
                 .toArray(String[]::new);
     }

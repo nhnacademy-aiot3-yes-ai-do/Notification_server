@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import java.util.UUID;
@@ -13,6 +14,7 @@ import site.yesaido.notification_server.entity.*;
 import site.yesaido.notification_server.exception.delivery.DeliveryAttemptLimitExceededException;
 import site.yesaido.notification_server.exception.delivery.DeliveryNotPendingException;
 import site.yesaido.notification_server.exception.delivery.DeliveryNotSendingException;
+import site.yesaido.notification_server.rabbitmq.exception.RabbitMqFanoutAttemptCountInvalidException;
 
 class NotificationDeliveryTest {
 
@@ -124,6 +126,59 @@ class NotificationDeliveryTest {
 
         assertEquals(DeliveryStatus.SENDING, delivery.getStatus());
         assertThrows(DeliveryNotPendingException.class, delivery::claimForDispatch);
+    }
+
+    @Test
+    void CREATED_발송은_활성화하면_PENDING으로_전환된다() {
+        NotificationDelivery source = createDelivery();
+        NotificationDelivery delivery = NotificationDelivery.prepare(
+                source.getNotification(), source.getSubscription(), source.getTemplate(), "생성 메시지");
+
+        assertEquals(DeliveryStatus.CREATED, delivery.getStatus());
+        delivery.activateForDispatch();
+
+        assertEquals(DeliveryStatus.PENDING, delivery.getStatus());
+        assertTrue(delivery.canRetry());
+    }
+
+    @Test
+    void CREATED가_아닌_발송은_활성화할_수_없다() {
+        NotificationDelivery delivery = createDelivery();
+
+        assertThrows(IllegalStateException.class, delivery::activateForDispatch);
+    }
+
+    @Test
+    void SENDING_발송은_stale_복구시_PENDING으로_돌아온다() {
+        NotificationDelivery delivery = createDelivery();
+        delivery.claimForDispatch();
+
+        delivery.releaseStaleClaim();
+
+        assertEquals(DeliveryStatus.PENDING, delivery.getStatus());
+        assertTrue(delivery.canRetry());
+    }
+
+    @Test
+    void RabbitMQ_실패시도횟수의_상한을_초과하면_전용예외를_던진다() {
+        NotificationDelivery source = createDelivery();
+        Notification notification = source.getNotification();
+        NotificationSubscription subscription = source.getSubscription();
+
+        assertThrows(RabbitMqFanoutAttemptCountInvalidException.class,
+                () -> NotificationDelivery.failForRabbitMqFanout(
+                        notification, subscription, null,
+                        (short) 4, "too many attempts"));
+    }
+
+    @Test
+    void SENDING이거나_최대시도전인_발송은_재시도할_수_있다() {
+        NotificationDelivery pending = createDelivery();
+        NotificationDelivery sending = createDelivery();
+        sending.claimForDispatch();
+
+        assertTrue(pending.canRetry());
+        assertTrue(sending.canRetry());
     }
 
     private NotificationDelivery createDelivery() {

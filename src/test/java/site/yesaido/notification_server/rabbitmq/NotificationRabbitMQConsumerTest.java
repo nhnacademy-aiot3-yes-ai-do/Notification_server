@@ -3,7 +3,6 @@ package site.yesaido.notification_server.rabbitmq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.rabbitmq.client.Channel;

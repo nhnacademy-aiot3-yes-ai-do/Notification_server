@@ -30,6 +30,8 @@ import site.yesaido.notification_server.repository.NotificationTemplateRepositor
 @Service
 public class RabbitMqNotificationPersistenceService {
 
+    private static final String UNKNOWN_FAILURE_TYPE = "Unknown";
+
     private final NotificationEventTypeRepository eventTypeRepository;
     private final NotificationSubscriptionRepository subscriptionRepository;
     private final NotificationTemplateRepository templateRepository;
@@ -145,34 +147,9 @@ public class RabbitMqNotificationPersistenceService {
                         Throwable cause = context.getLastThrowable();
                         Long channelTypeId = failure.subscription().getEndpoint().getChannelType().getId();
                         String reason = failureReason(cause);
-                        try {
-                            deliveryPersistenceService.persistFailure(
-                                    notificationId,
-                                    failure.subscription().getId(),
-                                    failure.template() == null ? null : failure.template().getId(),
-                                    (short) (1 + context.getRetryCount()),
-                                    reason);
-                        } catch (RuntimeException persistenceFailure) {
-                            RabbitMqNotificationFailureHistoryPersistenceException escalation =
-                                    new RabbitMqNotificationFailureHistoryPersistenceException(
-                                            "failed to persist FAILED delivery history: eventId=%s, eventCode=%s, subscriptionId=%s, channelTypeId=%s, originalFailureType=%s, originalFailureReason=%s"
-                                                    .formatted(command.eventId(), command.eventCode(),
-                                                            failure.subscription().getId(), channelTypeId,
-                                                            cause == null ? "Unknown" : cause.getClass().getSimpleName(), reason),
-                                            persistenceFailure);
-                            if (cause != null) {
-                                escalation.addSuppressed(cause);
-                            }
-                            log.error("RABBITMQ_NOTIFICATION_FAILURE_HISTORY_PERSISTENCE_FAILED eventId={}, eventCode={}, subscriptionId={}, channelTypeId={}, originalFailureType={}, originalFailureReason={}, persistenceFailureType={}",
-                                    command.eventId(), command.eventCode(), failure.subscription().getId(), channelTypeId,
-                                    cause == null ? "Unknown" : cause.getClass().getSimpleName(), reason,
-                                    persistenceFailure.getClass().getSimpleName(), escalation);
-                            throw escalation;
-                        }
-                        log.error("RABBITMQ_NOTIFICATION_DELIVERY_FINAL_FAILURE eventId={}, eventCode={}, subscriptionId={}, channelTypeId={}, attempts={}, failureType={}, reason={}",
-                                command.eventId(), command.eventCode(), failure.subscription().getId(), channelTypeId,
-                                NotificationDelivery.MAX_ATTEMPT_COUNT,
-                                cause == null ? "Unknown" : cause.getClass().getSimpleName(), reason);
+                        persistFailureHistory(command, notificationId, failure, channelTypeId,
+                                context.getRetryCount(), cause, reason);
+                        logFinalFailure(command, failure, channelTypeId, cause, reason);
                         return null;
                     });
             if (renderedMessage != null) {
@@ -181,6 +158,46 @@ public class RabbitMqNotificationPersistenceService {
                         notificationId, failure.subscription().getId(), template.getId(), renderedMessage);
             }
         }
+    }
+
+    private void persistFailureHistory(
+            RabbitMqNotificationCommand command, Long notificationId, DeliveryFailure failure,
+            Long channelTypeId, int retryCount, Throwable cause, String reason) {
+        try {
+            deliveryPersistenceService.persistFailure(
+                    notificationId,
+                    failure.subscription().getId(),
+                    failure.template() == null ? null : failure.template().getId(),
+                    (short) (1 + retryCount),
+                    reason);
+        } catch (RuntimeException persistenceFailure) {
+            RabbitMqNotificationFailureHistoryPersistenceException escalation =
+                    new RabbitMqNotificationFailureHistoryPersistenceException(
+                            "failed to persist FAILED delivery history: eventId=%s, eventCode=%s, subscriptionId=%s, channelTypeId=%s, originalFailureType=%s, originalFailureReason=%s"
+                                    .formatted(command.eventId(), command.eventCode(),
+                                            failure.subscription().getId(), channelTypeId,
+                                            failureType(cause), reason),
+                            persistenceFailure);
+            if (cause != null) {
+                escalation.addSuppressed(cause);
+            }
+            log.error("RABBITMQ_NOTIFICATION_FAILURE_HISTORY_PERSISTENCE_FAILED eventId={}, eventCode={}, subscriptionId={}, channelTypeId={}, originalFailureType={}, originalFailureReason={}, persistenceFailureType={}",
+                    command.eventId(), command.eventCode(), failure.subscription().getId(), channelTypeId,
+                    failureType(cause), reason, persistenceFailure.getClass().getSimpleName(), escalation);
+            throw escalation;
+        }
+    }
+
+    private void logFinalFailure(
+            RabbitMqNotificationCommand command, DeliveryFailure failure, Long channelTypeId,
+            Throwable cause, String reason) {
+        log.error("RABBITMQ_NOTIFICATION_DELIVERY_FINAL_FAILURE eventId={}, eventCode={}, subscriptionId={}, channelTypeId={}, attempts={}, failureType={}, reason={}",
+                command.eventId(), command.eventCode(), failure.subscription().getId(), channelTypeId,
+                NotificationDelivery.MAX_ATTEMPT_COUNT, failureType(cause), reason);
+    }
+
+    private String failureType(Throwable cause) {
+        return cause == null ? UNKNOWN_FAILURE_TYPE : cause.getClass().getSimpleName();
     }
 
     private String failureReason(Throwable cause) {

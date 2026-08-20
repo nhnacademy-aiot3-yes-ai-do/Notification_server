@@ -84,6 +84,49 @@ class RabbitMqNotificationPayloadProcessorTest {
     }
 
     @Test
+    void 로그인과_비밀번호_변경_실패도_실패용_이벤트로_변환한다() {
+        RabbitMqNotificationCommand login = userProcessor.process(
+                new UserEvent.UserLoginAttemptedEvent(UUID.randomUUID(), 2L, "tester", false, "Seoul", OCCURRED_AT));
+        RabbitMqNotificationCommand password = userProcessor.process(
+                new UserEvent.UserPasswordChangeAttemptedEvent(
+                        UUID.randomUUID(), 2L, "tester", false, OCCURRED_AT));
+
+        assertThat(login.eventCode()).isEqualTo("LOGIN_FAILED");
+        assertThat(password.eventCode()).isEqualTo("PASSWORD_CHANGE_FAILED");
+    }
+
+    @Test
+    void 비밀번호와_재활성화_닉네임이_없으면_미제공으로_대체한다() {
+        RabbitMqNotificationCommand password = userProcessor.process(
+                new UserEvent.UserPasswordChangeAttemptedEvent(
+                        UUID.randomUUID(), 2L, null, true, OCCURRED_AT));
+        RabbitMqNotificationCommand reactivation = userProcessor.process(
+                new UserEvent.UserAccountReactivationAttemptedEvent(
+                        UUID.randomUUID(), 2L, "", false, OCCURRED_AT));
+
+        assertThat(password.payload()).isEqualTo(Map.of("nickname", "미제공"));
+        assertThat(reactivation.payload()).isEqualTo(Map.of("nickname", "미제공"));
+    }
+
+    @Test
+    void 센서오프라인과_멤버초대의_누락된_문자열은_미제공으로_대체한다() {
+        RabbitMqNotificationCommand offline = cultivationProcessor.process(
+                new CultivationEvent.SensorDataUnavailableEvent(
+                        UUID.randomUUID(), 7L, null, "센서 오프라인", OCCURRED_AT));
+        RabbitMqNotificationCommand invited = cultivationProcessor.process(
+                new CultivationEvent.CultivationMemberInvitedEvent(
+                        UUID.randomUUID(), 7L, 1L, null, 2L, "", null, OCCURRED_AT));
+
+        assertThat(offline.payload()).isEqualTo(Map.of(
+                "cultivationName", "미제공",
+                "deviceName", "미제공"));
+        assertThat(invited.payload()).isEqualTo(Map.of(
+                "inviterNickname", "미제공",
+                "inviteeNickname", "미제공",
+                "invitationUrl", "미제공"));
+    }
+
+    @Test
     void AI와_문의와_로그인이_기존템플릿변수만_포함한_payload로_변환된다() {
         RabbitMqNotificationCommand feedback = aiProcessor.process(
                 new AiEvent.DailyFeedbackGeneratedEvent(UUID.randomUUID(), 2L, 7L, "토마토 A동", "url", "성장 중", OCCURRED_AT));
