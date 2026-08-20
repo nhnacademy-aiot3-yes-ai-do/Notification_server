@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.inOrder;
 
 import java.time.Duration;
 import java.util.List;
@@ -19,8 +20,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import site.yesaido.notification_server.config.NotificationProperties;
 import site.yesaido.notification_server.entity.ChannelType;
+import site.yesaido.notification_server.entity.DeliveryStatus;
+import site.yesaido.notification_server.entity.NotificationDelivery;
 import site.yesaido.notification_server.entity.NotificationEventType;
 import site.yesaido.notification_server.entity.NotificationSubscription;
 import site.yesaido.notification_server.entity.NotificationTemplate;
@@ -57,6 +61,31 @@ class RabbitMqNotificationPersistenceRetryTest {
 
         verify(deliveryRepository).insertFailedFromRabbitMqFanout(99L, 1L, null, (short) 3, "실패 사유");
         verifyNoMoreInteractions(deliveryRepository);
+    }
+
+    @Test
+    void deliveryPersistenceService_activateForDispatch는_CREATED를_PENDING으로_바꾼_후_ID를_조회한다() {
+        NotificationDeliveryRepository deliveryRepository = mock(NotificationDeliveryRepository.class);
+        RabbitMqNotificationDeliveryPersistenceService service =
+                new RabbitMqNotificationDeliveryPersistenceService(deliveryRepository);
+        UUID eventId = UUID.randomUUID();
+        NotificationDelivery first = mock(NotificationDelivery.class);
+        NotificationDelivery second = mock(NotificationDelivery.class);
+        when(first.getId()).thenReturn(11L);
+        when(second.getId()).thenReturn(12L);
+        when(deliveryRepository.findAllByNotification_SourceEventIdAndStatusOrderByIdAsc(
+                eventId, DeliveryStatus.CREATED)).thenReturn(List.of(first, second));
+
+        assertThat(service.activateForDispatch(eventId)).containsExactly(11L, 12L);
+
+        InOrder inOrder = inOrder(deliveryRepository, first, second);
+        inOrder.verify(deliveryRepository).findAllByNotification_SourceEventIdAndStatusOrderByIdAsc(
+                eventId, DeliveryStatus.CREATED);
+        inOrder.verify(first).activateForDispatch();
+        inOrder.verify(second).activateForDispatch();
+        inOrder.verify(first).getId();
+        inOrder.verify(second).getId();
+        verifyNoMoreInteractions(deliveryRepository, first, second);
     }
 
     @Test
