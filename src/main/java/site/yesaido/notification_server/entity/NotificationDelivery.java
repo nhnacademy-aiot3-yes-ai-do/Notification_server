@@ -92,6 +92,14 @@ public class NotificationDelivery extends AuditEntity {
         return delivery;
     }
 
+    /** RabbitMQ fan-out 저장이 끝난 Delivery를 Provider 발송 대상으로 전환한다. */
+    public void activateForDispatch() {
+        if (status != DeliveryStatus.CREATED) {
+            throw new IllegalStateException("생성 상태의 발송만 대기 상태로 전환할 수 있습니다.");
+        }
+        this.status = DeliveryStatus.PENDING;
+    }
+
     /** RabbitMQ fan-out 단계에서 템플릿/렌더링/저장이 최종 실패한 이력을 보존한다. */
     public static NotificationDelivery failForRabbitMqFanout(
             Notification notification, NotificationSubscription subscription,

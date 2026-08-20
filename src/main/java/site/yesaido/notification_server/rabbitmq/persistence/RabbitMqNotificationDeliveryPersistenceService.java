@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import site.yesaido.notification_server.entity.DeliveryStatus;
+import site.yesaido.notification_server.entity.NotificationDelivery;
 import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
 
 @Service
@@ -26,7 +28,9 @@ public class RabbitMqNotificationDeliveryPersistenceService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<Long> activateForDispatch(UUID eventId) {
-        deliveryRepository.activateCreatedDeliveries(eventId);
-        return deliveryRepository.findPendingIdsBySourceEventId(eventId);
+        List<NotificationDelivery> deliveries = deliveryRepository
+                .findAllByNotification_SourceEventIdAndStatusOrderByIdAsc(eventId, DeliveryStatus.CREATED);
+        deliveries.forEach(NotificationDelivery::activateForDispatch);
+        return deliveries.stream().map(NotificationDelivery::getId).toList();
     }
 }
