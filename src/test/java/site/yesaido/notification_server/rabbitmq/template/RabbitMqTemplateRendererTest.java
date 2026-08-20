@@ -24,7 +24,8 @@ class RabbitMqTemplateRendererTest {
 
     @Test
     void payload에_없는_변수는_예외를_던진다() {
-        assertThatThrownBy(() -> renderer.render("{{missing}}", Map.of()))
+        Map<String, Object> payload = Map.of();
+        assertThatThrownBy(() -> renderer.render("{{missing}}", payload))
                 .isInstanceOf(NotificationTemplateVariableMissingException.class);
     }
 }

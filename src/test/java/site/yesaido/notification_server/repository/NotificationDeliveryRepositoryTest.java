@@ -96,11 +96,12 @@ class NotificationDeliveryRepositoryTest {
                 WHERE notification_id = ? AND notification_subscription_id = ?
                 """, ids.notificationId(), ids.subscriptionId());
         assertThat(updated).isEqualTo(1);
-        assertThat(row.get("status")).isEqualTo("CREATED");
-        assertThat(row.get("notification_template_id")).isEqualTo(ids.templateId());
-        assertThat(row.get("rendered_message")).isEqualTo("복구된 메시지");
+        assertThat(row)
+                .containsEntry("status", "CREATED")
+                .containsEntry("notification_template_id", ids.templateId())
+                .containsEntry("rendered_message", "복구된 메시지")
+                .containsEntry("error", null);
         assertThat(((Number) row.get("attempt_count")).shortValue()).isZero();
-        assertThat(row.get("error")).isNull();
     }
 
     @Test
@@ -117,8 +118,9 @@ class NotificationDeliveryRepositoryTest {
                 WHERE notification_id = ? AND notification_subscription_id = ?
                 """, ids.notificationId(), ids.subscriptionId());
         assertThat(updated).isZero();
-        assertThat(row.get("status")).isEqualTo("CREATED");
-        assertThat(row.get("rendered_message")).isEqualTo("원본 메시지");
+        assertThat(row)
+                .containsEntry("status", "CREATED")
+                .containsEntry("rendered_message", "원본 메시지");
     }
 
     @Test
@@ -135,8 +137,9 @@ class NotificationDeliveryRepositoryTest {
                 WHERE notification_id = ? AND notification_subscription_id = ?
                 """, ids.notificationId(), ids.subscriptionId());
         assertThat(updated).isZero();
-        assertThat(row.get("status")).isEqualTo("PENDING");
-        assertThat(row.get("rendered_message")).isEqualTo("원본 메시지");
+        assertThat(row)
+                .containsEntry("status", "PENDING")
+                .containsEntry("rendered_message", "원본 메시지");
         assertThat(((Number) row.get("attempt_count")).shortValue()).isEqualTo((short) 1);
     }
 
@@ -154,9 +157,10 @@ class NotificationDeliveryRepositoryTest {
                 WHERE notification_id = ? AND notification_subscription_id = ?
                 """, ids.notificationId(), ids.subscriptionId());
         assertThat(inserted).isZero();
-        assertThat(row.get("status")).isEqualTo("CREATED");
-        assertThat(row.get("rendered_message")).isEqualTo("원본 메시지");
-        assertThat(row.get("error")).isNull();
+        assertThat(row)
+                .containsEntry("status", "CREATED")
+                .containsEntry("rendered_message", "원본 메시지")
+                .containsEntry("error", null);
     }
 
     @Test
@@ -173,9 +177,10 @@ class NotificationDeliveryRepositoryTest {
                 WHERE notification_id = ? AND notification_subscription_id = ?
                 """, ids.notificationId(), ids.subscriptionId());
         assertThat(inserted).isZero();
-        assertThat(row.get("status")).isEqualTo("SENT");
-        assertThat(row.get("rendered_message")).isEqualTo("발송 완료 메시지");
-        assertThat(row.get("error")).isNull();
+        assertThat(row)
+                .containsEntry("status", "SENT")
+                .containsEntry("rendered_message", "발송 완료 메시지")
+                .containsEntry("error", null);
     }
 
     @Test
