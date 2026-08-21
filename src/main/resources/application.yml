@@ -5,11 +5,6 @@ spring:
   application:
     name: notification-server
 
-  cloud:
-    kubernetes:
-      discovery:
-        enabled: ${K8S_DISCOVERY_ENABLED:false}
-
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?currentSchema=${NOTIFICATION_DB_SCHEMA}&stringtype=unspecified
     username: ${DB_USERNAME:postgres}
@@ -59,10 +54,6 @@ notification:
     pending-delivery-min-age: ${NOTIFICATION_PENDING_DELIVERY_MIN_AGE:PT30S}
     sending-claim-timeout: ${NOTIFICATION_SENDING_CLAIM_TIMEOUT:PT5M}
     pending-delivery-batch-size: ${NOTIFICATION_PENDING_DELIVERY_BATCH_SIZE:100}
-
-eureka:
-  client:
-    enabled: ${EUREKA_ENABLED:false}
 
 management:
   endpoints:
