@@ -205,6 +205,9 @@ class NotificationDeliveryRepositoryTest {
                 "SELECT id FROM channel_type WHERE code = 'TELEGRAM'", Long.class);
         Long subscriptionTypeId = jdbcTemplate.queryForObject(
                 "SELECT id FROM notification_subscription_type ORDER BY id LIMIT 1", Long.class);
+        Long eventTypeId = jdbcTemplate.queryForObject(
+                "SELECT notification_event_type_id FROM notification_subscription_type WHERE id = ?",
+                Long.class, subscriptionTypeId);
         Long templateId = jdbcTemplate.queryForObject(
                 "SELECT id FROM notification_template ORDER BY id LIMIT 1", Long.class);
         Long endpointId = jdbcTemplate.queryForObject("""
@@ -224,10 +227,11 @@ class NotificationDeliveryRepositoryTest {
                 """, Long.class, subscriptionTypeId, endpointId, userId,
                 LocalDateTime.now(), LocalDateTime.now());
         Long notificationId = jdbcTemplate.queryForObject("""
-                INSERT INTO notification (source_event_id, event_payload, created_at)
-                VALUES (?, CAST(? AS jsonb), ?)
+                INSERT INTO notification
+                    (source_event_id, notification_event_type_id, event_payload, created_at)
+                VALUES (?, ?, CAST(? AS jsonb), ?)
                 RETURNING id
-                """, Long.class, UUID.randomUUID(), "{}", LocalDateTime.now());
+                """, Long.class, UUID.randomUUID(), eventTypeId, "{}", LocalDateTime.now());
         return new FanoutIds(notificationId, subscriptionId, templateId);
     }
 
@@ -248,6 +252,9 @@ class NotificationDeliveryRepositoryTest {
                 "SELECT id FROM channel_type WHERE code = 'TELEGRAM'", Long.class);
         Long subscriptionTypeId = jdbcTemplate.queryForObject(
                 "SELECT id FROM notification_subscription_type ORDER BY id LIMIT 1", Long.class);
+        Long eventTypeId = jdbcTemplate.queryForObject(
+                "SELECT notification_event_type_id FROM notification_subscription_type WHERE id = ?",
+                Long.class, subscriptionTypeId);
         Long templateId = jdbcTemplate.queryForObject(
                 "SELECT id FROM notification_template ORDER BY id LIMIT 1", Long.class);
         Long endpointId = jdbcTemplate.queryForObject("""
@@ -267,10 +274,11 @@ class NotificationDeliveryRepositoryTest {
                 """, Long.class, subscriptionTypeId, endpointId, 99001L,
                 LocalDateTime.now(), LocalDateTime.now());
         Long notificationId = jdbcTemplate.queryForObject("""
-                INSERT INTO notification (source_event_id, event_payload, created_at)
-                VALUES (?, CAST(? AS jsonb), ?)
+                INSERT INTO notification
+                    (source_event_id, notification_event_type_id, event_payload, created_at)
+                VALUES (?, ?, CAST(? AS jsonb), ?)
                 RETURNING id
-                """, Long.class, UUID.randomUUID(), "{}", LocalDateTime.now());
+                """, Long.class, UUID.randomUUID(), eventTypeId, "{}", LocalDateTime.now());
         return jdbcTemplate.queryForObject("""
                 INSERT INTO notification_delivery
                     (notification_id, notification_subscription_id, notification_template_id,
