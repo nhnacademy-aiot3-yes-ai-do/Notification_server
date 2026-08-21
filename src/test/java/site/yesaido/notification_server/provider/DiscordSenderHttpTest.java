@@ -14,7 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import site.yesaido.notification_server.config.NotificationProperties;
-import site.yesaido.notification_server.exception.NotificationProviderException;
+import site.yesaido.notification_server.exception.provider.DiscordNotificationProviderException;
 
 class DiscordSenderHttpTest {
 
@@ -45,17 +45,14 @@ class DiscordSenderHttpTest {
         DiscordSender sender = new DiscordSender(builder, properties());
 
         assertThatThrownBy(() -> sender.send(WEBHOOK_URL, "테스트 메시지"))
-                .isInstanceOf(NotificationProviderException.class)
+                .isInstanceOf(DiscordNotificationProviderException.class)
                 .hasMessage("Discord 메시지 발송에 실패했습니다.")
                 .hasMessageNotContaining("test-token");
         server.verify();
     }
 
     private NotificationProperties properties() {
-        NotificationProperties.EventRoute route = new NotificationProperties.EventRoute("queue", "key");
         return new NotificationProperties(
-                new NotificationProperties.Rabbit("events", route, route, route, route,
-                        route, route, route, route, "dlx", "dlq", "failed"),
                 new NotificationProperties.Provider(
                         new NotificationProperties.Telegram("https://telegram.test", "test-token"),
                         new NotificationProperties.Discord(List.of("discord.com"))),

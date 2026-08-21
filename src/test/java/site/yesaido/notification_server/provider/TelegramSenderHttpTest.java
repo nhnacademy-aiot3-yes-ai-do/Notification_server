@@ -10,7 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 import org.springframework.test.web.client.MockRestServiceServer;
 import site.yesaido.notification_server.config.NotificationProperties;
-import site.yesaido.notification_server.exception.NotificationProviderException;
+import site.yesaido.notification_server.exception.provider.TelegramNotificationProviderException;
 
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -42,7 +42,7 @@ class TelegramSenderHttpTest {
         TelegramSender sender = new TelegramSender(builder, properties());
 
         assertThatThrownBy(() -> sender.send("123456", "테스트 메시지"))
-                .isInstanceOf(NotificationProviderException.class)
+                .isInstanceOf(TelegramNotificationProviderException.class)
                 .hasMessageContaining("chat not found");
     }
 
@@ -61,10 +61,7 @@ class TelegramSenderHttpTest {
     }
 
     private NotificationProperties properties() {
-        NotificationProperties.EventRoute route = new NotificationProperties.EventRoute("queue", "key");
         return new NotificationProperties(
-                new NotificationProperties.Rabbit("events", route, route, route, route,
-                        route, route, route, route, "dlx", "dlq", "failed"),
                 new NotificationProperties.Provider(
                         new NotificationProperties.Telegram("https://telegram.test", "test-token"),
                         new NotificationProperties.Discord(List.of("discord.com"))),

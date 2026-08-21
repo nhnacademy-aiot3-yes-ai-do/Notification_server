@@ -89,7 +89,7 @@ class NotificationEndpointControllerTest {
                         .contentType("application/json")
                         .content("{\"channelTypeId\":0,\"destination\":\"\",\"displayName\":\"\"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(jsonPath("$.detail").exists());
     }
 
     @Test

@@ -1,8 +1,7 @@
 package site.yesaido.notification_server.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.yesaido.notification_server.dto.delivery.DeliveryPageResponse;
@@ -15,9 +14,7 @@ public class NotificationQueryService {
 
     private final NotificationDeliveryRepository deliveryRepository;
 
-    public DeliveryPageResponse findDeliveries(Long userId, int page, int size) {
-        return DeliveryPageResponse.from(deliveryRepository.findPageByUserId(
-                userId,
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))));
+    public DeliveryPageResponse findDeliveries(Long userId, Pageable pageable) {
+        return DeliveryPageResponse.from(deliveryRepository.findPageByUserId(userId, pageable));
     }
 }

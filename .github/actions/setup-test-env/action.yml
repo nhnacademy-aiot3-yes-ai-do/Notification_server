@@ -5,6 +5,25 @@ runs:
   steps:
     - shell: bash
       run: |
-        echo "DB_URL=jdbc:postgresql://localhost:5432/testdb" >> "$GITHUB_ENV"
+        set -euo pipefail
+        
+        # PostgreSQL
+        echo "DB_HOST=localhost" >> "$GITHUB_ENV"
+        echo "DB_PORT=5432" >> "$GITHUB_ENV"
+        echo "DB_NAME=testdb" >> "$GITHUB_ENV"
         echo "DB_USERNAME=test" >> "$GITHUB_ENV"
         echo "DB_PASSWORD=test1234" >> "$GITHUB_ENV"
+        # application.yml uses this exact, case-sensitive variable name.
+        echo "NOTIFICATION_DB_SCHEMA=public" >> "$GITHUB_ENV"
+        
+        # RabbitMQ
+        echo "RABBITMQ_HOST=localhost" >> "$GITHUB_ENV"
+        echo "RABBITMQ_PORT=5672" >> "$GITHUB_ENV"
+        echo "RABBITMQ_USERNAME=test" >> "$GITHUB_ENV"
+        echo "RABBITMQ_PASSWORD=test1234" >> "$GITHUB_ENV"
+
+        # Disable external service discovery in CI.
+        echo "K8S_DISCOVERY_ENABLED=false" >> "$GITHUB_ENV"
+        echo "EUREKA_ENABLED=false" >> "$GITHUB_ENV"
+        echo "EUREKA_URL=http://localhost:8761/eureka/" >> "$GITHUB_ENV"
+        echo "LOG_LEVEL=WARN" >> "$GITHUB_ENV"

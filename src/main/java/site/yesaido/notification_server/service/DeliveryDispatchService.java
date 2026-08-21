@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import site.yesaido.notification_server.config.NotificationProperties;
-import site.yesaido.notification_server.domain.NotificationDelivery;
+import site.yesaido.notification_server.entity.NotificationDelivery;
 import site.yesaido.notification_server.messaging.DeadLetterPublisher;
 import site.yesaido.notification_server.provider.NotificationSender;
 import site.yesaido.notification_server.provider.NotificationSenderRegistry;
@@ -17,6 +17,7 @@ import site.yesaido.notification_server.provider.ProviderSendResult;
 public class DeliveryDispatchService {
 
     private static final Logger log = LoggerFactory.getLogger(DeliveryDispatchService.class);
+    private static final String UNKNOWN_FAILURE_TYPE = "Unknown";
 
     private final DeliveryStateService stateService;
     private final NotificationSenderRegistry senderRegistry;
@@ -84,7 +85,7 @@ public class DeliveryDispatchService {
                                     + "failureType={}",
                             deliveryId,
                             command.attemptCount() + remainingAttempts,
-                            failure == null ? "Unknown" : failure.getClass().getSimpleName());
+                            failure == null ? UNKNOWN_FAILURE_TYPE : failure.getClass().getSimpleName());
                     return null;
                 });
     }

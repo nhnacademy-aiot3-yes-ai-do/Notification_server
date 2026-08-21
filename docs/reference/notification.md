@@ -123,12 +123,45 @@ API Gateway가 JWT를 검증한 뒤 전달하는 `X-User-Id`를 사용자 ID로 
 | 로그인 성공 | `yes-nhn.notification.login.queue` |
 | 문의 등록 | `yes-nhn.notification.question.queue` |
 | 문의 답변 완료 | `yes-nhn.notification.answer.queue` |
-| 수확 완료 | `yes-nhn.notification.harvest.queue` |
+| 수확 완료 | `yes-nhn.notification.done.queue` |
 | 재배 종료 | `yes-nhn.notification.cultivation-finished.queue` |
 
-Routing Key는 아직 최종 합의하지 않았다. `application.yml`은 로컬 실행을 위해 Queue명과
-같은 값을 기본 Routing Key로 사용하지만, 이 값은 Producer 계약 확정 후 교체해야 한다.
-Producer별 payload 필드명도 최종 합의 전까지 공통 Parser에서 과도하게 제한하지 않는다.
+수확 완료 이벤트는 `yes-nhn.notification.done.queue`를 Queue와 Routing Key로 함께
+사용한다. 나머지 이벤트의 Routing Key와 Producer별 payload 필드명은 최종 합의 전까지
+공통 Parser에서 과도하게 제한하지 않는다.
+
+### 공통 이벤트 시간 형식
+
+팀 합의에 따라 서비스 간 공통 이벤트의 `occurredAt`과 payload 내부의 업무 시각(예:
+`harvestedAt`)은 모두 `LocalDateTime` 문자열로 전달한다. 형식은
+`2026-08-11T14:30:00`이며, 오프셋(`+09:00`)이나 지역명은 붙이지 않는다. 모든 서비스는
+`Asia/Seoul` 기준으로 이 값을 해석한다.
+
+수확 완료 이벤트의 확정된 외피 예시는 다음과 같다. `eventId`는 Cultivation Service가
+발급하고, `eventType`은 `HARVEST_COMPLETED`, `producer`는 `cultivation-server`를 쓴다.
+
+```json
+{
+  "eventId": "b3f1c2a4-0000-0000-0000-000000000000",
+  "eventType": "HARVEST_COMPLETED",
+  "producer": "cultivation-server",
+  "targetType": "CULTIVATION",
+  "targetId": 1,
+  "occurredAt": "2026-08-11T14:30:00",
+  "payload": {
+    "cultivationId": 1,
+    "cultivationName": "Cultivation1",
+    "userId": 100,
+    "harvestId": 5,
+    "harvestWeight": 2.5,
+    "harvestedAt": "2026-08-11T14:30:00"
+  }
+}
+```
+
+`TypeId`는 Spring AMQP 내부 역직렬화 메타데이터이며 Notification의 서비스 간 이벤트
+계약 필드는 아니다. Notification은 공통 외피의 `eventType`으로 이벤트를 구분한다.
+수확 완료 템플릿도 Producer payload와 동일하게 `{{harvestWeight}}` 변수를 사용한다.
 
 공용 Dead Letter Exchange와 Queue는 `yes-nhn.dlx`, `yes-nhn.dlq`를 사용한다.
 Notification은 공용 DLQ를 자동으로 소비하지 않으며, 관리자가 RabbitMQ Management
@@ -262,4 +295,31 @@ Producer → RabbitMQ Exchange/Queue → Notification Consumer
 - 애플리케이션 DB: `localhost:5432/notification_db`
 - Migration 검증 DB: `localhost:55432/notification_migration_test`
 - RabbitMQ: `localhost:5672`
-- 통합 테스트: Docker PostgreSQL 연결 상태에서 67개 테스트, 실패 0건
+- 통합 테스트: Docker PostgreSQL 연결 상태에서 Repository 6개 테스트, 실패 0건
+
+## 2026-08-07 전체 검증 결과
+
+원본 `develop` 브랜치에서 전체 검증을 다시 실행했다.
+
+| 검증 항목 | 결과 |
+|---|---|
+| `mvn clean verify` 기본 테스트 | 77개 실행, 실패 0, 오류 0, 스킵 6개 |
+| PostgreSQL Repository 통합 테스트 | 6개 실행, 실패 0, 오류 0 |
+| Flyway Migration | V1~V10 검증·적용 성공, 검증 DB 버전 10 |
+| Controller·Service·Consumer·Provider 테스트 | 전체 통과 |
+| Telegram·Discord 가짜 HTTP Provider 테스트 | 통과 |
+
+통합 테스트는 다음 Docker PostgreSQL 검증 DB에 연결해 실행했다.
+
+```text
+jdbc:postgresql://localhost:55432/notification_migration_test
+```
+
+기본 `mvn clean verify`에서는 외부 DB 의존성을 피하기 위해 Repository 통합 테스트가 스킵되며,
+`notification.integration.enabled=true`를 지정하면 실제 PostgreSQL에서 실행된다. 이번에는
+해당 플래그를 켜서 통합 테스트까지 별도로 통과시켰다.
+
+이번 결과는 Notification 내부의 DB·HTTP·이벤트 처리 흐름이 정상임을 의미한다. 실제 팀 서비스와의
+RabbitMQ 종단 간 연결, 최종 routing key와 Producer payload, 운영 Secret, Gateway·Kubernetes 설정은
+공통 계약 확정 후 별도 검증이 필요하다. 따라서 외부 서비스까지 운영 환경에서 연결 완료되었다는
+의미는 아니다.

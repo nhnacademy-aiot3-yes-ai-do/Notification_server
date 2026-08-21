@@ -20,6 +20,7 @@ import site.yesaido.notification_server.dto.subscription.SubscriptionCreateReque
 import site.yesaido.notification_server.dto.subscription.SubscriptionEnabledRequest;
 import site.yesaido.notification_server.dto.subscription.SubscriptionResponse;
 import site.yesaido.notification_server.service.NotificationSubscriptionService;
+import site.yesaido.notification_server.validation.ValidationMessages;
 
 @Validated
 @RestController
@@ -32,7 +33,7 @@ public class NotificationSubscriptionController {
     @PostMapping
     public ResponseEntity<SubscriptionResponse> create(
             @RequestHeader("X-User-Id")
-            @Positive(message = "사용자 ID는 1 이상이어야 합니다.") Long userId,
+            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
             @Valid @RequestBody SubscriptionCreateRequest request
     ) {
         SubscriptionResponse response = subscriptionService.create(userId, request);
@@ -43,7 +44,7 @@ public class NotificationSubscriptionController {
     @GetMapping
     public ResponseEntity<List<SubscriptionResponse>> findAll(
             @RequestHeader("X-User-Id")
-            @Positive(message = "사용자 ID는 1 이상이어야 합니다.") Long userId
+            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId
     ) {
         return ResponseEntity.ok(subscriptionService.findAll(userId));
     }
@@ -51,9 +52,9 @@ public class NotificationSubscriptionController {
     @PatchMapping("/{subscriptionId}/enabled")
     public ResponseEntity<SubscriptionResponse> changeEnabled(
             @RequestHeader("X-User-Id")
-            @Positive(message = "사용자 ID는 1 이상이어야 합니다.") Long userId,
+            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
             @PathVariable
-            @Positive(message = "알림 구독 ID는 1 이상이어야 합니다.") Long subscriptionId,
+            @Positive(message = ValidationMessages.SUBSCRIPTION_ID_POSITIVE) Long subscriptionId,
             @Valid @RequestBody SubscriptionEnabledRequest request
     ) {
         return ResponseEntity.ok(subscriptionService.changeEnabled(
@@ -63,9 +64,9 @@ public class NotificationSubscriptionController {
     @DeleteMapping("/{subscriptionId}")
     public ResponseEntity<Void> delete(
             @RequestHeader("X-User-Id")
-            @Positive(message = "사용자 ID는 1 이상이어야 합니다.") Long userId,
+            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
             @PathVariable
-            @Positive(message = "알림 구독 ID는 1 이상이어야 합니다.") Long subscriptionId
+            @Positive(message = ValidationMessages.SUBSCRIPTION_ID_POSITIVE) Long subscriptionId
     ) {
         subscriptionService.delete(userId, subscriptionId);
         return ResponseEntity.noContent().build();

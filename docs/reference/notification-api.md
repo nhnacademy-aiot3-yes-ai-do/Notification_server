@@ -37,8 +37,10 @@ DELETE 시 해당 Endpoint에 연결된 비삭제 Subscription도 함께 소프�
 
 ### Endpoint 요청·응답
 
-```json
-POST /api/v1/notification-endpoints
+```http
+POST /api/v1/notification-endpoints HTTP/1.1
+Content-Type: application/json
+
 {
   "channelTypeId": 1,
   "destination": "123456789",
@@ -87,8 +89,10 @@ DELETE /api/v1/notification-subscriptions/{subscriptionId}
 `subscriptionTypeId`는 프론트가 아래의 “구독 종류 조회” API에서 받은 값을 사용한다.
 `targetId`는 Notification DB의 ID가 아니라 재배·문의·사용자 서비스가 가진 원래 대상 ID다.
 
-```json
-POST /api/v1/notification-subscriptions
+```http
+POST /api/v1/notification-subscriptions HTTP/1.1
+Content-Type: application/json
+
 {
   "subscriptionTypeId": 5,
   "endpointId": 10,
@@ -124,7 +128,8 @@ GET /api/v1/notification-subscription-types
 GET /api/v1/notifications?page=0&size=20
 ```
 
-알림 이력은 최신 생성일 순으로 반환한다. `page`는 0 이상, `size`는 1~100이다.
+알림 이력은 최신 생성일 순으로 반환한다. `page`는 0 이상이며, `size`의 기본값은 20개다.
+요청한 `size`가 100을 넘으면 서버는 최대 100개로 제한한다.
 프론트는 첫 화면에서 `page=0&size=20`을 사용하고 `hasNext=true`일 때만 다음 페이지를
 요청하면 된다. `message`는 해당 채널에 실제로 렌더링된 알림 문구이므로 화면에 바로 표시할 수 있다.
 
@@ -174,11 +179,11 @@ GET /api/v1/notifications?page=0&size=20
 프론트는 오류 문구를 `detail`, 프로그램 분기는 `code`로 처리한다. `message` 필드는 반환하지
 않으므로 사용하면 안 된다.
 
-| HTTP | 코드 | 의미 |
-|---:|---|---|
-| 400 | `INVALID_REQUEST` | 필수값·형식 오류 |
-| 400 | `UNSUPPORTED_NOTIFICATION_CHANNEL` | 지원하지 않는 채널 조합 |
-| 404 | `NOTIFICATION_RESOURCE_NOT_FOUND` | 없거나 사용자 소유가 아닌 리소스 |
-| 409 | `NOTIFICATION_RESOURCE_CONFLICT` | Endpoint·구독 중복 |
-| 502 | `NOTIFICATION_PROVIDER_FAILURE` | 외부 채널 요청 실패 |
-| 500 | `INTERNAL_SERVER_ERROR` | 예상하지 못한 서버 오류 |
+| HTTP | 코드                                   | 의미                            |
+|-----:|----------------------------------------|---------------------------------|
+|  400 | `INVALID_REQUEST`                      | 필수값·형식 오류                |
+|  400 | `UNSUPPORTED_NOTIFICATION_CHANNEL`     | 지원하지 않는 채널 조합         |
+|  404 | `NOTIFICATION_RESOURCE_NOT_FOUND`      | 없거나 사용자 소유가 아닌 리소스 |
+|  409 | `NOTIFICATION_RESOURCE_CONFLICT`       | Endpoint·구독 중복              |
+|  502 | `NOTIFICATION_PROVIDER_FAILURE`        | 외부 채널 요청 실패             |
+|  500 | `INTERNAL_SERVER_ERROR`                | 예상하지 못한 서버 오류         |

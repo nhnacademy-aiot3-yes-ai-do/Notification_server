@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import site.yesaido.notification_server.domain.NotificationDelivery;
+import site.yesaido.notification_server.entity.NotificationDelivery;
 import site.yesaido.notification_server.messaging.DeadLetterPublisher;
 import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
 

@@ -15,3 +15,5 @@ target/
 
 # OS files
 .DS_Store
+
+application-dev.yml

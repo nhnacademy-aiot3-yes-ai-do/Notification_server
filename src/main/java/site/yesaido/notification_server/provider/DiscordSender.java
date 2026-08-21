@@ -8,7 +8,7 @@ import java.util.Set;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import site.yesaido.notification_server.config.NotificationProperties;
-import site.yesaido.notification_server.exception.NotificationProviderException;
+import site.yesaido.notification_server.exception.provider.DiscordNotificationProviderException;
 
 @Component
 public class DiscordSender implements NotificationSender {
@@ -62,7 +62,7 @@ public class DiscordSender implements NotificationSender {
             Object messageId = response == null ? null : response.get("id");
             return new ProviderSendResult(messageId == null ? null : String.valueOf(messageId));
         } catch (RuntimeException exception) {
-            throw new NotificationProviderException("Discord 메시지 발송에 실패했습니다.", exception);
+            throw new DiscordNotificationProviderException("Discord 메시지 발송에 실패했습니다.", exception);
         }
     }
 }

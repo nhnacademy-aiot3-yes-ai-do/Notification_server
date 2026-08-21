@@ -7,7 +7,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
 import site.yesaido.notification_server.config.NotificationProperties;
-import site.yesaido.notification_server.exception.NotificationProviderException;
+import site.yesaido.notification_server.exception.provider.TelegramNotificationProviderException;
 
 class NotificationSenderTest {
 
@@ -19,7 +19,7 @@ class NotificationSenderTest {
         assertThatThrownBy(() -> sender.validateDestination("not-a-chat-id"))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> sender.send("123456789", "message"))
-                .isInstanceOf(NotificationProviderException.class)
+                .isInstanceOf(TelegramNotificationProviderException.class)
                 .hasMessageContaining("Token");
     }
 
@@ -38,20 +38,11 @@ class NotificationSenderTest {
 
     private NotificationProperties properties(String telegramToken) {
         return new NotificationProperties(
-                new NotificationProperties.Rabbit(
-                        "events",
-                        route(), route(), route(), route(),
-                        route(), route(), route(), route(),
-                        "dlx", "dlq", "failed"),
                 new NotificationProperties.Provider(
                         new NotificationProperties.Telegram(
                                 "https://api.telegram.org", telegramToken),
                         new NotificationProperties.Discord(
                                 List.of("discord.com", "discordapp.com"))),
                 new NotificationProperties.Retry(Duration.ZERO));
-    }
-
-    private NotificationProperties.EventRoute route() {
-        return new NotificationProperties.EventRoute("queue", "routing-key");
     }
 }

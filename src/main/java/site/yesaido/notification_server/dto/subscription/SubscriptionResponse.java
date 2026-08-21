@@ -1,7 +1,7 @@
 package site.yesaido.notification_server.dto.subscription;
 
 import java.time.LocalDateTime;
-import site.yesaido.notification_server.domain.NotificationSubscription;
+import site.yesaido.notification_server.entity.NotificationSubscription;
 
 public record SubscriptionResponse(
         Long id,

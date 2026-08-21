@@ -5,13 +5,8 @@ spring:
   application:
     name: notification-server
 
-  cloud:
-    kubernetes:
-      discovery:
-        enabled: ${K8S_DISCOVERY_ENABLED:false}
-
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/notification_db}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?currentSchema=${NOTIFICATION_DB_SCHEMA}&stringtype=unspecified
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -30,46 +25,22 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: false
 
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100
+
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
-    virtual-host: ${RABBITMQ_VHOST:/}
     listener:
       simple:
         default-requeue-rejected: false
 
 notification:
-  rabbit:
-    exchange: ${NOTIFICATION_EVENT_EXCHANGE:yes-nhn.notification.exchange}
-    threshold:
-      queue: ${NOTIFICATION_THRESHOLD_QUEUE:yes-nhn.notification.threshold.queue}
-      routing-key: ${NOTIFICATION_THRESHOLD_ROUTING_KEY:yes-nhn.notification.threshold.queue}
-    action:
-      queue: ${NOTIFICATION_ACTION_QUEUE:yes-nhn.notification.action.queue}
-      routing-key: ${NOTIFICATION_ACTION_ROUTING_KEY:yes-nhn.notification.action.queue}
-    daily:
-      queue: ${NOTIFICATION_DAILY_QUEUE:yes-nhn.notification.daily.queue}
-      routing-key: ${NOTIFICATION_DAILY_ROUTING_KEY:yes-nhn.notification.daily.queue}
-    login:
-      queue: ${NOTIFICATION_LOGIN_QUEUE:yes-nhn.notification.login.queue}
-      routing-key: ${NOTIFICATION_LOGIN_ROUTING_KEY:yes-nhn.notification.login.queue}
-    question:
-      queue: ${NOTIFICATION_QUESTION_QUEUE:yes-nhn.notification.question.queue}
-      routing-key: ${NOTIFICATION_QUESTION_ROUTING_KEY:yes-nhn.notification.question.queue}
-    answer:
-      queue: ${NOTIFICATION_ANSWER_QUEUE:yes-nhn.notification.answer.queue}
-      routing-key: ${NOTIFICATION_ANSWER_ROUTING_KEY:yes-nhn.notification.answer.queue}
-    harvest:
-      queue: ${NOTIFICATION_HARVEST_QUEUE:yes-nhn.notification.harvest.queue}
-      routing-key: ${NOTIFICATION_HARVEST_ROUTING_KEY:yes-nhn.notification.harvest.queue}
-    cultivation-finished:
-      queue: ${NOTIFICATION_CULTIVATION_FINISHED_QUEUE:yes-nhn.notification.cultivation-finished.queue}
-      routing-key: ${NOTIFICATION_CULTIVATION_FINISHED_ROUTING_KEY:yes-nhn.notification.cultivation-finished.queue}
-    dead-letter-exchange: ${NOTIFICATION_DLX:yes-nhn.dlx}
-    dead-letter-queue: ${NOTIFICATION_DLQ:yes-nhn.dlq}
-    dead-letter-routing-key: ${NOTIFICATION_DLQ_ROUTING_KEY:yes-nhn.dlq}
   provider:
     telegram:
       base-url: ${TELEGRAM_API_BASE_URL:https://api.telegram.org}
@@ -83,13 +54,6 @@ notification:
     pending-delivery-min-age: ${NOTIFICATION_PENDING_DELIVERY_MIN_AGE:PT30S}
     sending-claim-timeout: ${NOTIFICATION_SENDING_CLAIM_TIMEOUT:PT5M}
     pending-delivery-batch-size: ${NOTIFICATION_PENDING_DELIVERY_BATCH_SIZE:100}
-
-server:
-  port: ${SERVER_PORT:8080}
-
-eureka:
-  client:
-    enabled: ${EUREKA_ENABLED:false}
 
 management:
   endpoints:
