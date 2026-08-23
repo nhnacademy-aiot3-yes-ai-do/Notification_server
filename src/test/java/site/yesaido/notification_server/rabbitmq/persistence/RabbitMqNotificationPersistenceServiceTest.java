@@ -49,7 +49,8 @@ class RabbitMqNotificationPersistenceServiceTest {
                 UUID.randomUUID(), "HARVEST_COMPLETED", "CULTIVATION", 7L, null, Map.of("cultivationName", "토마토"));
 
         when(eventTypeRepository.findByCode(command.eventCode())).thenReturn(Optional.of(eventType));
-        when(creationService.createIfAbsent(eq(command.eventId()), eq(eventType), any()))
+        when(creationService.createIfAbsent(
+                eq(command.eventId()), eq(eventType), eq(command.targetId()), eq(command.occurredAt()), any()))
                 .thenReturn(new RabbitMqNotificationCreationResult(99L, true));
         when(subscriptionRepository.findActiveSubscriptions(command.eventCode(), command.targetType(), command.targetId()))
                 .thenReturn(List.of(telegramSubscription, discordSubscription));
@@ -81,7 +82,8 @@ class RabbitMqNotificationPersistenceServiceTest {
         NotificationEventType eventType = eventType("INQUIRY");
 
         when(eventTypeRepository.findByCode(command.eventCode())).thenReturn(Optional.of(eventType));
-        when(creationService.createIfAbsent(eq(command.eventId()), eq(eventType), any()))
+        when(creationService.createIfAbsent(
+                eq(command.eventId()), eq(eventType), eq(command.targetId()), eq(command.occurredAt()), any()))
                 .thenReturn(new RabbitMqNotificationCreationResult(99L, true));
         when(subscriptionRepository.findActiveSubscriptionsForRecipientUserIds(
                 command.eventCode(), command.targetType(), command.targetId(), command.recipientUserIds()))

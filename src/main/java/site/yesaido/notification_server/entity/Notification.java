@@ -1,5 +1,6 @@
 package site.yesaido.notification_server.entity;
 
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 import jakarta.persistence.Column;
@@ -30,6 +31,12 @@ public class Notification {
     @Column(name = "source_event_id", nullable = false, unique = true)
     private UUID sourceEventId;
 
+    @Column(name = "target_id")
+    private Long targetId;
+
+    @Column(name = "occurred_at")
+    private OffsetDateTime occurredAt;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "notification_event_type_id", nullable = false)
     private NotificationEventType eventType;
@@ -41,8 +48,18 @@ public class Notification {
     public Notification(UUID sourceEventId,
                         NotificationEventType eventType,
                         Map<String, Object> eventPayload) {
+        this(sourceEventId, eventType, null, null, eventPayload);
+    }
+
+    public Notification(UUID sourceEventId,
+                        NotificationEventType eventType,
+                        Long targetId,
+                        OffsetDateTime occurredAt,
+                        Map<String, Object> eventPayload) {
         this.sourceEventId = sourceEventId;
         this.eventType = eventType;
+        this.targetId = targetId;
+        this.occurredAt = occurredAt;
         this.eventPayload = eventPayload;
     }
 }

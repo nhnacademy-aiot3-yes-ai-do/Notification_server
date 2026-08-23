@@ -109,7 +109,8 @@ class RabbitMqNotificationPersistenceRetryTest {
                 UUID.randomUUID(), "HARVEST_COMPLETED", "CULTIVATION", 7L, null, Map.of("cultivationName", "tomato"));
 
         when(eventTypeRepository.findByCode(command.eventCode())).thenReturn(Optional.of(eventType));
-        when(creationService.createIfAbsent(eq(command.eventId()), eq(eventType), any()))
+        when(creationService.createIfAbsent(
+                eq(command.eventId()), eq(eventType), eq(command.targetId()), eq(command.occurredAt()), any()))
                 .thenReturn(new RabbitMqNotificationCreationResult(99L, true));
         when(subscriptionRepository.findActiveSubscriptions(command.eventCode(), command.targetType(), command.targetId()))
                 .thenReturn(List.of(first, second));
@@ -144,7 +145,8 @@ class RabbitMqNotificationPersistenceRetryTest {
         RabbitMqNotificationCommand command = new RabbitMqNotificationCommand(
                 UUID.randomUUID(), "HARVEST_COMPLETED", "CULTIVATION", 7L, null, Map.of());
         when(eventTypeRepository.findByCode(command.eventCode())).thenReturn(Optional.of(eventType));
-        when(creationService.createIfAbsent(eq(command.eventId()), eq(eventType), any()))
+        when(creationService.createIfAbsent(
+                eq(command.eventId()), eq(eventType), eq(command.targetId()), eq(command.occurredAt()), any()))
                 .thenReturn(new RabbitMqNotificationCreationResult(99L, true));
         when(subscriptionRepository.findActiveSubscriptions(command.eventCode(), command.targetType(), command.targetId()))
                 .thenReturn(List.of(subscription));
@@ -176,7 +178,8 @@ class RabbitMqNotificationPersistenceRetryTest {
         RabbitMqNotificationCommand command = new RabbitMqNotificationCommand(
                 UUID.randomUUID(), "HARVEST_COMPLETED", "CULTIVATION", 7L, null, Map.of());
         when(eventTypeRepository.findByCode(command.eventCode())).thenReturn(Optional.of(eventType));
-        when(creationService.createIfAbsent(eq(command.eventId()), eq(eventType), any()))
+        when(creationService.createIfAbsent(
+                eq(command.eventId()), eq(eventType), eq(command.targetId()), eq(command.occurredAt()), any()))
                 .thenReturn(new RabbitMqNotificationCreationResult(99L, true));
         when(subscriptionRepository.findActiveSubscriptions(command.eventCode(), command.targetType(), command.targetId()))
                 .thenReturn(List.of(subscription));
@@ -207,7 +210,8 @@ class RabbitMqNotificationPersistenceRetryTest {
         RabbitMqNotificationCommand command = new RabbitMqNotificationCommand(
                 UUID.randomUUID(), "HARVEST_COMPLETED", "CULTIVATION", 7L, null, Map.of());
         when(eventTypeRepository.findByCode(command.eventCode())).thenReturn(Optional.of(eventType));
-        when(creationService.createIfAbsent(eq(command.eventId()), eq(eventType), any()))
+        when(creationService.createIfAbsent(
+                eq(command.eventId()), eq(eventType), eq(command.targetId()), eq(command.occurredAt()), any()))
                 .thenReturn(new RabbitMqNotificationCreationResult(99L, true));
         when(subscriptionRepository.findActiveSubscriptions(command.eventCode(), command.targetType(), command.targetId()))
                 .thenReturn(List.of(subscription));
@@ -240,7 +244,8 @@ class RabbitMqNotificationPersistenceRetryTest {
         RabbitMqNotificationCommand command = new RabbitMqNotificationCommand(
                 UUID.randomUUID(), "HARVEST_COMPLETED", "CULTIVATION", 7L, null, Map.of());
         when(eventTypeRepository.findByCode(command.eventCode())).thenReturn(Optional.of(eventType));
-        when(creationService.createIfAbsent(eq(command.eventId()), eq(eventType), any()))
+        when(creationService.createIfAbsent(
+                eq(command.eventId()), eq(eventType), eq(command.targetId()), eq(command.occurredAt()), any()))
                 .thenReturn(new RabbitMqNotificationCreationResult(99L, true));
         when(subscriptionRepository.findActiveSubscriptions(command.eventCode(), command.targetType(), command.targetId()))
                 .thenReturn(List.of(subscription));

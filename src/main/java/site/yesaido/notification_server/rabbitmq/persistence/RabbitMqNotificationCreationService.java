@@ -2,6 +2,7 @@ package site.yesaido.notification_server.rabbitmq.persistence;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +22,23 @@ public class RabbitMqNotificationCreationService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public RabbitMqNotificationCreationResult createIfAbsent(
-            UUID eventId, NotificationEventType eventType, Map<String, Object> payload) {
-        boolean created = notificationRepository.insertIfAbsent(eventId, eventType.getId(), writePayload(payload)) == 1;
+            UUID eventId,
+            NotificationEventType eventType,
+            Long targetId,
+            OffsetDateTime occurredAt,
+            Map<String, Object> payload) {
+        if (targetId == null) {
+            throw new IllegalArgumentException("RabbitMQ notification targetId는 필수입니다");
+        }
+        if (occurredAt == null) {
+            throw new IllegalArgumentException("RabbitMQ notification occurredAt은 필수입니다");
+        }
+        boolean created = notificationRepository.insertIfAbsent(
+                eventId, eventType.getId(), targetId, occurredAt, writePayload(payload)) == 1;
+        return result(eventId, created);
+    }
+
+    private RabbitMqNotificationCreationResult result(UUID eventId, boolean created) {
         Notification notification = notificationRepository.findBySourceEventId(eventId)
                 .orElseThrow(() -> new IllegalStateException("notification을 조회할 수 없습니다: " + eventId));
         return new RabbitMqNotificationCreationResult(notification.getId(), created);
