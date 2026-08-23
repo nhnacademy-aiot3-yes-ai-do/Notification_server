@@ -11,8 +11,4 @@ ALTER TABLE notification
     CHECK (
         (target_id IS NULL AND occurred_at IS NULL)
         OR (target_id IS NOT NULL AND occurred_at IS NOT NULL)
-    );
-
-CREATE INDEX idx_notification_target_occurred_at
-    ON notification (target_id, occurred_at)
-    WHERE target_id IS NOT NULL AND occurred_at IS NOT NULL;
+    ) NOT VALID;
