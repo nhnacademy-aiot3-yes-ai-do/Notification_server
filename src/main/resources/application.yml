@@ -5,6 +5,10 @@ spring:
   application:
     name: notification-server
 
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?currentSchema=${NOTIFICATION_DB_SCHEMA}&stringtype=unspecified
     username: ${DB_USERNAME:postgres}

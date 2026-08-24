@@ -70,8 +70,8 @@ public class RabbitMqNotificationPersistenceService {
         }
 
         Map<String, Object> payload = payload(command);
-        RabbitMqNotificationCreationResult creation =
-                notificationCreationService.createIfAbsent(command.eventId(), eventType, payload);
+        RabbitMqNotificationCreationResult creation = notificationCreationService.createIfAbsent(
+                command.eventId(), eventType, command.targetId(), command.occurredAt(), payload);
         List<NotificationSubscription> subscriptions = activeSubscriptions(command);
         Map<Long, NotificationTemplate> templatesByChannelTypeId = templatesByChannelTypeId(eventType.getId(), subscriptions);
         List<DeliveryFailure> failures = new ArrayList<>();
