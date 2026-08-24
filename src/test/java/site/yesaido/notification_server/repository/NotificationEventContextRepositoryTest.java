@@ -1,7 +1,11 @@
 package site.yesaido.notification_server.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -33,15 +37,20 @@ class NotificationEventContextRepositoryTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
     @Test
-    void RabbitMQ_원본_저장시_대상과_이벤트_발생시각을_보존한다() {
+    void RabbitMQ_원본_저장시_대상과_이벤트_발생시각을_보존한다() throws Exception {
         UUID eventId = UUID.randomUUID();
         OffsetDateTime occurredAt = OffsetDateTime.parse("2026-08-23T12:34:56+09:00");
-        String eventPayload = """
-                {"targetId": 77, "occurredAt": "%s"}
-                """.formatted(occurredAt);
+        Map<String, Object> eventPayload = new LinkedHashMap<>();
+        eventPayload.put("targetId", 77L);
+        eventPayload.put("occurredAt", occurredAt);
 
-        int inserted = repository.insertIfAbsent(eventId, eventTypeId(), eventPayload);
+        int inserted = repository.insertIfAbsent(eventId, eventTypeId(),
+                objectMapper.writeValueAsString(eventPayload));
         Map<String, Object> stored = jdbcTemplate.queryForMap("""
                 SELECT source_event_id,
                        event_payload ->> 'targetId' AS target_id,
@@ -69,11 +78,11 @@ class NotificationEventContextRepositoryTest {
                 .isZero();
 
         String storedPayload = jdbcTemplate.queryForObject("""
-                SELECT event_payload::text
+                SELECT event_payload ->> 'targetId'
                 FROM notification
                 WHERE source_event_id = ?
                 """, String.class, eventId);
-        assertThat(storedPayload).contains("\"targetId\": 77");
+        assertThat(storedPayload).isEqualTo("77");
     }
 
     private Long eventTypeId() {

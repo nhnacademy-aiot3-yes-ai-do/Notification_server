@@ -3,8 +3,13 @@ package site.yesaido.notification_server.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -39,8 +44,12 @@ class NotificationDailySummaryRepositoryTest {
     @Autowired
     private NotificationRepository repository;
 
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
     @Test
-    void 발생시각_경계와_재배지를_기준으로_원본알림만_유형별_집계한다() {
+    void 실제_ObjectMapper_JSONB_저장값으로_발생시각_경계와_재배지를_기준으로_집계한다() throws Exception {
         Long eventTypeId = eventTypeId("ENVIRONMENT_THRESHOLD_BREACHED");
         Long recoveredTypeId = eventTypeId("ENVIRONMENT_RECOVERED");
         insertNotification(eventTypeId, 4L, START_AT);
@@ -67,14 +76,15 @@ class NotificationDailySummaryRepositoryTest {
                 "SELECT id FROM notification_event_type WHERE code = ?", Long.class, code);
     }
 
-    private void insertNotification(Long eventTypeId, Long targetId, OffsetDateTime occurredAt) {
-        String eventPayload = """
-                {"targetId": %d, "occurredAt": "%s"}
-                """.formatted(targetId, occurredAt);
+    private void insertNotification(Long eventTypeId, Long targetId, OffsetDateTime occurredAt)
+            throws Exception {
+        Map<String, Object> eventPayload = new LinkedHashMap<>();
+        eventPayload.put("targetId", targetId);
+        eventPayload.put("occurredAt", occurredAt);
         jdbcTemplate.update("""
                 INSERT INTO notification
                     (source_event_id, notification_event_type_id, event_payload)
                 VALUES (?, ?, CAST(? AS jsonb))
-                """, UUID.randomUUID(), eventTypeId, eventPayload);
+                """, UUID.randomUUID(), eventTypeId, objectMapper.writeValueAsString(eventPayload));
     }
 }
