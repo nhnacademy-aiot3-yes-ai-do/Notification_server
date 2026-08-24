@@ -3,6 +3,7 @@ package site.yesaido.notification_server.rabbitmq.persistence;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,9 @@ import site.yesaido.notification_server.repository.NotificationRepository;
 @Service
 @RequiredArgsConstructor
 public class RabbitMqNotificationCreationService {
+
+    private static final String TARGET_ID = "targetId";
+    private static final String OCCURRED_AT = "occurredAt";
 
     private final NotificationRepository notificationRepository;
     private final ObjectMapper objectMapper;
@@ -34,7 +38,7 @@ public class RabbitMqNotificationCreationService {
             throw new IllegalArgumentException("RabbitMQ notification occurredAt은 필수입니다");
         }
         boolean created = notificationRepository.insertIfAbsent(
-                eventId, eventType.getId(), targetId, occurredAt, writePayload(payload)) == 1;
+                eventId, eventType.getId(), writePayload(payload, targetId, occurredAt)) == 1;
         return result(eventId, created);
     }
 
@@ -44,9 +48,12 @@ public class RabbitMqNotificationCreationService {
         return new RabbitMqNotificationCreationResult(notification.getId(), created);
     }
 
-    private String writePayload(Map<String, Object> payload) {
+    private String writePayload(Map<String, Object> payload, Long targetId, OffsetDateTime occurredAt) {
+        Map<String, Object> eventPayload = new LinkedHashMap<>(payload);
+        eventPayload.put(TARGET_ID, targetId);
+        eventPayload.put(OCCURRED_AT, occurredAt);
         try {
-            return objectMapper.writeValueAsString(payload);
+            return objectMapper.writeValueAsString(eventPayload);
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("RabbitMQ notification payload을 JSON으로 변환할 수 없습니다", exception);
         }

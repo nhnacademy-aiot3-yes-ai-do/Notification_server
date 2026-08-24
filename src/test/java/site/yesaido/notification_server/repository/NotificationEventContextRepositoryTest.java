@@ -1,9 +1,6 @@
 package site.yesaido.notification_server.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -11,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -41,10 +37,15 @@ class NotificationEventContextRepositoryTest {
     void RabbitMQ_원본_저장시_대상과_이벤트_발생시각을_보존한다() {
         UUID eventId = UUID.randomUUID();
         OffsetDateTime occurredAt = OffsetDateTime.parse("2026-08-23T12:34:56+09:00");
+        String eventPayload = """
+                {"targetId": 77, "occurredAt": "%s"}
+                """.formatted(occurredAt);
 
-        int inserted = repository.insertIfAbsent(eventId, eventTypeId(), 77L, occurredAt, "{}");
+        int inserted = repository.insertIfAbsent(eventId, eventTypeId(), eventPayload);
         Map<String, Object> stored = jdbcTemplate.queryForMap("""
-                SELECT source_event_id, target_id, occurred_at
+                SELECT source_event_id,
+                       event_payload ->> 'targetId' AS target_id,
+                       event_payload ->> 'occurredAt' AS occurred_at
                 FROM notification
                 WHERE source_event_id = ?
                 """, eventId);
@@ -52,25 +53,27 @@ class NotificationEventContextRepositoryTest {
         assertThat(inserted).isEqualTo(1);
         assertThat(stored)
                 .containsEntry("source_event_id", eventId)
-                .containsEntry("target_id", 77L);
-        assertThat(((Timestamp) stored.get("occurred_at")).toInstant())
-                .isEqualTo(occurredAt.toInstant());
+                .containsEntry("target_id", "77")
+                .containsEntry("occurred_at", occurredAt.toString());
     }
 
     @Test
-    void targetId만_저장하면_거부한다() {
-        assertThatThrownBy(() -> repository.insertIfAbsent(
-                UUID.randomUUID(), eventTypeId(), 77L, null, "{}"))
-                .isInstanceOf(DataIntegrityViolationException.class);
-    }
+    void 중복_이벤트는_기존_eventPayload를_덮어쓰지_않는다() {
+        UUID eventId = UUID.randomUUID();
+        Long eventTypeId = eventTypeId();
+        String originalPayload = "{\"targetId\":77,\"occurredAt\":\"2026-08-23T12:34:56+09:00\"}";
 
-    @Test
-    void occurredAt만_저장하면_거부한다() {
-        OffsetDateTime occurredAt = OffsetDateTime.parse("2026-08-23T12:34:56+09:00");
+        assertThat(repository.insertIfAbsent(eventId, eventTypeId, originalPayload)).isEqualTo(1);
+        assertThat(repository.insertIfAbsent(eventId, eventTypeId,
+                "{\"targetId\":99,\"occurredAt\":\"2026-08-24T12:34:56+09:00\"}"))
+                .isZero();
 
-        assertThatThrownBy(() -> repository.insertIfAbsent(
-                UUID.randomUUID(), eventTypeId(), null, occurredAt, "{}"))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        String storedPayload = jdbcTemplate.queryForObject("""
+                SELECT event_payload::text
+                FROM notification
+                WHERE source_event_id = ?
+                """, String.class, eventId);
+        assertThat(storedPayload).contains("\"targetId\": 77");
     }
 
     private Long eventTypeId() {

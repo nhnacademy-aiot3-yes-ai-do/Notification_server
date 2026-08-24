@@ -50,10 +50,13 @@ class RabbitMqNotificationCreationServiceTest {
         UUID eventId = UUID.randomUUID();
         NotificationEventType eventType = eventType(3L);
         Map<String, Object> payload = Map.of("cultivationId", 5L);
+        Map<String, Object> storedPayload = Map.of(
+                "cultivationId", 5L, "targetId", TARGET_ID, "occurredAt", OCCURRED_AT);
         Notification notification = notification(11L, eventId, eventType, payload);
-        when(objectMapper.writeValueAsString(payload)).thenReturn("{\"cultivationId\":5}");
-        when(notificationRepository.insertIfAbsent(
-                eventId, 3L, TARGET_ID, OCCURRED_AT, "{\"cultivationId\":5}"))
+        when(objectMapper.writeValueAsString(storedPayload))
+                .thenReturn("{\"cultivationId\":5,\"targetId\":5,\"occurredAt\":\"2026-08-23T12:34:56+09:00\"}");
+        when(notificationRepository.insertIfAbsent(eventId, 3L,
+                "{\"cultivationId\":5,\"targetId\":5,\"occurredAt\":\"2026-08-23T12:34:56+09:00\"}"))
                 .thenReturn(1);
         when(notificationRepository.findBySourceEventId(eventId)).thenReturn(Optional.of(notification));
 
@@ -71,10 +74,13 @@ class RabbitMqNotificationCreationServiceTest {
         UUID eventId = UUID.randomUUID();
         NotificationEventType eventType = eventType(3L);
         Map<String, Object> payload = Map.of();
+        Map<String, Object> storedPayload = Map.of("targetId", TARGET_ID, "occurredAt", OCCURRED_AT);
         Notification notification = notification(11L, eventId, eventType, payload);
-        when(objectMapper.writeValueAsString(payload)).thenReturn("{}");
-        when(notificationRepository.insertIfAbsent(
-                eventId, 3L, TARGET_ID, OCCURRED_AT, "{}")).thenReturn(0);
+        when(objectMapper.writeValueAsString(storedPayload))
+                .thenReturn("{\"targetId\":5,\"occurredAt\":\"2026-08-23T12:34:56+09:00\"}");
+        when(notificationRepository.insertIfAbsent(eventId, 3L,
+                "{\"targetId\":5,\"occurredAt\":\"2026-08-23T12:34:56+09:00\"}"))
+                .thenReturn(0);
         when(notificationRepository.findBySourceEventId(eventId)).thenReturn(Optional.of(notification));
 
         RabbitMqNotificationCreationResult result = service.createIfAbsent(
@@ -85,14 +91,17 @@ class RabbitMqNotificationCreationServiceTest {
     }
 
     @Test
-    void 이벤트_문맥이_있으면_재배지와_발생시각을_함께_저장한다() throws Exception {
+    void 이벤트_문맥을_eventPayload에_함께_저장한다() throws Exception {
         UUID eventId = UUID.randomUUID();
         NotificationEventType eventType = eventType(3L);
         Map<String, Object> payload = Map.of("cultivationId", 5L);
+        Map<String, Object> storedPayload = Map.of(
+                "cultivationId", 5L, "targetId", TARGET_ID, "occurredAt", OCCURRED_AT);
         Notification notification = notification(11L, eventId, eventType, payload);
-        when(objectMapper.writeValueAsString(payload)).thenReturn("{\"cultivationId\":5}");
-        when(notificationRepository.insertIfAbsent(
-                eventId, 3L, TARGET_ID, OCCURRED_AT, "{\"cultivationId\":5}"))
+        when(objectMapper.writeValueAsString(storedPayload))
+                .thenReturn("{\"cultivationId\":5,\"targetId\":5,\"occurredAt\":\"2026-08-23T12:34:56+09:00\"}");
+        when(notificationRepository.insertIfAbsent(eventId, 3L,
+                "{\"cultivationId\":5,\"targetId\":5,\"occurredAt\":\"2026-08-23T12:34:56+09:00\"}"))
                 .thenReturn(1);
         when(notificationRepository.findBySourceEventId(eventId)).thenReturn(Optional.of(notification));
 
@@ -100,8 +109,8 @@ class RabbitMqNotificationCreationServiceTest {
                 eventId, eventType, TARGET_ID, OCCURRED_AT, payload);
 
         assertTrue(result.created());
-        verify(notificationRepository).insertIfAbsent(
-                eventId, 3L, TARGET_ID, OCCURRED_AT, "{\"cultivationId\":5}");
+        verify(notificationRepository).insertIfAbsent(eventId, 3L,
+                "{\"cultivationId\":5,\"targetId\":5,\"occurredAt\":\"2026-08-23T12:34:56+09:00\"}");
     }
 
     @Test
@@ -109,7 +118,8 @@ class RabbitMqNotificationCreationServiceTest {
         UUID eventId = UUID.randomUUID();
         NotificationEventType eventType = eventType(3L);
         Map<String, Object> payload = Map.of();
-        when(objectMapper.writeValueAsString(payload)).thenReturn("{}");
+        when(objectMapper.writeValueAsString(Map.of("targetId", TARGET_ID, "occurredAt", OCCURRED_AT)))
+                .thenReturn("{\"targetId\":5,\"occurredAt\":\"2026-08-23T12:34:56+09:00\"}");
         when(notificationRepository.findBySourceEventId(eventId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class,
@@ -121,12 +131,16 @@ class RabbitMqNotificationCreationServiceTest {
         UUID eventId = UUID.randomUUID();
         NotificationEventType eventType = eventType(3L);
         Map<String, Object> payload = Map.of("unsupported", new Object());
-        when(objectMapper.writeValueAsString(payload))
+        Map<String, Object> storedPayload = Map.of(
+                "unsupported", payload.get("unsupported"),
+                "targetId", TARGET_ID,
+                "occurredAt", OCCURRED_AT);
+        when(objectMapper.writeValueAsString(storedPayload))
                 .thenThrow(new JsonProcessingException("serialization failed") { });
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.createIfAbsent(eventId, eventType, TARGET_ID, OCCURRED_AT, payload));
-        verify(objectMapper).writeValueAsString(payload);
+        verify(objectMapper).writeValueAsString(storedPayload);
     }
 
     @Test

@@ -26,18 +26,15 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      */
     @Modifying
     @Query(value = """
-            INSERT INTO notification (
-                source_event_id, notification_event_type_id, target_id, occurred_at, event_payload)
-            VALUES (:sourceEventId, :eventTypeId, :targetId, :occurredAt, CAST(:payload AS jsonb))
+            INSERT INTO notification (source_event_id, notification_event_type_id, event_payload)
+            VALUES (:sourceEventId, :eventTypeId, CAST(:payload AS jsonb))
             ON CONFLICT (source_event_id) DO NOTHING
             """, nativeQuery = true)
     int insertIfAbsent(@Param("sourceEventId") UUID sourceEventId,
                        @Param("eventTypeId") Long eventTypeId,
-                       @Param("targetId") Long targetId,
-                       @Param("occurredAt") OffsetDateTime occurredAt,
                        @Param("payload") String payload);
 
-    /** 원본 알림을 발생 시각과 재배지 기준으로 이벤트 유형별 집계한다. */
+    /** event_payload에 보존한 원본 이벤트의 재배지와 발생 시각을 기준으로 유형별 집계한다. */
     @Query(value = """
             SELECT event_type.code AS eventTypeCode,
                    event_type.display_name AS eventTypeName,
@@ -48,9 +45,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             JOIN subscription_target_type target_type
               ON target_type.id = event_type.target_type
             WHERE target_type.target_type = 'CULTIVATION'
-              AND notification.target_id = :cultivationId
-              AND notification.occurred_at >= :startAt
-              AND notification.occurred_at < :endAt
+              AND notification.event_payload @> jsonb_build_object('targetId', :cultivationId)
+              AND CAST(notification.event_payload ->> 'occurredAt' AS timestamptz) >= :startAt
+              AND CAST(notification.event_payload ->> 'occurredAt' AS timestamptz) < :endAt
             GROUP BY event_type.code, event_type.display_name
             ORDER BY event_type.code
             """, nativeQuery = true)

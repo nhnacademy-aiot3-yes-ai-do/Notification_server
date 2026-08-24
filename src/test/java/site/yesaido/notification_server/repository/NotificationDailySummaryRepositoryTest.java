@@ -68,10 +68,13 @@ class NotificationDailySummaryRepositoryTest {
     }
 
     private void insertNotification(Long eventTypeId, Long targetId, OffsetDateTime occurredAt) {
+        String eventPayload = """
+                {"targetId": %d, "occurredAt": "%s"}
+                """.formatted(targetId, occurredAt);
         jdbcTemplate.update("""
                 INSERT INTO notification
-                    (source_event_id, notification_event_type_id, target_id, occurred_at, event_payload)
-                VALUES (?, ?, ?, ?, CAST(? AS jsonb))
-                """, UUID.randomUUID(), eventTypeId, targetId, occurredAt, "{}");
+                    (source_event_id, notification_event_type_id, event_payload)
+                VALUES (?, ?, CAST(? AS jsonb))
+                """, UUID.randomUUID(), eventTypeId, eventPayload);
     }
 }
