@@ -6,5 +6,5 @@ public interface NotificationEventCountProjection {
 
     String getEventTypeName();
 
-    long getEventCount();
+    Long getEventCount();
 }

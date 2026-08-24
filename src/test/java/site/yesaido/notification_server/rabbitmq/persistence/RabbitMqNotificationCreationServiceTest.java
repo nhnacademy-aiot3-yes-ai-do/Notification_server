@@ -66,6 +66,8 @@ class RabbitMqNotificationCreationServiceTest {
 
     @Test
     void 중복_이벤트는_기존_Notification을_반환하고_created를_false로_반환한다() throws Exception {
+        // 중복 이벤트는 UNIQUE(source_event_id) + ON CONFLICT DO NOTHING의
+        // 원자적 처리 결과(0)를 받아 기존 Notification만 재사용해야 한다.
         UUID eventId = UUID.randomUUID();
         NotificationEventType eventType = eventType(3L);
         Map<String, Object> payload = Map.of();

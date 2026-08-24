@@ -62,7 +62,7 @@ class NotificationDailySummaryServiceTest {
         assertThat(response.eventCounts()).isEmpty();
     }
 
-    private record StubEventCount(String eventTypeCode, String eventTypeName, long eventCount)
+    private record StubEventCount(String eventTypeCode, String eventTypeName, Long eventCount)
             implements NotificationEventCountProjection {
         @Override
         public String getEventTypeCode() {
@@ -75,7 +75,7 @@ class NotificationDailySummaryServiceTest {
         }
 
         @Override
-        public long getEventCount() {
+        public Long getEventCount() {
             return eventCount;
         }
     }

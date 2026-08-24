@@ -18,7 +18,11 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     Optional<Notification> findBySourceEventId(UUID sourceEventId);
 
     /**
-     * UNIQUE(source_event_id)를 DB에서 원자적으로 선점한다. 0이면 다른 consumer가 먼저 저장한 정상 중복이다.
+     * RabbitMQ 중복 이벤트를 DB에서 원자적으로 선점한다.
+     *
+     * JPA의 exists 후 save 방식은 동시 consumer 사이에서 경쟁 조건이 생길 수 있다.
+     * 따라서 PostgreSQL의 UNIQUE(source_event_id)와 ON CONFLICT DO NOTHING을
+     * 한 문장으로 실행해, 1이면 신규 저장·0이면 이미 처리된 정상 중복으로 구분한다.
      */
     @Modifying
     @Query(value = """
