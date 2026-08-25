@@ -8,8 +8,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.yesaido.notification_server.dto.summary.DailyNotificationEventCountResponse;
+import site.yesaido.notification_server.dto.summary.DailyNotificationSummariesResponse;
 import site.yesaido.notification_server.dto.summary.DailyNotificationSummaryResponse;
+import site.yesaido.notification_server.dto.summary.PeriodNotificationSummariesResponse;
+import site.yesaido.notification_server.dto.summary.PeriodNotificationSummaryResponse;
 import site.yesaido.notification_server.repository.NotificationRepository;
+import site.yesaido.notification_server.validation.ValidationMessages;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +27,49 @@ public class NotificationDailySummaryService {
     public DailyNotificationSummaryResponse summarize(Long cultivationId, LocalDate date) {
         OffsetDateTime startAt = date.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime();
         OffsetDateTime endAt = date.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime();
-        List<DailyNotificationEventCountResponse> eventCounts = notificationRepository
+        return summarize(cultivationId, date, startAt, endAt);
+    }
+
+    public DailyNotificationSummariesResponse summarizeDaily(LocalDate date, List<Long> cultivationIds) {
+        List<DailyNotificationSummaryResponse> summaries = cultivationIds.stream()
+                .distinct()
+                .map(cultivationId -> summarize(cultivationId, date))
+                .toList();
+        return new DailyNotificationSummariesResponse(date, BUSINESS_ZONE.getId(), summaries);
+    }
+
+    public PeriodNotificationSummariesResponse summarizePeriod(
+            LocalDate startDate, LocalDate endDate, List<Long> cultivationIds) {
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException(ValidationMessages.SUMMARY_DATE_RANGE_INVALID);
+        }
+        OffsetDateTime startAt = startDate.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime();
+        OffsetDateTime endAt = endDate.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime();
+        List<PeriodNotificationSummaryResponse> summaries = cultivationIds.stream()
+                .distinct()
+                .map(cultivationId -> summarizePeriod(cultivationId, startAt, endAt))
+                .toList();
+        return new PeriodNotificationSummariesResponse(
+                startDate, endDate, BUSINESS_ZONE.getId(), summaries);
+    }
+
+    private DailyNotificationSummaryResponse summarize(
+            Long cultivationId, LocalDate date, OffsetDateTime startAt, OffsetDateTime endAt) {
+        List<DailyNotificationEventCountResponse> eventCounts = findEventCounts(cultivationId, startAt, endAt);
+        long totalCount = totalCount(eventCounts);
+
+        return new DailyNotificationSummaryResponse(cultivationId, date, totalCount, eventCounts);
+    }
+
+    private PeriodNotificationSummaryResponse summarizePeriod(
+            Long cultivationId, OffsetDateTime startAt, OffsetDateTime endAt) {
+        List<DailyNotificationEventCountResponse> eventCounts = findEventCounts(cultivationId, startAt, endAt);
+        return new PeriodNotificationSummaryResponse(cultivationId, totalCount(eventCounts), eventCounts);
+    }
+
+    private List<DailyNotificationEventCountResponse> findEventCounts(
+            Long cultivationId, OffsetDateTime startAt, OffsetDateTime endAt) {
+        return notificationRepository
                 .countEventsByCultivationAndOccurredAtBetween(cultivationId, startAt, endAt)
                 .stream()
                 .map(projection -> new DailyNotificationEventCountResponse(
@@ -31,10 +77,11 @@ public class NotificationDailySummaryService {
                         projection.getEventTypeName(),
                         projection.getEventCount()))
                 .toList();
-        long totalCount = eventCounts.stream()
+    }
+
+    private long totalCount(List<DailyNotificationEventCountResponse> eventCounts) {
+        return eventCounts.stream()
                 .mapToLong(DailyNotificationEventCountResponse::count)
                 .sum();
-
-        return new DailyNotificationSummaryResponse(cultivationId, date, totalCount, eventCounts);
     }
 }
