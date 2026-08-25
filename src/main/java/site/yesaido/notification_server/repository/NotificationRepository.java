@@ -55,4 +55,27 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             @Param("cultivationId") Long cultivationId,
             @Param("startAt") OffsetDateTime startAt,
             @Param("endAt") OffsetDateTime endAt);
+
+    @Query(value = """
+            SELECT CAST(notification.event_payload ->> 'targetId' AS bigint) AS cultivationId,
+                   event_type.code AS eventTypeCode,
+                   event_type.display_name AS eventTypeName,
+                   COUNT(notification.id) AS eventCount
+            FROM notification
+            JOIN notification_event_type event_type
+              ON event_type.id = notification.notification_event_type_id
+            JOIN subscription_target_type target_type
+              ON target_type.id = event_type.target_type
+            WHERE target_type.target_type = 'CULTIVATION'
+              AND CAST(notification.event_payload ->> 'targetId' AS bigint) IN (:cultivationIds)
+              AND CAST(notification.event_payload ->> 'occurredAt' AS timestamptz) >= :startAt
+              AND CAST(notification.event_payload ->> 'occurredAt' AS timestamptz) < :endAt
+            GROUP BY CAST(notification.event_payload ->> 'targetId' AS bigint),
+                     event_type.code, event_type.display_name
+            ORDER BY cultivationId, event_type.code
+            """, nativeQuery = true)
+    List<NotificationEventCountProjection> countEventsByCultivationsAndOccurredAtBetween(
+            @Param("cultivationIds") List<Long> cultivationIds,
+            @Param("startAt") OffsetDateTime startAt,
+            @Param("endAt") OffsetDateTime endAt);
 }

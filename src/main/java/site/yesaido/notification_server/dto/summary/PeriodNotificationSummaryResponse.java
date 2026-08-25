@@ -1,15 +1,13 @@
 package site.yesaido.notification_server.dto.summary;
 
-import java.time.LocalDate;
 import java.util.List;
 
-public record DailyNotificationSummaryResponse(
+public record PeriodNotificationSummaryResponse(
         Long cultivationId,
-        LocalDate date,
         long totalCount,
         List<DailyNotificationEventCountResponse> eventCounts
 ) {
-    public DailyNotificationSummaryResponse {
+    public PeriodNotificationSummaryResponse {
         eventCounts = List.copyOf(eventCounts);
     }
 }
