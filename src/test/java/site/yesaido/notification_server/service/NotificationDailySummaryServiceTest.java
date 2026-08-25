@@ -72,10 +72,10 @@ class NotificationDailySummaryServiceTest {
         LocalDate date = LocalDate.of(2026, 8, 24);
         OffsetDateTime startAt = OffsetDateTime.parse("2026-08-24T00:00:00+09:00");
         OffsetDateTime endAt = OffsetDateTime.parse("2026-08-25T00:00:00+09:00");
-        when(notificationRepository.countEventsByCultivationAndOccurredAtBetween(11L, startAt, endAt))
-                .thenReturn(List.of(new StubEventCount("ENVIRONMENT_THRESHOLD_BREACHED", "환경 이상", 3L)));
-        when(notificationRepository.countEventsByCultivationAndOccurredAtBetween(12L, startAt, endAt))
-                .thenReturn(List.of());
+        when(notificationRepository.countEventsByCultivationsAndOccurredAtBetween(
+                List.of(11L, 12L), startAt, endAt))
+                .thenReturn(List.of(new StubEventCount(11L,
+                        "ENVIRONMENT_THRESHOLD_BREACHED", "환경 이상", 3L)));
 
         DailyNotificationSummariesResponse response = service.summarizeDaily(date, List.of(11L, 12L));
 
@@ -97,10 +97,11 @@ class NotificationDailySummaryServiceTest {
         LocalDate endDate = LocalDate.of(2026, 8, 24);
         OffsetDateTime startAt = OffsetDateTime.parse("2026-08-18T00:00:00+09:00");
         OffsetDateTime endAt = OffsetDateTime.parse("2026-08-25T00:00:00+09:00");
-        when(notificationRepository.countEventsByCultivationAndOccurredAtBetween(11L, startAt, endAt))
+        when(notificationRepository.countEventsByCultivationsAndOccurredAtBetween(
+                List.of(11L), startAt, endAt))
                 .thenReturn(List.of(
-                        new StubEventCount("ENVIRONMENT_THRESHOLD_BREACHED", "환경 이상", 3L),
-                        new StubEventCount("ACTUATOR_CONTROL_SUCCEEDED", "제어 성공", 2L)));
+                        new StubEventCount(11L, "ENVIRONMENT_THRESHOLD_BREACHED", "환경 이상", 3L),
+                        new StubEventCount(11L, "ACTUATOR_CONTROL_SUCCEEDED", "제어 성공", 2L)));
 
         PeriodNotificationSummariesResponse response =
                 service.summarizePeriod(startDate, endDate, List.of(11L));
@@ -116,7 +117,8 @@ class NotificationDailySummaryServiceTest {
                         new DailyNotificationEventCountResponse(
                                 "ACTUATOR_CONTROL_SUCCEEDED", "제어 성공", 2L))));
         assertThat(response.summaries().getFirst().totalCount()).isEqualTo(5L);
-        verify(notificationRepository).countEventsByCultivationAndOccurredAtBetween(11L, startAt, endAt);
+        verify(notificationRepository).countEventsByCultivationsAndOccurredAtBetween(
+                List.of(11L), startAt, endAt);
     }
 
     @Test
@@ -130,8 +132,18 @@ class NotificationDailySummaryServiceTest {
                 .hasMessage(ValidationMessages.SUMMARY_DATE_RANGE_INVALID);
     }
 
-    private record StubEventCount(String eventTypeCode, String eventTypeName, Long eventCount)
+    private record StubEventCount(Long cultivationId, String eventTypeCode,
+                                  String eventTypeName, Long eventCount)
             implements NotificationEventCountProjection {
+        private StubEventCount(String eventTypeCode, String eventTypeName, Long eventCount) {
+            this(null, eventTypeCode, eventTypeName, eventCount);
+        }
+
+        @Override
+        public Long getCultivationId() {
+            return cultivationId;
+        }
+
         @Override
         public String getEventTypeCode() {
             return eventTypeCode;
