@@ -45,9 +45,23 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             JOIN subscription_target_type target_type
               ON target_type.id = event_type.target_type
             WHERE target_type.target_type = 'CULTIVATION'
-              AND notification.event_payload @> jsonb_build_object('targetId', :cultivationId)
-              AND CAST(notification.event_payload ->> 'occurredAt' AS timestamptz) >= :startAt
-              AND CAST(notification.event_payload ->> 'occurredAt' AS timestamptz) < :endAt
+              AND CASE
+                    WHEN jsonb_typeof(notification.event_payload -> 'targetId') = 'number'
+                     AND notification.event_payload ->> 'targetId' ~ '^[0-9]+$'
+                    THEN (notification.event_payload ->> 'targetId')::bigint
+                  END = :cultivationId
+              AND CASE
+                    WHEN jsonb_typeof(notification.event_payload -> 'occurredAt') = 'string'
+                     AND notification.event_payload ->> 'occurredAt'
+                         ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([+-][0-9]{2}:[0-9]{2}|Z)$'
+                    THEN (notification.event_payload ->> 'occurredAt')::timestamptz
+                  END >= :startAt
+              AND CASE
+                    WHEN jsonb_typeof(notification.event_payload -> 'occurredAt') = 'string'
+                     AND notification.event_payload ->> 'occurredAt'
+                         ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([+-][0-9]{2}:[0-9]{2}|Z)$'
+                    THEN (notification.event_payload ->> 'occurredAt')::timestamptz
+                  END < :endAt
             GROUP BY event_type.code, event_type.display_name
             ORDER BY event_type.code
             """, nativeQuery = true)
@@ -57,7 +71,11 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             @Param("endAt") OffsetDateTime endAt);
 
     @Query(value = """
-            SELECT CAST(notification.event_payload ->> 'targetId' AS bigint) AS cultivationId,
+            SELECT CASE
+                       WHEN jsonb_typeof(notification.event_payload -> 'targetId') = 'number'
+                        AND notification.event_payload ->> 'targetId' ~ '^[0-9]+$'
+                       THEN (notification.event_payload ->> 'targetId')::bigint
+                   END AS cultivationId,
                    event_type.code AS eventTypeCode,
                    event_type.display_name AS eventTypeName,
                    COUNT(notification.id) AS eventCount
@@ -67,10 +85,28 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             JOIN subscription_target_type target_type
               ON target_type.id = event_type.target_type
             WHERE target_type.target_type = 'CULTIVATION'
-              AND CAST(notification.event_payload ->> 'targetId' AS bigint) IN (:cultivationIds)
-              AND CAST(notification.event_payload ->> 'occurredAt' AS timestamptz) >= :startAt
-              AND CAST(notification.event_payload ->> 'occurredAt' AS timestamptz) < :endAt
-            GROUP BY CAST(notification.event_payload ->> 'targetId' AS bigint),
+              AND CASE
+                    WHEN jsonb_typeof(notification.event_payload -> 'targetId') = 'number'
+                     AND notification.event_payload ->> 'targetId' ~ '^[0-9]+$'
+                    THEN (notification.event_payload ->> 'targetId')::bigint
+                  END IN (:cultivationIds)
+              AND CASE
+                    WHEN jsonb_typeof(notification.event_payload -> 'occurredAt') = 'string'
+                     AND notification.event_payload ->> 'occurredAt'
+                         ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([+-][0-9]{2}:[0-9]{2}|Z)$'
+                    THEN (notification.event_payload ->> 'occurredAt')::timestamptz
+                  END >= :startAt
+              AND CASE
+                    WHEN jsonb_typeof(notification.event_payload -> 'occurredAt') = 'string'
+                     AND notification.event_payload ->> 'occurredAt'
+                         ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([+-][0-9]{2}:[0-9]{2}|Z)$'
+                    THEN (notification.event_payload ->> 'occurredAt')::timestamptz
+                  END < :endAt
+            GROUP BY CASE
+                         WHEN jsonb_typeof(notification.event_payload -> 'targetId') = 'number'
+                          AND notification.event_payload ->> 'targetId' ~ '^[0-9]+$'
+                         THEN (notification.event_payload ->> 'targetId')::bigint
+                     END,
                      event_type.code, event_type.display_name
             ORDER BY cultivationId, event_type.code
             """, nativeQuery = true)

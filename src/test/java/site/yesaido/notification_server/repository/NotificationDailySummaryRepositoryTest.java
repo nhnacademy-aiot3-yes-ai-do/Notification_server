@@ -60,6 +60,8 @@ class NotificationDailySummaryRepositoryTest {
         insertNotification(eventTypeId, 5L, START_AT.plusHours(2));
         insertNotification(eventTypeId("LOGIN_SUCCEEDED"), 4L, START_AT.plusHours(3));
         insertNotification(eventTypeId("INQUIRY_ANSWERED"), 4L, START_AT.plusHours(4));
+        insertRawNotification(eventTypeId, "{\"targetId\":\"4\",\"occurredAt\":\"2026-08-20T05:00:00+09:00\"}");
+        insertRawNotification(eventTypeId, "{\"targetId\":4,\"occurredAt\":\"not-a-date\"}");
 
         List<NotificationEventCountProjection> result = repository
                 .countEventsByCultivationAndOccurredAtBetween(4L, START_AT, END_AT);
@@ -69,6 +71,14 @@ class NotificationDailySummaryRepositoryTest {
                 .containsExactly(
                         tuple("ENVIRONMENT_RECOVERED", 1L),
                         tuple("ENVIRONMENT_THRESHOLD_BREACHED", 3L));
+    }
+
+    private void insertRawNotification(Long eventTypeId, String eventPayload) {
+        jdbcTemplate.update("""
+                INSERT INTO notification
+                    (source_event_id, notification_event_type_id, event_payload)
+                VALUES (?, ?, CAST(? AS jsonb))
+                """, UUID.randomUUID(), eventTypeId, eventPayload);
     }
 
     private Long eventTypeId(String code) {
