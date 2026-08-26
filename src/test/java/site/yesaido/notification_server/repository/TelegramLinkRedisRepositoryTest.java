@@ -89,6 +89,23 @@ class TelegramLinkRedisRepositoryTest {
     }
 
     @Test
+    void completesAfterCommitWithoutDependingOnTheShortProcessingLock() {
+        UUID sessionId = UUID.randomUUID();
+        TelegramLinkRedisRepository.PendingLink pendingLink =
+                new TelegramLinkRedisRepository.PendingLink("hash", 7L, sessionId);
+
+        repository.completeLinkedAfterCommit(pendingLink, expiration);
+
+        verify(redisTemplate).execute(
+                any(),
+                eq(java.util.List.of(
+                        "notification:telegram-link:status:{" + sessionId + "}:status",
+                        "notification:telegram-link:token:{" + sessionId + "}:token",
+                        "notification:telegram-link:lock:{" + sessionId + "}:lock")),
+                eq("7:" + sessionId), eq("600"), eq("test-lock-owner"));
+    }
+
+    @Test
     void marksLinkedAndConsumesTokenInOneRedisScript() {
         UUID sessionId = UUID.randomUUID();
         TelegramLinkRedisRepository.PendingLink pendingLink =

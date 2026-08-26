@@ -1,6 +1,7 @@
 package site.yesaido.notification_server.config.property;
 
 import java.time.Duration;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -11,8 +12,12 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "notification.telegram-link")
 public record TelegramLinkProperties(
-        @NotBlank @Pattern(regexp = "[A-Za-z0-9_]+") String botUsername,
+        @NotBlank @Pattern(regexp = "\\w+") String botUsername,
         @NotBlank @Size(max = 256) @Pattern(regexp = "[A-Za-z0-9_-]+") String webhookSecret,
         @NotNull Duration expiration
 ) {
+    @AssertTrue(message = "expiration must be at least one whole second")
+    boolean hasRedisCompatibleExpiration() {
+        return expiration != null && expiration.toSeconds() > 0;
+    }
 }

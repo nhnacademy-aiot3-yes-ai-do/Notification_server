@@ -5,7 +5,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +31,7 @@ import site.yesaido.notification_server.repository.TelegramLinkRedisRepository.P
 @RequiredArgsConstructor
 public class TelegramLinkService {
 
+    private static final int POST_COMMIT_REDIS_ATTEMPTS = 2;
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String TELEGRAM = "TELEGRAM";
     private static final String LINKED_MESSAGE = "MushMush Telegram 알림 연동이 완료되었습니다.";
@@ -47,7 +48,7 @@ public class TelegramLinkService {
         String token = newToken();
         String tokenHash = hash(token);
         UUID sessionId = TelegramLinkRedisRepository.sessionIdForTokenHash(tokenHash);
-        LocalDateTime expiresAt = now().plus(properties.expiration());
+        Instant expiresAt = clock.instant().plus(properties.expiration());
         linkRepository.create(sessionId, userId, tokenHash, properties.expiration());
         return new TelegramLinkSessionResponse(
                 sessionId,
@@ -74,17 +75,16 @@ public class TelegramLinkService {
             sender.validateDestination(chatId);
 
             endpointRepository.lockActiveDestination(telegramChannel.getId(), chatId);
-            NotificationEndpoint activeOwner = endpointRepository
-                    .findFirstByChannelType_IdAndDestinationAndDeletedFalse(telegramChannel.getId(), chatId)
-                    .orElse(null);
-            if (activeOwner != null && !activeOwner.getUserId().equals(pendingLink.userId())) {
+            java.util.List<NotificationEndpoint> activeOwners = endpointRepository
+                    .findAllByChannelType_IdAndDestinationAndDeletedFalse(telegramChannel.getId(), chatId);
+            if (activeOwners.stream().anyMatch(owner -> !owner.getUserId().equals(pendingLink.userId()))) {
                 linkRepository.markExpired(pendingLink, properties.expiration());
                 return CompletionResult.IGNORED;
             }
 
-            NotificationEndpoint endpoint = activeOwner != null
-                    ? activeOwner
-                    : new NotificationEndpoint(pendingLink.userId(), telegramChannel, chatId, "Telegram");
+            NotificationEndpoint endpoint = activeOwners.stream().findFirst()
+                    .orElseGet(() -> new NotificationEndpoint(
+                            pendingLink.userId(), telegramChannel, chatId, "Telegram"));
             endpoint.changeEnabled(true);
             endpointRepository.save(endpoint);
             completeAfterCommit(sender, chatId, pendingLink);
@@ -97,10 +97,17 @@ public class TelegramLinkService {
 
     private void completeAfterCommit(NotificationSender sender, String chatId, PendingLink pendingLink) {
         Runnable complete = () -> {
-            if (!linkRepository.markLinked(pendingLink, properties.expiration())) {
-                throw new IllegalStateException("Telegram link processing lock was lost before completion");
+            CompletionAttempt completionAttempt = completeRedisStatus(pendingLink);
+            TelegramLinkRedisRepository.LinkCompletion completion = completionAttempt.completion();
+            if (completion == TelegramLinkRedisRepository.LinkCompletion.TRANSITIONED
+                    || (completion == TelegramLinkRedisRepository.LinkCompletion.ALREADY_LINKED
+                    && completionAttempt.recoveredAfterFailure())) {
+                sendConfirmation(sender, chatId, pendingLink.userId());
+                return;
             }
-            sendConfirmation(sender, chatId, pendingLink.userId());
+            if (completion != TelegramLinkRedisRepository.LinkCompletion.ALREADY_LINKED) {
+                throw new IllegalStateException("Telegram link status could not be completed after database commit");
+            }
         };
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -119,6 +126,27 @@ public class TelegramLinkService {
             return;
         }
         complete.run();
+    }
+
+    private CompletionAttempt completeRedisStatus(PendingLink pendingLink) {
+        RuntimeException lastFailure = null;
+        for (int attempt = 1; attempt <= POST_COMMIT_REDIS_ATTEMPTS; attempt++) {
+            try {
+                return new CompletionAttempt(
+                        linkRepository.completeLinkedAfterCommit(pendingLink, properties.expiration()),
+                        lastFailure != null);
+            } catch (RuntimeException exception) {
+                lastFailure = exception;
+                log.warn("Telegram link Redis completion attempt failed: attempt={}, failureType={}",
+                        attempt, exception.getClass().getSimpleName());
+            }
+        }
+        throw new IllegalStateException("Telegram link Redis completion failed after database commit", lastFailure);
+    }
+
+    private record CompletionAttempt(
+            TelegramLinkRedisRepository.LinkCompletion completion,
+            boolean recoveredAfterFailure) {
     }
 
     private void sendConfirmation(NotificationSender sender, String chatId, Long userId) {
@@ -151,10 +179,6 @@ public class TelegramLinkService {
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256을 사용할 수 없습니다.", exception);
         }
-    }
-
-    private LocalDateTime now() {
-        return LocalDateTime.now(clock);
     }
 
     enum CompletionResult {

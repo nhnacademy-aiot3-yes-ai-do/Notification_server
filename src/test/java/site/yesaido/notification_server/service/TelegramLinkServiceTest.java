@@ -47,6 +47,8 @@ class TelegramLinkServiceTest {
     void setUp() {
         reset(linkRepository, channelTypeRepository, endpointRepository, senderRegistry, telegramSender);
         when(linkRepository.markLinked(any(), any())).thenReturn(true);
+        when(linkRepository.completeLinkedAfterCommit(any(), any()))
+                .thenReturn(TelegramLinkRedisRepository.LinkCompletion.TRANSITIONED);
         service = new TelegramLinkService(
                 linkRepository,
                 channelTypeRepository,
@@ -64,7 +66,7 @@ class TelegramLinkServiceTest {
         String token = response.deepLink().substring(response.deepLink().indexOf("?start=") + 7);
         assertThat(java.util.Base64.getUrlDecoder().decode(token)).hasSize(32);
         assertThat(response.status()).isEqualTo("PENDING");
-        assertThat(response.expiresAt()).isEqualTo("2026-08-25T02:10:00");
+        assertThat(response.expiresAt()).isEqualTo(Instant.parse("2026-08-25T02:10:00Z"));
         verify(linkRepository).create(eq(response.sessionId()), eq(7L), any(String.class), eq(expiration));
     }
 
@@ -75,8 +77,8 @@ class TelegramLinkServiceTest {
         when(channel.getId()).thenReturn(1L);
         when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
         when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
-        when(endpointRepository.findFirstByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
-                .thenReturn(Optional.empty());
+        when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
+                .thenReturn(java.util.List.of());
         when(senderRegistry.get("TELEGRAM")).thenReturn(telegramSender);
 
         TelegramLinkService.CompletionResult result = service.completeStart("opaque-code", "123456");
@@ -85,9 +87,9 @@ class TelegramLinkServiceTest {
         var endpointAccess = inOrder(endpointRepository);
         endpointAccess.verify(endpointRepository).lockActiveDestination(1L, "123456");
         endpointAccess.verify(endpointRepository)
-                .findFirstByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456");
+                .findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456");
         verify(endpointRepository).save(any(NotificationEndpoint.class));
-        verify(linkRepository).markLinked(pendingLink, expiration);
+        verify(linkRepository).completeLinkedAfterCommit(pendingLink, expiration);
         verify(telegramSender).send("123456", "MushMush Telegram 알림 연동이 완료되었습니다.");
     }
 
@@ -100,14 +102,36 @@ class TelegramLinkServiceTest {
         when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
         when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
         when(senderRegistry.get("TELEGRAM")).thenReturn(telegramSender);
-        when(endpointRepository.findFirstByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
-                .thenReturn(Optional.of(otherUsersEndpoint));
+        when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
+                .thenReturn(java.util.List.of(otherUsersEndpoint));
         when(otherUsersEndpoint.getUserId()).thenReturn(99L);
 
         TelegramLinkService.CompletionResult result = service.completeStart("opaque-code", "123456");
 
         assertThat(result).isEqualTo(TelegramLinkService.CompletionResult.IGNORED);
         verify(linkRepository).markExpired(pendingLink, expiration);
+    }
+
+    @Test
+    void expiresRedisLinkWhenAnyActiveChatOwnerBelongsToAnotherUser() {
+        PendingLink pendingLink = new PendingLink("token-hash", 7L, UUID.randomUUID());
+        ChannelType channel = mock(ChannelType.class);
+        NotificationEndpoint sameUsersEndpoint = mock(NotificationEndpoint.class);
+        NotificationEndpoint otherUsersEndpoint = mock(NotificationEndpoint.class);
+        when(channel.getId()).thenReturn(1L);
+        when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
+        when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
+        when(senderRegistry.get("TELEGRAM")).thenReturn(telegramSender);
+        when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
+                .thenReturn(java.util.List.of(sameUsersEndpoint, otherUsersEndpoint));
+        when(sameUsersEndpoint.getUserId()).thenReturn(7L);
+        when(otherUsersEndpoint.getUserId()).thenReturn(99L);
+
+        TelegramLinkService.CompletionResult result = service.completeStart("opaque-code", "123456");
+
+        assertThat(result).isEqualTo(TelegramLinkService.CompletionResult.IGNORED);
+        verify(linkRepository).markExpired(pendingLink, expiration);
+        verify(endpointRepository, never()).save(any(NotificationEndpoint.class));
     }
 
     @Test
@@ -150,7 +174,27 @@ class TelegramLinkServiceTest {
             TransactionSynchronizationManager.getSynchronizations()
                     .forEach(TransactionSynchronization::afterCommit);
 
-            verify(linkRepository).markLinked(pendingLink, expiration);
+            verify(linkRepository).completeLinkedAfterCommit(pendingLink, expiration);
+            verify(telegramSender).send("123456", "MushMush Telegram 알림 연동이 완료되었습니다.");
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void retriesTransientRedisCompletionFailureAfterCommitBeforeConfirming() {
+        PendingLink pendingLink = linkedPendingLink();
+        when(linkRepository.completeLinkedAfterCommit(pendingLink, expiration))
+                .thenThrow(new IllegalStateException("redis unavailable"))
+                .thenReturn(TelegramLinkRedisRepository.LinkCompletion.ALREADY_LINKED);
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.completeStart("opaque-code", "123456");
+
+            TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(TransactionSynchronization::afterCommit);
+
+            verify(linkRepository, org.mockito.Mockito.times(2)).completeLinkedAfterCommit(pendingLink, expiration);
             verify(telegramSender).send("123456", "MushMush Telegram 알림 연동이 완료되었습니다.");
         } finally {
             TransactionSynchronizationManager.clearSynchronization();
@@ -163,8 +207,8 @@ class TelegramLinkServiceTest {
         when(channel.getId()).thenReturn(1L);
         when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
         when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
-        when(endpointRepository.findFirstByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
-                .thenReturn(Optional.empty());
+        when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
+                .thenReturn(java.util.List.of());
         when(senderRegistry.get("TELEGRAM")).thenReturn(telegramSender);
         return pendingLink;
     }

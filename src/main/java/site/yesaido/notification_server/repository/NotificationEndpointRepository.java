@@ -34,6 +34,9 @@ public interface NotificationEndpointRepository extends JpaRepository<Notificati
     void lockActiveDestination(@Param("channelTypeId") Long channelTypeId, @Param("destination") String destination);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<NotificationEndpoint> findAllByChannelType_IdAndDestinationAndDeletedFalse(
+            Long channelTypeId, String destination);
+
     Optional<NotificationEndpoint> findFirstByChannelType_IdAndDestinationAndDeletedFalse(
             Long channelTypeId, String destination);
 

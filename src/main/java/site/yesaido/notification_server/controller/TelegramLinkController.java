@@ -25,11 +25,11 @@ public class TelegramLinkController {
 
     private final TelegramLinkService telegramLinkService;
 
-    @GetMapping("/{sessionId}")
+    @GetMapping("/{session-id}")
     public ResponseEntity<TelegramLinkStatusResponse> status(
             @RequestHeader("X-User-Id")
             @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
-            @PathVariable UUID sessionId
+            @PathVariable("session-id") UUID sessionId
     ) {
         return ResponseEntity.ok(telegramLinkService.status(userId, sessionId));
     }

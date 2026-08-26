@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,7 +61,7 @@ class TelegramLinkControllerTest {
                 sessionId,
                 "PENDING",
                 "https://t.me/yes_ai_do_farm_alert_bot?start=opaque",
-                LocalDateTime.of(2026, 8, 25, 2, 10)));
+                Instant.parse("2026-08-25T02:10:00Z")));
 
         mockMvc.perform(post("/api/v1/telegram-link-sessions").header("X-User-Id", "7"))
                 .andExpect(status().isCreated())

@@ -33,6 +33,24 @@ public class TelegramLinkRedisRepository {
             redis.call('DEL', KEYS[3])
             return 1
             """, Long.class);
+    private static final DefaultRedisScript<Long> COMPLETE_AFTER_COMMIT = new DefaultRedisScript<>("""
+            local identity = ARGV[1]
+            local pending = identity .. ':PENDING'
+            local linked = identity .. ':LINKED'
+            local current = redis.call('GET', KEYS[1])
+            if current == linked then
+                return 2
+            end
+            if current ~= pending or redis.call('GET', KEYS[2]) ~= identity then
+                return 0
+            end
+            redis.call('SET', KEYS[1], linked, 'EX', ARGV[2])
+            redis.call('DEL', KEYS[2])
+            if redis.call('GET', KEYS[3]) == ARGV[3] then
+                redis.call('DEL', KEYS[3])
+            end
+            return 1
+            """, Long.class);
     private static final DefaultRedisScript<Long> RELEASE_LOCK = new DefaultRedisScript<>("""
             if redis.call('GET', KEYS[1]) == ARGV[1] then
                 return redis.call('DEL', KEYS[1])
@@ -94,6 +112,19 @@ public class TelegramLinkRedisRepository {
         return mark(pendingLink, LINKED, expiration);
     }
 
+    public LinkCompletion completeLinkedAfterCommit(PendingLink pendingLink, Duration expiration) {
+        Long result = redisTemplate.execute(
+                COMPLETE_AFTER_COMMIT,
+                List.of(
+                        statusKey(pendingLink.sessionId()),
+                        tokenKey(pendingLink.sessionId()),
+                        lockKey(pendingLink.sessionId())),
+                pendingLink.userId() + ":" + pendingLink.sessionId(),
+                expirationSeconds(expiration),
+                pendingLink.lockOwner());
+        return LinkCompletion.from(result);
+    }
+
     public boolean markExpired(PendingLink pendingLink, Duration expiration) {
         return mark(pendingLink, EXPIRED, expiration);
     }
@@ -141,6 +172,22 @@ public class TelegramLinkRedisRepository {
 
     public static UUID sessionIdForTokenHash(String tokenHash) {
         return UUID.nameUUIDFromBytes(tokenHash.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public enum LinkCompletion {
+        REJECTED,
+        TRANSITIONED,
+        ALREADY_LINKED;
+
+        private static LinkCompletion from(Long result) {
+            if (Long.valueOf(1L).equals(result)) {
+                return TRANSITIONED;
+            }
+            if (Long.valueOf(2L).equals(result)) {
+                return ALREADY_LINKED;
+            }
+            return REJECTED;
+        }
     }
 
     public enum LinkStatus {

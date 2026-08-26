@@ -22,6 +22,27 @@ class TelegramLinkPropertiesTest {
     }
 
     @Test
+    void rejectsZeroOrNegativeExpirationAtStartup() {
+        contextRunner.withPropertyValues(
+                        "notification.telegram-link.webhook-secret=valid_webhook-secret_123",
+                        "notification.telegram-link.expiration=PT0S")
+                .run(context -> assertThat(context.getStartupFailure()).isNotNull());
+
+        contextRunner.withPropertyValues(
+                        "notification.telegram-link.webhook-secret=valid_webhook-secret_123",
+                        "notification.telegram-link.expiration=PT-1S")
+                .run(context -> assertThat(context.getStartupFailure()).isNotNull());
+    }
+
+    @Test
+    void rejectsSubSecondExpirationThatCannotProduceRedisTtlAtStartup() {
+        contextRunner.withPropertyValues(
+                        "notification.telegram-link.webhook-secret=valid_webhook-secret_123",
+                        "notification.telegram-link.expiration=PT0.5S")
+                .run(context -> assertThat(context.getStartupFailure()).isNotNull());
+    }
+
+    @Test
     void bindsValidWebhookConfiguration() {
         contextRunner.withPropertyValues("notification.telegram-link.webhook-secret=valid_webhook-secret_123")
                 .run(context -> {
