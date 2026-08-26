@@ -9,6 +9,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
 import site.yesaido.notification_server.rabbitmq.facade.RabbitMqNotificationFacade;
+import site.yesaido.notification_server.rabbitmq.ConsumerFailureLog;
 
 import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.*;
 
@@ -23,7 +24,7 @@ public class CultivationRabbitMQConsumer {
     public void consumeHarvest(CultivationEvent.HarvestCompletedEvent event, Channel channel,
                                @Header(AmqpHeaders.DELIVERY_TAG) long tag) throws IOException {
         try { notificationFacade.handle(event); channel.basicAck(tag, false); }
-        catch (Exception exception) { channel.basicNack(tag, false, false); }
+        catch (Exception exception) { ConsumerFailureLog.error(NOTIFICATION_HARVEST_QUEUE, event.eventId(), tag, exception); channel.basicNack(tag, false, false); }
     }
 
     @RabbitListener(queues = NOTIFICATION_SENSOR_QUEUE,
@@ -31,7 +32,7 @@ public class CultivationRabbitMQConsumer {
     public void consumeSensor(CultivationEvent.SensorDataUnavailableEvent event, Channel channel,
                               @Header(AmqpHeaders.DELIVERY_TAG) long tag) throws IOException {
         try { notificationFacade.handle(event); channel.basicAck(tag, false); }
-        catch (Exception exception) { channel.basicNack(tag, false, false); }
+        catch (Exception exception) { ConsumerFailureLog.error(NOTIFICATION_SENSOR_QUEUE, event.eventId(), tag, exception); channel.basicNack(tag, false, false); }
     }
 
     @RabbitListener(queues = NOTIFICATION_MEMBER_QUEUE,
@@ -39,6 +40,6 @@ public class CultivationRabbitMQConsumer {
     public void consumeMember(CultivationEvent.CultivationMemberInvitedEvent event, Channel channel,
                               @Header(AmqpHeaders.DELIVERY_TAG) long tag) throws IOException {
         try { notificationFacade.handle(event); channel.basicAck(tag, false); }
-        catch (Exception exception) { channel.basicNack(tag, false, false); }
+        catch (Exception exception) { ConsumerFailureLog.error(NOTIFICATION_MEMBER_QUEUE, event.eventId(), tag, exception); channel.basicNack(tag, false, false); }
     }
 }
