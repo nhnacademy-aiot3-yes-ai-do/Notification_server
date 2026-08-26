@@ -145,16 +145,22 @@ class RabbitMqNotificationCreationServiceTest {
 
     @Test
     void targetId가_없으면_저장하지_않는다() {
+        UUID eventId = UUID.randomUUID();
+        NotificationEventType eventType = eventType(3L);
+        Map<String, Object> payload = Map.of();
         assertThrows(IllegalArgumentException.class,
                 () -> service.createIfAbsent(
-                        UUID.randomUUID(), eventType(3L), null, OCCURRED_AT, Map.of()));
+                        eventId, eventType, null, OCCURRED_AT, payload));
     }
 
     @Test
     void occurredAt이_없으면_저장하지_않는다() {
+        UUID eventId = UUID.randomUUID();
+        NotificationEventType eventType = eventType(3L);
+        Map<String, Object> payload = Map.of();
         assertThrows(IllegalArgumentException.class,
                 () -> service.createIfAbsent(
-                        UUID.randomUUID(), eventType(3L), TARGET_ID, null, Map.of()));
+                        eventId, eventType, TARGET_ID, null, payload));
     }
 
     private NotificationEventType eventType(Long id) {
