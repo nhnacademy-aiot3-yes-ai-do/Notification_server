@@ -123,11 +123,11 @@ class NotificationDailySummaryServiceTest {
 
     @Test
     void 시작일이_종료일보다_이후면_거부한다() {
+        LocalDate startDate = LocalDate.of(2026, 8, 25);
+        LocalDate endDate = LocalDate.of(2026, 8, 24);
+        List<Long> cultivationIds = List.of(11L);
         org.assertj.core.api.Assertions.assertThatThrownBy(() ->
-                        service.summarizePeriod(
-                                LocalDate.of(2026, 8, 25),
-                                LocalDate.of(2026, 8, 24),
-                                List.of(11L)))
+                        service.summarizePeriod(startDate, endDate, cultivationIds))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(ValidationMessages.SUMMARY_DATE_RANGE_INVALID);
     }
