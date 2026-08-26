@@ -9,6 +9,12 @@ public final class ValidationMessages {
     public static final String USER_ID_POSITIVE = "사용자 ID는 1 이상이어야 합니다.";
     public static final String ENDPOINT_ID_POSITIVE = "알림 수신 경로 ID는 1 이상이어야 합니다.";
     public static final String SUBSCRIPTION_ID_POSITIVE = "알림 구독 ID는 1 이상이어야 합니다.";
+    public static final String CULTIVATION_ID_POSITIVE = "재배지 ID는 1 이상이어야 합니다.";
+    public static final String CULTIVATION_IDS_NOT_EMPTY = "재배지 ID 목록은 비어 있을 수 없습니다.";
+    public static final String SUMMARY_DATE_REQUIRED = "조회 날짜는 필수입니다.";
+    public static final String SUMMARY_START_DATE_REQUIRED = "조회 시작일은 필수입니다.";
+    public static final String SUMMARY_END_DATE_REQUIRED = "조회 종료일은 필수입니다.";
+    public static final String SUMMARY_DATE_RANGE_INVALID = "조회 시작일은 종료일보다 이후일 수 없습니다.";
 
     private ValidationMessages() {
     }

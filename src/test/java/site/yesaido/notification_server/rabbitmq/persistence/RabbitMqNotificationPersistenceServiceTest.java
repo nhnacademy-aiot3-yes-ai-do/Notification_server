@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
-
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +29,9 @@ import site.yesaido.notification_server.repository.NotificationTemplateRepositor
 
 class RabbitMqNotificationPersistenceServiceTest {
 
+    private static final OffsetDateTime OCCURRED_AT =
+            OffsetDateTime.parse("2026-08-23T12:34:56+09:00");
+
     @Test
     void template이_없는_구독은_건너뛰고_다른_구독의_delivery는_저장한다() {
         NotificationEventTypeRepository eventTypeRepository = mock(NotificationEventTypeRepository.class);
@@ -46,10 +49,12 @@ class RabbitMqNotificationPersistenceServiceTest {
         NotificationSubscription discordSubscription = subscription(2L, 20L);
         NotificationTemplate telegramTemplate = template(101L, 10L, "template");
         RabbitMqNotificationCommand command = new RabbitMqNotificationCommand(
-                UUID.randomUUID(), "HARVEST_COMPLETED", "CULTIVATION", 7L, null, Map.of("cultivationName", "토마토"));
+                UUID.randomUUID(), "HARVEST_COMPLETED", "CULTIVATION", 7L, OCCURRED_AT,
+                Map.of("cultivationName", "토마토"));
 
         when(eventTypeRepository.findByCode(command.eventCode())).thenReturn(Optional.of(eventType));
-        when(creationService.createIfAbsent(eq(command.eventId()), eq(eventType), any()))
+        when(creationService.createIfAbsent(
+                eq(command.eventId()), eq(eventType), eq(command.targetId()), eq(OCCURRED_AT), any()))
                 .thenReturn(new RabbitMqNotificationCreationResult(99L, true));
         when(subscriptionRepository.findActiveSubscriptions(command.eventCode(), command.targetType(), command.targetId()))
                 .thenReturn(List.of(telegramSubscription, discordSubscription));
@@ -76,12 +81,13 @@ class RabbitMqNotificationPersistenceServiceTest {
                 eventTypeRepository, subscriptionRepository, templateRepository, creationService, deliveryService, templateRenderer,
                 new NotificationProperties(null, new NotificationProperties.Retry(Duration.ofMillis(1))));
         RabbitMqNotificationCommand command = new RabbitMqNotificationCommand(
-                UUID.randomUUID(), "INQUIRY_ANSWERED", "INQUIRY", 9L, null,
+                UUID.randomUUID(), "INQUIRY_ANSWERED", "INQUIRY", 9L, OCCURRED_AT,
                 Map.of("inquiryTitle", "문의"), List.of(101L, 202L));
         NotificationEventType eventType = eventType("INQUIRY");
 
         when(eventTypeRepository.findByCode(command.eventCode())).thenReturn(Optional.of(eventType));
-        when(creationService.createIfAbsent(eq(command.eventId()), eq(eventType), any()))
+        when(creationService.createIfAbsent(
+                eq(command.eventId()), eq(eventType), eq(command.targetId()), eq(OCCURRED_AT), any()))
                 .thenReturn(new RabbitMqNotificationCreationResult(99L, true));
         when(subscriptionRepository.findActiveSubscriptionsForRecipientUserIds(
                 command.eventCode(), command.targetType(), command.targetId(), command.recipientUserIds()))
