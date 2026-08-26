@@ -1,13 +1,13 @@
 package site.yesaido.notification_server.service;
 
 import java.time.LocalDateTime;
-import java.time.Duration;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import site.yesaido.notification_server.config.property.NotificationRecoveryProperties;
 import site.yesaido.notification_server.entity.NotificationDelivery;
 import site.yesaido.notification_server.messaging.DeadLetterPublisher;
 import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
@@ -20,48 +20,29 @@ import site.yesaido.notification_server.repository.NotificationDeliveryRepositor
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PendingDeliveryRecoveryScheduler {
 
     private final NotificationDeliveryRepository deliveryRepository;
     private final DeliveryDispatchService dispatchService;
     private final DeliveryStateService deliveryStateService;
     private final DeadLetterPublisher deadLetterPublisher;
-    private final Duration pendingMinAge;
-    private final Duration sendingClaimTimeout;
-    private final int batchSize;
-
-    public PendingDeliveryRecoveryScheduler(
-            NotificationDeliveryRepository deliveryRepository,
-            DeliveryDispatchService dispatchService,
-            DeliveryStateService deliveryStateService,
-            DeadLetterPublisher deadLetterPublisher,
-            @Value("${notification.recovery.pending-delivery-min-age:PT30S}") Duration pendingMinAge,
-            @Value("${notification.recovery.sending-claim-timeout:PT5M}") Duration sendingClaimTimeout,
-            @Value("${notification.recovery.pending-delivery-batch-size:100}") int batchSize
-    ) {
-        this.deliveryRepository = deliveryRepository;
-        this.dispatchService = dispatchService;
-        this.deliveryStateService = deliveryStateService;
-        this.deadLetterPublisher = deadLetterPublisher;
-        this.pendingMinAge = pendingMinAge;
-        this.sendingClaimTimeout = sendingClaimTimeout;
-        this.batchSize = batchSize;
-    }
+    private final NotificationRecoveryProperties recoveryProperties;
 
     @Scheduled(fixedDelayString = "${notification.recovery.pending-delivery-delay:PT1M}")
     public void recoverPendingDeliveries() {
         List<Long> deliveryIds = deliveryRepository.findRecoverablePendingIds(
-                LocalDateTime.now().minus(pendingMinAge),
+                LocalDateTime.now().minus(recoveryProperties.pendingDeliveryMinAge()),
                 NotificationDelivery.MAX_ATTEMPT_COUNT,
-                PageRequest.of(0, batchSize));
+                PageRequest.of(0, recoveryProperties.pendingDeliveryBatchSize()));
         if (!deliveryIds.isEmpty()) {
             log.warn("Recovering stale pending notification deliveries: count={}", deliveryIds.size());
             deliveryIds.forEach(this::dispatchSafely);
         }
 
-        LocalDateTime staleClaimBefore = LocalDateTime.now().minus(sendingClaimTimeout);
+        LocalDateTime staleClaimBefore = LocalDateTime.now().minus(recoveryProperties.sendingClaimTimeout());
         List<Long> staleSendingIds = deliveryRepository.findStaleSendingIds(
-                staleClaimBefore, PageRequest.of(0, batchSize));
+                staleClaimBefore, PageRequest.of(0, recoveryProperties.pendingDeliveryBatchSize()));
         if (!staleSendingIds.isEmpty()) {
             log.warn("Releasing stale notification delivery claims: count={}", staleSendingIds.size());
             staleSendingIds.forEach(deliveryId ->

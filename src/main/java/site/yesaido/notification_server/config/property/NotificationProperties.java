@@ -1,4 +1,4 @@
-package site.yesaido.notification_server.config;
+package site.yesaido.notification_server.config.property;
 
 import java.time.Duration;
 import java.util.List;

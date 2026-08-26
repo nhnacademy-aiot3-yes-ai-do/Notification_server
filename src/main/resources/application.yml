@@ -26,6 +26,11 @@ spring:
     baseline-on-migrate: false
 
   data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+      database: ${REDIS_DATABASE:0}
     web:
       pageable:
         default-page-size: 20
@@ -47,6 +52,10 @@ notification:
       bot-token: ${TELEGRAM_BOT_TOKEN:}
     discord:
       allowed-hosts: ${DISCORD_ALLOWED_HOSTS:discord.com,discordapp.com}
+  telegram-link:
+    bot-username: ${TELEGRAM_BOT_USERNAME:}
+    webhook-secret: ${TELEGRAM_WEBHOOK_SECRET:}
+    expiration: ${TELEGRAM_LINK_EXPIRATION:PT10M}
   retry:
     backoff: ${NOTIFICATION_RETRY_BACKOFF:1s}
   recovery:

@@ -1,9 +1,11 @@
 package site.yesaido.notification_server.repository;
 
-import site.yesaido.notification_server.entity.NotificationEndpoint;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import site.yesaido.notification_server.entity.NotificationEndpoint;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -27,4 +29,14 @@ public interface NotificationEndpointRepository extends JpaRepository<Notificati
 
     boolean existsByUserIdAndChannelType_IdAndDestinationAndIdNotAndDeletedFalse(
             Long userId, Long channelTypeId, String destination, Long id);
+
+    @Query(value = "SELECT pg_advisory_xact_lock(CAST(:channelTypeId AS integer), hashtext(:destination))", nativeQuery = true)
+    void lockActiveDestination(@Param("channelTypeId") Long channelTypeId, @Param("destination") String destination);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<NotificationEndpoint> findFirstByChannelType_IdAndDestinationAndDeletedFalse(
+            Long channelTypeId, String destination);
+
+    Optional<NotificationEndpoint> findFirstByUserIdAndChannelType_IdAndDestinationAndDeletedFalseOrderByIdDesc(
+            Long userId, Long channelTypeId, String destination);
 }

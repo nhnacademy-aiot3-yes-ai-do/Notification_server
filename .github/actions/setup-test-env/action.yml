@@ -16,6 +16,12 @@ runs:
         # application.yml uses this exact, case-sensitive variable name.
         echo "NOTIFICATION_DB_SCHEMA=public" >> "$GITHUB_ENV"
         
+        # Redis: Telegram one-time link state is cache-only and must expire in CI too.
+        echo "REDIS_HOST=localhost" >> "$GITHUB_ENV"
+        echo "REDIS_PORT=6379" >> "$GITHUB_ENV"
+        echo "REDIS_PASSWORD=" >> "$GITHUB_ENV"
+        echo "REDIS_DATABASE=0" >> "$GITHUB_ENV"
+
         # RabbitMQ
         echo "RABBITMQ_HOST=localhost" >> "$GITHUB_ENV"
         echo "RABBITMQ_PORT=5672" >> "$GITHUB_ENV"
