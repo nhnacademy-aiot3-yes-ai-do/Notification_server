@@ -10,6 +10,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import site.yesaido.notification_server.rabbitmq.event.UserEvent;
 import site.yesaido.notification_server.rabbitmq.facade.RabbitMqNotificationFacade;
+import site.yesaido.notification_server.rabbitmq.ConsumerFailureLog;
 
 import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_AUTH_QUEUE;
 import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_INQUIRY_QUEUE;
@@ -29,6 +30,7 @@ public class UserRabbitMQConsumer {
             notificationFacade.handle(event);
             channel.basicAck(deliveryTag, false);
         } catch (Exception exception) {
+            ConsumerFailureLog.error(NOTIFICATION_INQUIRY_QUEUE, event.eventId(), deliveryTag, exception);
             channel.basicNack(deliveryTag, false, false);
         }
     }
@@ -69,6 +71,7 @@ public class UserRabbitMQConsumer {
                 notificationFacade.handle(event);
                 channel.basicAck(deliveryTag, false);
             } catch (Exception exception) {
+                ConsumerFailureLog.error(NOTIFICATION_AUTH_QUEUE, event.eventId(), deliveryTag, exception);
                 channel.basicNack(deliveryTag, false, false);
             }
         }
@@ -80,6 +83,7 @@ public class UserRabbitMQConsumer {
                 notificationFacade.handle(event);
                 channel.basicAck(deliveryTag, false);
             } catch (Exception exception) {
+                ConsumerFailureLog.error(NOTIFICATION_AUTH_QUEUE, event.eventId(), deliveryTag, exception);
                 channel.basicNack(deliveryTag, false, false);
             }
         }
@@ -91,6 +95,7 @@ public class UserRabbitMQConsumer {
                 notificationFacade.handle(event);
                 channel.basicAck(deliveryTag, false);
             } catch (Exception exception) {
+                ConsumerFailureLog.error(NOTIFICATION_AUTH_QUEUE, event.eventId(), deliveryTag, exception);
                 channel.basicNack(deliveryTag, false, false);
             }
         }

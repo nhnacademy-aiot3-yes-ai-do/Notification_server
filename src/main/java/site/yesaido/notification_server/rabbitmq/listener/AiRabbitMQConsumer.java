@@ -9,6 +9,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import site.yesaido.notification_server.rabbitmq.event.AiEvent;
 import site.yesaido.notification_server.rabbitmq.facade.RabbitMqNotificationFacade;
+import site.yesaido.notification_server.rabbitmq.ConsumerFailureLog;
 
 import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.*;
 
@@ -26,6 +27,7 @@ public class AiRabbitMQConsumer {
         try {
             notificationFacade.handle(event); channel.basicAck(tag, false);
         } catch (Exception exception) {
+            ConsumerFailureLog.error(NOTIFICATION_DAILY_QUEUE, event.eventId(), tag, exception);
             channel.basicNack(tag, false, false);
         }
     }
@@ -39,6 +41,7 @@ public class AiRabbitMQConsumer {
             notificationFacade.handle(event);
             channel.basicAck(tag, false);
         } catch (Exception exception) {
+            ConsumerFailureLog.error(NOTIFICATION_CULTIVATION_COMPLETE_QUEUE, event.eventId(), tag, exception);
             channel.basicNack(tag, false, false);
         }
     }
