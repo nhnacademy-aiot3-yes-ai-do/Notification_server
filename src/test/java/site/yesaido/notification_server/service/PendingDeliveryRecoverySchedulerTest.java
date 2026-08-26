@@ -1,6 +1,7 @@
 package site.yesaido.notification_server.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,13 +17,13 @@ import site.yesaido.notification_server.repository.NotificationDeliveryRepositor
 class PendingDeliveryRecoverySchedulerTest {
 
     private final NotificationDeliveryRepository deliveryRepository =
-            org.mockito.Mockito.mock(NotificationDeliveryRepository.class);
+            mock(NotificationDeliveryRepository.class);
     private final DeliveryDispatchService dispatchService =
-            org.mockito.Mockito.mock(DeliveryDispatchService.class);
+            mock(DeliveryDispatchService.class);
     private final DeliveryStateService deliveryStateService =
-            org.mockito.Mockito.mock(DeliveryStateService.class);
+            mock(DeliveryStateService.class);
     private final DeadLetterPublisher deadLetterPublisher =
-            org.mockito.Mockito.mock(DeadLetterPublisher.class);
+            mock(DeadLetterPublisher.class);
     private final NotificationRecoveryProperties recoveryProperties = new NotificationRecoveryProperties(
             Duration.ofSeconds(30), Duration.ofMinutes(5), 100);
 
@@ -56,7 +57,7 @@ class PendingDeliveryRecoverySchedulerTest {
         when(deliveryRepository.findRecoverablePendingIds(any(), org.mockito.ArgumentMatchers.anyShort(), any(Pageable.class)))
                 .thenReturn(List.of(11L, 12L));
         when(deliveryRepository.findStaleSendingIds(any(), any(Pageable.class))).thenReturn(List.of());
-        org.mockito.Mockito.doThrow(new IllegalStateException("temporary"))
+        doThrow(new IllegalStateException("temporary"))
                 .when(dispatchService).dispatch(11L);
         PendingDeliveryRecoveryScheduler scheduler = scheduler();
 
@@ -105,7 +106,7 @@ class PendingDeliveryRecoverySchedulerTest {
         when(deliveryStateService.failStaleClaimWhenAttemptsExhausted(
                 org.mockito.ArgumentMatchers.eq(16L), any(), any()))
                 .thenReturn(true);
-        org.mockito.Mockito.doThrow(new IllegalStateException("dlq unavailable"))
+        doThrow(new IllegalStateException("dlq unavailable"))
                 .when(deadLetterPublisher).publish(org.mockito.ArgumentMatchers.eq(16L), any());
         when(deliveryStateService.releaseStaleClaim(org.mockito.ArgumentMatchers.eq(17L), any()))
                 .thenReturn(true);

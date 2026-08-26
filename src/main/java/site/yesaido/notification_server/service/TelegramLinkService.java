@@ -49,7 +49,7 @@ public class TelegramLinkService {
         String tokenHash = hash(token);
         UUID sessionId = TelegramLinkRedisRepository.sessionIdForTokenHash(tokenHash);
         Instant expiresAt = clock.instant().plus(properties.expiration());
-        linkRepository.create(sessionId, userId, tokenHash, properties.expiration());
+        linkRepository.create(sessionId, userId, properties.expiration());
         return new TelegramLinkSessionResponse(
                 sessionId,
                 TelegramLinkRedisRepository.LinkStatus.PENDING.name(),
@@ -63,7 +63,7 @@ public class TelegramLinkService {
 
     @Transactional
     CompletionResult completeStart(String token, String chatId) {
-        PendingLink pendingLink = linkRepository.acquire(hash(token), properties.expiration()).orElse(null);
+        PendingLink pendingLink = linkRepository.acquire(hash(token)).orElse(null);
         if (pendingLink == null) {
             return CompletionResult.IGNORED;
         }

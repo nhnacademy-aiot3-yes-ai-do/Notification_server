@@ -36,7 +36,7 @@ class TelegramLinkRedisRepositoryTest {
         UUID sessionId = UUID.fromString("0d9cce63-4fcf-4c45-aa8a-f6a0adcf7d79");
         String tokenHash = "hash";
 
-        repository.create(sessionId, 7L, tokenHash, expiration);
+        repository.create(sessionId, 7L, expiration);
 
         verify(redisTemplate).execute(
                 any(),
@@ -57,7 +57,7 @@ class TelegramLinkRedisRepositoryTest {
         when(valueOperations.get("notification:telegram-link:token:{" + sessionId + "}:token"))
                 .thenReturn("7:" + sessionId);
 
-        Optional<TelegramLinkRedisRepository.PendingLink> result = repository.acquire("hash", expiration);
+        Optional<TelegramLinkRedisRepository.PendingLink> result = repository.acquire("hash");
 
         assertThat(result).hasValueSatisfying(link -> {
             assertThat(link.tokenHash()).isEqualTo("hash");
@@ -148,7 +148,7 @@ class TelegramLinkRedisRepositoryTest {
                 eq("notification:telegram-link:lock:{" + sessionId + "}:lock"), any(), eq(Duration.ofSeconds(30))))
                 .thenReturn(false);
 
-        assertThat(repository.acquire("hash", expiration)).isEmpty();
+        assertThat(repository.acquire("hash")).isEmpty();
 
         verify(valueOperations, never()).get("notification:telegram-link:token:{" + sessionId + "}:token");
     }
@@ -161,7 +161,7 @@ class TelegramLinkRedisRepositoryTest {
                 .thenReturn(true);
         when(valueOperations.get("notification:telegram-link:token:{" + sessionId + "}:token")).thenReturn(null);
 
-        assertThat(repository.acquire("hash", expiration)).isEmpty();
+        assertThat(repository.acquire("hash")).isEmpty();
 
         verify(redisTemplate).execute(any(), eq(java.util.List.of(
                 "notification:telegram-link:lock:{" + sessionId + "}:lock")), any());
@@ -175,7 +175,7 @@ class TelegramLinkRedisRepositoryTest {
                 .thenReturn(true);
         when(valueOperations.get("notification:telegram-link:token:{" + sessionId + "}:token")).thenReturn("garbage");
 
-        assertThat(repository.acquire("hash", expiration)).isEmpty();
+        assertThat(repository.acquire("hash")).isEmpty();
 
         verify(redisTemplate).delete("notification:telegram-link:token:{" + sessionId + "}:token");
         verify(redisTemplate).execute(any(), eq(java.util.List.of(

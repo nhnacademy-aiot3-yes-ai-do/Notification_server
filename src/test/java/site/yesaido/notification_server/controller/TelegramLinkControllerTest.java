@@ -1,33 +1,31 @@
 package site.yesaido.notification_server.controller;
 
-import static org.mockito.ArgumentMatchers.any;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import site.yesaido.notification_server.config.property.TelegramLinkProperties;
+import site.yesaido.notification_server.dto.telegram.TelegramLinkSessionResponse;
+import site.yesaido.notification_server.dto.telegram.TelegramLinkStatusResponse;
+import site.yesaido.notification_server.dto.telegram.TelegramWebhookUpdate;
+import site.yesaido.notification_server.exception.GlobalExceptionHandler;
+import site.yesaido.notification_server.interceptor.TelegramWebhookAuthenticationInterceptor;
+import site.yesaido.notification_server.service.TelegramLinkService;
+import site.yesaido.notification_server.service.TelegramWebhookService;
+
+import java.time.Instant;
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.time.Instant;
-import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.ArgumentCaptor;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import site.yesaido.notification_server.config.property.TelegramLinkProperties;
-import site.yesaido.notification_server.exception.GlobalExceptionHandler;
-import site.yesaido.notification_server.dto.telegram.TelegramLinkSessionResponse;
-import site.yesaido.notification_server.dto.telegram.TelegramLinkStatusResponse;
-import site.yesaido.notification_server.dto.telegram.TelegramWebhookUpdate;
-import site.yesaido.notification_server.service.TelegramLinkService;
-import site.yesaido.notification_server.service.TelegramWebhookService;
-import site.yesaido.notification_server.interceptor.TelegramWebhookAuthenticationInterceptor;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class TelegramLinkControllerTest {

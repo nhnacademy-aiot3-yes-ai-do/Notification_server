@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Repository;
@@ -19,44 +20,11 @@ public class TelegramLinkRedisRepository {
     private static final String PENDING = "PENDING";
     private static final String LINKED = "LINKED";
     private static final String EXPIRED = "EXPIRED";
-    private static final DefaultRedisScript<Long> CREATE_LINK = new DefaultRedisScript<>("""
-            redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[3])
-            redis.call('SET', KEYS[2], ARGV[2], 'EX', ARGV[3])
-            return 1
-            """, Long.class);
-    private static final DefaultRedisScript<Long> COMPLETE_LINK = new DefaultRedisScript<>("""
-            if redis.call('GET', KEYS[3]) ~= ARGV[3] then
-                return 0
-            end
-            redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
-            redis.call('DEL', KEYS[2])
-            redis.call('DEL', KEYS[3])
-            return 1
-            """, Long.class);
-    private static final DefaultRedisScript<Long> COMPLETE_AFTER_COMMIT = new DefaultRedisScript<>("""
-            local identity = ARGV[1]
-            local pending = identity .. ':PENDING'
-            local linked = identity .. ':LINKED'
-            local current = redis.call('GET', KEYS[1])
-            if current == linked then
-                return 2
-            end
-            if current ~= pending or redis.call('GET', KEYS[2]) ~= identity then
-                return 0
-            end
-            redis.call('SET', KEYS[1], linked, 'EX', ARGV[2])
-            redis.call('DEL', KEYS[2])
-            if redis.call('GET', KEYS[3]) == ARGV[3] then
-                redis.call('DEL', KEYS[3])
-            end
-            return 1
-            """, Long.class);
-    private static final DefaultRedisScript<Long> RELEASE_LOCK = new DefaultRedisScript<>("""
-            if redis.call('GET', KEYS[1]) == ARGV[1] then
-                return redis.call('DEL', KEYS[1])
-            end
-            return 0
-            """, Long.class);
+    private static final DefaultRedisScript<Long> CREATE_LINK = script("redis/telegram-link/create-link.lua");
+    private static final DefaultRedisScript<Long> COMPLETE_LINK = script("redis/telegram-link/complete-link.lua");
+    private static final DefaultRedisScript<Long> COMPLETE_AFTER_COMMIT =
+            script("redis/telegram-link/complete-after-commit.lua");
+    private static final DefaultRedisScript<Long> RELEASE_LOCK = script("redis/telegram-link/release-lock.lua");
 
     private final StringRedisTemplate redisTemplate;
 
@@ -64,7 +32,14 @@ public class TelegramLinkRedisRepository {
         this.redisTemplate = redisTemplate;
     }
 
-    public void create(UUID sessionId, Long userId, String tokenHash, Duration expiration) {
+    private static DefaultRedisScript<Long> script(String path) {
+        DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+        script.setLocation(new ClassPathResource(path));
+        script.setResultType(Long.class);
+        return script;
+    }
+
+    public void create(UUID sessionId, Long userId, Duration expiration) {
         String identity = userId + ":" + sessionId;
         redisTemplate.execute(
                 CREATE_LINK,
@@ -74,7 +49,7 @@ public class TelegramLinkRedisRepository {
                 expirationSeconds(expiration));
     }
 
-    public Optional<PendingLink> acquire(String tokenHash, Duration expiration) {
+    public Optional<PendingLink> acquire(String tokenHash) {
         UUID sessionId = sessionIdForTokenHash(tokenHash);
         String lockOwner = UUID.randomUUID().toString();
         String lockKey = lockKey(sessionId);

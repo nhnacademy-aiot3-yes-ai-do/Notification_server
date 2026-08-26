@@ -3,12 +3,7 @@ package site.yesaido.notification_server.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -67,7 +62,7 @@ class TelegramLinkServiceTest {
         assertThat(java.util.Base64.getUrlDecoder().decode(token)).hasSize(32);
         assertThat(response.status()).isEqualTo("PENDING");
         assertThat(response.expiresAt()).isEqualTo(Instant.parse("2026-08-25T02:10:00Z"));
-        verify(linkRepository).create(eq(response.sessionId()), eq(7L), any(String.class), eq(expiration));
+        verify(linkRepository).create(eq(response.sessionId()), eq(7L), eq(expiration));
     }
 
     @Test
@@ -75,7 +70,7 @@ class TelegramLinkServiceTest {
         PendingLink pendingLink = new PendingLink("token-hash", 7L, UUID.randomUUID());
         ChannelType channel = mock(ChannelType.class);
         when(channel.getId()).thenReturn(1L);
-        when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
+        when(linkRepository.acquire(any())).thenReturn(Optional.of(pendingLink));
         when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
         when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
                 .thenReturn(java.util.List.of());
@@ -99,7 +94,7 @@ class TelegramLinkServiceTest {
         ChannelType channel = mock(ChannelType.class);
         NotificationEndpoint otherUsersEndpoint = mock(NotificationEndpoint.class);
         when(channel.getId()).thenReturn(1L);
-        when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
+        when(linkRepository.acquire(any())).thenReturn(Optional.of(pendingLink));
         when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
         when(senderRegistry.get("TELEGRAM")).thenReturn(telegramSender);
         when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
@@ -119,7 +114,7 @@ class TelegramLinkServiceTest {
         NotificationEndpoint sameUsersEndpoint = mock(NotificationEndpoint.class);
         NotificationEndpoint otherUsersEndpoint = mock(NotificationEndpoint.class);
         when(channel.getId()).thenReturn(1L);
-        when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
+        when(linkRepository.acquire(any())).thenReturn(Optional.of(pendingLink));
         when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
         when(senderRegistry.get("TELEGRAM")).thenReturn(telegramSender);
         when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
@@ -136,7 +131,7 @@ class TelegramLinkServiceTest {
 
     @Test
     void ignoresUnknownRedisLinkWithoutSavingEndpoint() {
-        when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.empty());
+        when(linkRepository.acquire(any())).thenReturn(Optional.empty());
 
         TelegramLinkService.CompletionResult result = service.completeStart("unknown", "123456");
 
@@ -194,7 +189,7 @@ class TelegramLinkServiceTest {
             TransactionSynchronizationManager.getSynchronizations()
                     .forEach(TransactionSynchronization::afterCommit);
 
-            verify(linkRepository, org.mockito.Mockito.times(2)).completeLinkedAfterCommit(pendingLink, expiration);
+            verify(linkRepository, times(2)).completeLinkedAfterCommit(pendingLink, expiration);
             verify(telegramSender).send("123456", "MushMush Telegram 알림 연동이 완료되었습니다.");
         } finally {
             TransactionSynchronizationManager.clearSynchronization();
@@ -205,7 +200,7 @@ class TelegramLinkServiceTest {
         PendingLink pendingLink = new PendingLink("token-hash", 7L, UUID.randomUUID());
         ChannelType channel = mock(ChannelType.class);
         when(channel.getId()).thenReturn(1L);
-        when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
+        when(linkRepository.acquire(any())).thenReturn(Optional.of(pendingLink));
         when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
         when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
                 .thenReturn(java.util.List.of());
