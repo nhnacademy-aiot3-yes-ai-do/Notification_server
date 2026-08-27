@@ -11,6 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import site.yesaido.notification_server.rabbitmq.event.AiEvent;
 import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
+import site.yesaido.notification_server.rabbitmq.event.HarvestCompletedPayload;
+import site.yesaido.notification_server.rabbitmq.event.MemberAddedPayload;
+import site.yesaido.notification_server.rabbitmq.event.NotificationEnvelope;
 import site.yesaido.notification_server.rabbitmq.event.RuleEngineEvent;
 import site.yesaido.notification_server.rabbitmq.event.UserEvent;
 import site.yesaido.notification_server.rabbitmq.facade.RabbitMqNotificationFacade;
@@ -160,13 +163,14 @@ class NotificationRabbitMQConsumerTest {
         RabbitMqNotificationFacade facade = mock(RabbitMqNotificationFacade.class);
         Channel channel = mock(Channel.class);
         CultivationRabbitMQConsumer consumer = new CultivationRabbitMQConsumer(facade);
-        CultivationEvent.HarvestCompletedEvent event =
-                new CultivationEvent.HarvestCompletedEvent(null, 0L, 0L, null, 0L, null, null);
+        NotificationEnvelope<HarvestCompletedPayload> event =
+                new NotificationEnvelope<>(null, "HARVEST_COMPLETED", "cultivation-server",
+                        "CULTIVATION", 3L, null, null);
 
         consumer.consumeHarvest(event, channel, DELIVERY_TAG);
 
         InOrder inOrder = inOrder(facade, channel);
-        inOrder.verify(facade).handle(event);
+        inOrder.verify(facade).handleHarvestCompleted(event);
         inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
         verifyNoMoreInteractions(facade, channel);
     }
@@ -193,14 +197,14 @@ class NotificationRabbitMQConsumerTest {
         RabbitMqNotificationFacade facade = mock(RabbitMqNotificationFacade.class);
         Channel channel = mock(Channel.class);
         CultivationRabbitMQConsumer consumer = new CultivationRabbitMQConsumer(facade);
-        CultivationEvent.CultivationMemberInvitedEvent event =
-                new CultivationEvent.CultivationMemberInvitedEvent(
-                        null, 0L, 0L, null, 0L, null, null, null);
+        NotificationEnvelope<MemberAddedPayload> event =
+                new NotificationEnvelope<>(null, "MEMBER_ADDED", "cultivation-server",
+                        "USER", 21L, null, null);
 
         consumer.consumeMember(event, channel, DELIVERY_TAG);
 
         InOrder inOrder = inOrder(facade, channel);
-        inOrder.verify(facade).handle(event);
+        inOrder.verify(facade).handleMemberAdded(event);
         inOrder.verify(channel).basicAck(DELIVERY_TAG, false);
         verifyNoMoreInteractions(facade, channel);
     }
@@ -210,14 +214,15 @@ class NotificationRabbitMQConsumerTest {
         RabbitMqNotificationFacade facade = mock(RabbitMqNotificationFacade.class);
         Channel channel = mock(Channel.class);
         CultivationRabbitMQConsumer consumer = new CultivationRabbitMQConsumer(facade);
-        CultivationEvent.HarvestCompletedEvent event =
-                new CultivationEvent.HarvestCompletedEvent(null, 0L, 0L, null, 0L, null, null);
-        doThrow(new IllegalStateException("processing failed")).when(facade).handle(event);
+        NotificationEnvelope<HarvestCompletedPayload> event =
+                new NotificationEnvelope<>(null, "HARVEST_COMPLETED", "cultivation-server",
+                        "CULTIVATION", 3L, null, null);
+        doThrow(new IllegalStateException("processing failed")).when(facade).handleHarvestCompleted(event);
 
         consumer.consumeHarvest(event, channel, DELIVERY_TAG);
 
         InOrder inOrder = inOrder(facade, channel);
-        inOrder.verify(facade).handle(event);
+        inOrder.verify(facade).handleHarvestCompleted(event);
         inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
         verifyNoMoreInteractions(facade, channel);
     }
@@ -243,15 +248,15 @@ class NotificationRabbitMQConsumerTest {
         RabbitMqNotificationFacade facade = mock(RabbitMqNotificationFacade.class);
         Channel channel = mock(Channel.class);
         CultivationRabbitMQConsumer consumer = new CultivationRabbitMQConsumer(facade);
-        CultivationEvent.CultivationMemberInvitedEvent event =
-                new CultivationEvent.CultivationMemberInvitedEvent(
-                        null, 0L, 0L, null, 0L, null, null, null);
-        doThrow(new IllegalStateException("processing failed")).when(facade).handle(event);
+        NotificationEnvelope<MemberAddedPayload> event =
+                new NotificationEnvelope<>(null, "MEMBER_ADDED", "cultivation-server",
+                        "USER", 21L, null, null);
+        doThrow(new IllegalStateException("processing failed")).when(facade).handleMemberAdded(event);
 
         consumer.consumeMember(event, channel, DELIVERY_TAG);
 
         InOrder inOrder = inOrder(facade, channel);
-        inOrder.verify(facade).handle(event);
+        inOrder.verify(facade).handleMemberAdded(event);
         inOrder.verify(channel).basicNack(DELIVERY_TAG, false, false);
         verifyNoMoreInteractions(facade, channel);
     }
