@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -62,7 +63,14 @@ class TelegramLinkServiceTest {
         assertThat(java.util.Base64.getUrlDecoder().decode(token)).hasSize(32);
         assertThat(response.status()).isEqualTo("PENDING");
         assertThat(response.expiresAt()).isEqualTo(Instant.parse("2026-08-25T02:10:00Z"));
-        verify(linkRepository).create(eq(response.sessionId()), eq(7L), eq(expiration));
+        var sessionId = ArgumentCaptor.forClass(UUID.class);
+        var userId = ArgumentCaptor.forClass(Long.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Duration> linkExpiration = ArgumentCaptor.forClass(Duration.class);
+        verify(linkRepository).create(sessionId.capture(), userId.capture(), linkExpiration.capture());
+        assertThat(sessionId.getValue()).isEqualTo(response.sessionId());
+        assertThat(userId.getValue()).isEqualTo(7L);
+        assertThat(linkExpiration.getValue()).isEqualTo(expiration);
     }
 
     @Test

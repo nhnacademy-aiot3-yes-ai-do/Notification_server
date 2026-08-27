@@ -35,7 +35,6 @@ class TelegramLinkRedisRepositoryTest {
     @Test
     void createsClusterCompatibleExpiringRedisKeys() {
         UUID sessionId = UUID.fromString("0d9cce63-4fcf-4c45-aa8a-f6a0adcf7d79");
-        String tokenHash = "hash";
 
         repository.create(sessionId, 7L, expiration);
 

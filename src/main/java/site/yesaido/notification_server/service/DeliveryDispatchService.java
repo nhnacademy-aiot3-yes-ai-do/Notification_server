@@ -64,21 +64,13 @@ public class DeliveryDispatchService {
                                 deliveryId, command.channelCode(), attempt);
                         return null;
                     } catch (RuntimeException exception) {
-                        log.warn("Notification delivery attempt failed: deliveryId={}, channel={}, "
-                                        + "attempt={}/{}, failureType={}",
-                                deliveryId,
-                                command.channelCode(),
-                                attempt,
-                                NotificationDelivery.MAX_ATTEMPT_COUNT,
-                                exception.getClass().getSimpleName());
-                        throw exception;
+                        throw new DeliveryAttemptException(
+                                deliveryId, command.channelCode(), attempt, exception);
                     }
                 },
                 context -> {
                     Throwable failure = context.getLastThrowable();
-                    String reason = failure == null
-                            ? "알 수 없는 발송 오류"
-                            : failure.getMessage();
+                    String reason = failureReason(failure);
                     stateService.markFailed(deliveryId, reason);
                     deadLetterPublisher.publish(deliveryId, reason);
                     log.error("Notification delivery failed after retries: deliveryId={}, attempts={}, "
@@ -88,5 +80,23 @@ public class DeliveryDispatchService {
                             failure == null ? UNKNOWN_FAILURE_TYPE : failure.getClass().getSimpleName());
                     return null;
                 });
+    }
+
+    private static String failureReason(Throwable failure) {
+        if (failure == null) {
+            return "알 수 없는 발송 오류";
+        }
+        if (failure.getCause() != null && failure.getCause().getMessage() != null) {
+            return failure.getCause().getMessage();
+        }
+        return failure.getMessage();
+    }
+
+    private static final class DeliveryAttemptException extends RuntimeException {
+
+        private DeliveryAttemptException(Long deliveryId, String channelCode, int attempt, RuntimeException cause) {
+            super("Notification delivery attempt failed: deliveryId=%d, channel=%s, attempt=%d/%d"
+                    .formatted(deliveryId, channelCode, attempt, NotificationDelivery.MAX_ATTEMPT_COUNT), cause);
+        }
     }
 }

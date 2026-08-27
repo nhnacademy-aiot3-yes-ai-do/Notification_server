@@ -62,7 +62,7 @@ public class TelegramLinkService {
     }
 
     @Transactional
-    CompletionResult completeStart(String token, String chatId) {
+    public CompletionResult completeStart(String token, String chatId) {
         PendingLink pendingLink = linkRepository.acquire(hash(token), properties.expiration()).orElse(null);
         if (pendingLink == null) {
             return CompletionResult.IGNORED;
