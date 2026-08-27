@@ -70,7 +70,7 @@ class TelegramLinkServiceTest {
         PendingLink pendingLink = new PendingLink("token-hash", 7L, UUID.randomUUID());
         ChannelType channel = mock(ChannelType.class);
         when(channel.getId()).thenReturn(1L);
-        when(linkRepository.acquire(any())).thenReturn(Optional.of(pendingLink));
+        when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
         when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
         when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
                 .thenReturn(java.util.List.of());
@@ -94,7 +94,7 @@ class TelegramLinkServiceTest {
         ChannelType channel = mock(ChannelType.class);
         NotificationEndpoint otherUsersEndpoint = mock(NotificationEndpoint.class);
         when(channel.getId()).thenReturn(1L);
-        when(linkRepository.acquire(any())).thenReturn(Optional.of(pendingLink));
+        when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
         when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
         when(senderRegistry.get("TELEGRAM")).thenReturn(telegramSender);
         when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
@@ -114,7 +114,7 @@ class TelegramLinkServiceTest {
         NotificationEndpoint sameUsersEndpoint = mock(NotificationEndpoint.class);
         NotificationEndpoint otherUsersEndpoint = mock(NotificationEndpoint.class);
         when(channel.getId()).thenReturn(1L);
-        when(linkRepository.acquire(any())).thenReturn(Optional.of(pendingLink));
+        when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
         when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
         when(senderRegistry.get("TELEGRAM")).thenReturn(telegramSender);
         when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
@@ -131,7 +131,7 @@ class TelegramLinkServiceTest {
 
     @Test
     void ignoresUnknownRedisLinkWithoutSavingEndpoint() {
-        when(linkRepository.acquire(any())).thenReturn(Optional.empty());
+        when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.empty());
 
         TelegramLinkService.CompletionResult result = service.completeStart("unknown", "123456");
 
@@ -200,7 +200,7 @@ class TelegramLinkServiceTest {
         PendingLink pendingLink = new PendingLink("token-hash", 7L, UUID.randomUUID());
         ChannelType channel = mock(ChannelType.class);
         when(channel.getId()).thenReturn(1L);
-        when(linkRepository.acquire(any())).thenReturn(Optional.of(pendingLink));
+        when(linkRepository.acquire(any(), eq(expiration))).thenReturn(Optional.of(pendingLink));
         when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(channel));
         when(endpointRepository.findAllByChannelType_IdAndDestinationAndDeletedFalse(1L, "123456"))
                 .thenReturn(java.util.List.of());

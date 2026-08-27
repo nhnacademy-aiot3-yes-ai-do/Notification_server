@@ -14,6 +14,7 @@ class TelegramLinkRedisScriptResourceTest {
                 "redis/telegram-link/create-link.lua",
                 "redis/telegram-link/complete-link.lua",
                 "redis/telegram-link/complete-after-commit.lua",
+                "redis/telegram-link/renew-processing.lua",
                 "redis/telegram-link/release-lock.lua");
 
         scriptPaths.forEach(path -> assertThat(new ClassPathResource(path).exists())

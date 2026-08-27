@@ -24,6 +24,8 @@ public class TelegramLinkRedisRepository {
     private static final DefaultRedisScript<Long> COMPLETE_LINK = script("redis/telegram-link/complete-link.lua");
     private static final DefaultRedisScript<Long> COMPLETE_AFTER_COMMIT =
             script("redis/telegram-link/complete-after-commit.lua");
+    private static final DefaultRedisScript<Long> RENEW_PROCESSING =
+            script("redis/telegram-link/renew-processing.lua");
     private static final DefaultRedisScript<Long> RELEASE_LOCK = script("redis/telegram-link/release-lock.lua");
 
     private final StringRedisTemplate redisTemplate;
@@ -49,7 +51,7 @@ public class TelegramLinkRedisRepository {
                 expirationSeconds(expiration));
     }
 
-    public Optional<PendingLink> acquire(String tokenHash) {
+    public Optional<PendingLink> acquire(String tokenHash, Duration processingExpiration) {
         UUID sessionId = sessionIdForTokenHash(tokenHash);
         String lockOwner = UUID.randomUUID().toString();
         String lockKey = lockKey(sessionId);
@@ -62,12 +64,28 @@ public class TelegramLinkRedisRepository {
             release(lockKey, lockOwner);
             return Optional.empty();
         }
+        PendingLink pendingLink;
         try {
-            return Optional.of(PendingLink.parse(tokenHash, value, lockOwner));
+            pendingLink = PendingLink.parse(tokenHash, value, lockOwner);
         } catch (IllegalArgumentException exception) {
             redisTemplate.delete(tokenKey(sessionId));
             release(lockKey, lockOwner);
             return Optional.empty();
+        }
+
+        try {
+            if (!renewProcessing(pendingLink, processingExpiration)) {
+                release(pendingLink);
+                return Optional.empty();
+            }
+            return Optional.of(pendingLink);
+        } catch (RuntimeException exception) {
+            try {
+                release(pendingLink);
+            } catch (RuntimeException releaseException) {
+                exception.addSuppressed(releaseException);
+            }
+            throw exception;
         }
     }
 
@@ -106,6 +124,15 @@ public class TelegramLinkRedisRepository {
 
     public void release(PendingLink pendingLink) {
         release(lockKey(pendingLink.sessionId()), pendingLink.lockOwner());
+    }
+
+    private boolean renewProcessing(PendingLink pendingLink, Duration processingExpiration) {
+        return Long.valueOf(1L).equals(redisTemplate.execute(
+                RENEW_PROCESSING,
+                List.of(statusKey(pendingLink.sessionId()), tokenKey(pendingLink.sessionId()), lockKey(pendingLink.sessionId())),
+                pendingLink.userId() + ":" + pendingLink.sessionId(),
+                pendingLink.lockOwner(),
+                expirationSeconds(processingExpiration)));
     }
 
     private boolean mark(PendingLink pendingLink, String status, Duration expiration) {
