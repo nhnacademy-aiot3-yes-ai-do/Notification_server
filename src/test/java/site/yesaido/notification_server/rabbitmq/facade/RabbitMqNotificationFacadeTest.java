@@ -16,6 +16,9 @@ import org.mockito.InOrder;
 import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
 import site.yesaido.notification_server.rabbitmq.event.AiEvent;
 import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
+import site.yesaido.notification_server.rabbitmq.event.HarvestCompletedPayload;
+import site.yesaido.notification_server.rabbitmq.event.MemberAddedPayload;
+import site.yesaido.notification_server.rabbitmq.event.NotificationEnvelope;
 import site.yesaido.notification_server.rabbitmq.event.RuleEngineEvent;
 import site.yesaido.notification_server.rabbitmq.event.UserEvent;
 import site.yesaido.notification_server.rabbitmq.persistence.RabbitMqNotificationDeliveryPersistenceService;
@@ -130,6 +133,44 @@ class RabbitMqNotificationFacadeTest {
         verify(deliveryPersistenceService).activateForDispatch(passwordChangeCommand.eventId());
         verify(deliveryPersistenceService).activateForDispatch(reactivationCommand.eventId());
         verify(deliveryPersistenceService).activateForDispatch(inquiryCommand.eventId());
+    }
+
+    @Test
+    void 수확과_멤버추가_Envelope를_Processor로_변환해_저장한다() {
+        RabbitMqNotificationPersistenceService persistenceService = mock(RabbitMqNotificationPersistenceService.class);
+        RabbitMqNotificationDeliveryPersistenceService deliveryPersistenceService =
+                mock(RabbitMqNotificationDeliveryPersistenceService.class);
+        DeliveryDispatchService dispatchService = mock(DeliveryDispatchService.class);
+        CultivationNotificationProcessor cultivationProcessor = mock(CultivationNotificationProcessor.class);
+        RabbitMqNotificationFacade facade = new RabbitMqNotificationFacade(
+                persistenceService,
+                deliveryPersistenceService,
+                dispatchService,
+                mock(RuleEngineNotificationProcessor.class),
+                mock(AiNotificationProcessor.class),
+                cultivationProcessor,
+                mock(UserNotificationProcessor.class));
+
+        NotificationEnvelope<HarvestCompletedPayload> harvest = new NotificationEnvelope<>(
+                "7a5bc0a0-b4a7-4c50-b2e2-4d238c234487", "HARVEST_COMPLETED", "cultivation-server",
+                "CULTIVATION", 3L, "2026-08-27T14:15:30+09:00",
+                new HarvestCompletedPayload("광주", BigDecimal.TEN));
+        NotificationEnvelope<MemberAddedPayload> member = new NotificationEnvelope<>(
+                "8a5bc0a0-b4a7-4c50-b2e2-4d238c234488", "MEMBER_ADDED", "cultivation-server",
+                "USER", 21L, "2026-08-27T14:15:30+09:00",
+                new MemberAddedPayload(3L, "광주", "MEMBER"));
+        RabbitMqNotificationCommand harvestCommand = command("HARVEST_COMPLETED");
+        RabbitMqNotificationCommand memberCommand = command("MEMBER_ADDED");
+        when(cultivationProcessor.processHarvestCompleted(harvest)).thenReturn(harvestCommand);
+        when(cultivationProcessor.processMemberAdded(member)).thenReturn(memberCommand);
+
+        facade.handleHarvestCompleted(harvest);
+        facade.handleMemberAdded(member);
+
+        verify(persistenceService).persist(harvestCommand);
+        verify(persistenceService).persist(memberCommand);
+        verify(deliveryPersistenceService).activateForDispatch(harvestCommand.eventId());
+        verify(deliveryPersistenceService).activateForDispatch(memberCommand.eventId());
     }
 
     @Test

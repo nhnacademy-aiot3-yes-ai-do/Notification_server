@@ -2,11 +2,15 @@ package site.yesaido.notification_server.rabbitmq.processor;
 
 import org.springframework.stereotype.Component;
 import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
+import site.yesaido.notification_server.rabbitmq.event.HarvestCompletedPayload;
+import site.yesaido.notification_server.rabbitmq.event.MemberAddedPayload;
+import site.yesaido.notification_server.rabbitmq.event.NotificationEnvelope;
 import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
 import site.yesaido.notification_server.rabbitmq.contract.NotificationEventDefinition;
 import site.yesaido.notification_server.rabbitmq.exception.RabbitMqHarvestQuantityMissingException;
 
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -14,6 +18,32 @@ import java.util.UUID;
 public class CultivationNotificationProcessor {
 
     private static final String UNAVAILABLE = "미제공";
+
+    public RabbitMqNotificationCommand processHarvestCompleted(
+            NotificationEnvelope<HarvestCompletedPayload> envelope) {
+        HarvestCompletedPayload payload = envelope.payload();
+        if (payload == null || payload.harvestWeight() == null) {
+            throw new RabbitMqHarvestQuantityMissingException(envelope.targetId());
+        }
+        return command(envelope.eventUuid(), NotificationEventDefinition.HARVEST_COMPLETED,
+                envelope.targetId(), envelope.occurredAtOffsetDateTime(), Map.of(
+                        "cultivationName", valueOrUnavailable(payload.cultivationName()),
+                        "harvestWeight", payload.harvestWeight()));
+    }
+
+    public RabbitMqNotificationCommand processMemberAdded(
+            NotificationEnvelope<MemberAddedPayload> envelope) {
+        MemberAddedPayload payload = envelope.payload() == null
+                ? new MemberAddedPayload(null, null, null)
+                : envelope.payload();
+        Map<String, Object> templatePayload = new LinkedHashMap<>();
+        templatePayload.put("cultivationId",
+                payload.cultivationId() == null ? UNAVAILABLE : payload.cultivationId());
+        templatePayload.put("cultivationName", valueOrUnavailable(payload.cultivationName()));
+        templatePayload.put("role", valueOrUnavailable(payload.role()));
+        return command(envelope.eventUuid(), NotificationEventDefinition.MEMBER_ADDED,
+                envelope.targetId(), envelope.occurredAtOffsetDateTime(), templatePayload);
+    }
 
     public RabbitMqNotificationCommand process(CultivationEvent.HarvestCompletedEvent event) {
         if (event.harvestQuantity() == null) {
