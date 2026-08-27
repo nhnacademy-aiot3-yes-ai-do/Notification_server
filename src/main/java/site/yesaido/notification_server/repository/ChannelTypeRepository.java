@@ -7,4 +7,6 @@ import site.yesaido.notification_server.entity.ChannelType;
 public interface ChannelTypeRepository extends JpaRepository<ChannelType, Long> {
 
     Optional<ChannelType> findByIdAndDeletedFalse(Long id);
+
+    Optional<ChannelType> findByCodeAndDeletedFalse(String code);
 }

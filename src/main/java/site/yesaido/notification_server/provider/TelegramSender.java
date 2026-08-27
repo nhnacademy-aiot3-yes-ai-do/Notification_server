@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import site.yesaido.notification_server.config.NotificationProperties;
+import site.yesaido.notification_server.config.property.NotificationProperties;
 import site.yesaido.notification_server.exception.provider.TelegramNotificationProviderException;
 
 @Component
