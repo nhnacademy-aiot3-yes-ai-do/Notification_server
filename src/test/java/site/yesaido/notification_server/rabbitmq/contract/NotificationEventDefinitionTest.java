@@ -21,4 +21,12 @@ class NotificationEventDefinitionTest {
         assertThat(definition.code()).isEqualTo("INQUIRY_ANSWERED");
         assertThat(definition.targetType()).isEqualTo("INQUIRY");
     }
+
+    @Test
+    void 멤버추가는_USER_대상이다() {
+        NotificationEventDefinition definition = NotificationEventDefinition.MEMBER_ADDED;
+
+        assertThat(definition.code()).isEqualTo("MEMBER_ADDED");
+        assertThat(definition.targetType()).isEqualTo("USER");
+    }
 }

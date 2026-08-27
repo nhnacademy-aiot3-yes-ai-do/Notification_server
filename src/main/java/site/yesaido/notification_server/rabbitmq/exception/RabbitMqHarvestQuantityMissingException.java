@@ -8,6 +8,13 @@ import site.yesaido.common.exception.server.ServerErrorLevel;
 public class RabbitMqHarvestQuantityMissingException extends CustomServerException {
     private static final String DEFAULT_MESSAGE = "수확 완료 이벤트에 수확량이 없습니다.";
 
+    public RabbitMqHarvestQuantityMissingException(Long cultivationId) {
+        super(
+                DEFAULT_MESSAGE,
+                DEFAULT_MESSAGE + " - cultivationId=" + cultivationId,
+                ServerErrorLevel.ERROR_LEVEL);
+    }
+
     public RabbitMqHarvestQuantityMissingException(Long cultivationId, Long harvestId) {
         super(
                 DEFAULT_MESSAGE,

@@ -10,6 +10,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import site.yesaido.notification_server.rabbitmq.event.AiEvent;
 import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
+import site.yesaido.notification_server.rabbitmq.event.HarvestCompletedPayload;
+import site.yesaido.notification_server.rabbitmq.event.MemberAddedPayload;
+import site.yesaido.notification_server.rabbitmq.event.NotificationEnvelope;
 import site.yesaido.notification_server.rabbitmq.event.RuleEngineEvent;
 import site.yesaido.notification_server.rabbitmq.event.UserEvent;
 import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
@@ -51,6 +54,127 @@ class RabbitMqNotificationPayloadProcessorTest {
                 "cultivationName", "미제공",
                 "deviceName", "FAN",
                 "controlType", "ON"));
+    }
+
+    @Test
+    void 수확_Envelope를_targetId와_harvestWeight로_변환한다() {
+        NotificationEnvelope<HarvestCompletedPayload> envelope = new NotificationEnvelope<>(
+                "7a5bc0a0-b4a7-4c50-b2e2-4d238c234487",
+                "HARVEST_COMPLETED",
+                "cultivation-server",
+                "CULTIVATION",
+                3L,
+                "2026-08-27T14:15:30.123+09:00",
+                new HarvestCompletedPayload("광주", new BigDecimal("10")));
+
+        RabbitMqNotificationCommand command = cultivationProcessor.processHarvestCompleted(envelope);
+
+        assertThat(command.eventCode()).isEqualTo("HARVEST_COMPLETED");
+        assertThat(command.targetType()).isEqualTo("CULTIVATION");
+        assertThat(command.targetId()).isEqualTo(3L);
+        assertThat(command.occurredAt()).isEqualTo(OffsetDateTime.parse("2026-08-27T14:15:30.123+09:00"));
+        assertThat(command.payload()).isEqualTo(Map.of(
+                "cultivationName", "광주",
+                "harvestWeight", new BigDecimal("10")));
+    }
+
+    @Test
+    void 수확_Envelope에_수확량이_없으면_계약_예외를_던진다() {
+        NotificationEnvelope<HarvestCompletedPayload> envelope = new NotificationEnvelope<>(
+                "7a5bc0a0-b4a7-4c50-b2e2-4d238c234487",
+                "HARVEST_COMPLETED",
+                "cultivation-server",
+                "CULTIVATION",
+                3L,
+                "2026-08-27T14:15:30+09:00",
+                new HarvestCompletedPayload("광주", null));
+
+        assertThatThrownBy(() -> cultivationProcessor.processHarvestCompleted(envelope))
+                .isInstanceOf(site.yesaido.notification_server.rabbitmq.exception.RabbitMqHarvestQuantityMissingException.class);
+    }
+
+    @Test
+    void 수확_Envelope의_eventId가_잘못된_UUID면_예외를_던진다() {
+        NotificationEnvelope<HarvestCompletedPayload> envelope = new NotificationEnvelope<>(
+                "not-a-uuid",
+                "HARVEST_COMPLETED",
+                "cultivation-server",
+                "CULTIVATION",
+                3L,
+                "2026-08-27T14:15:30+09:00",
+                new HarvestCompletedPayload("광주", BigDecimal.TEN));
+
+        assertThatThrownBy(() -> cultivationProcessor.processHarvestCompleted(envelope))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void 수확_Envelope의_occurredAt이_잘못된_시각이면_예외를_던진다() {
+        NotificationEnvelope<HarvestCompletedPayload> envelope = new NotificationEnvelope<>(
+                "7a5bc0a0-b4a7-4c50-b2e2-4d238c234487",
+                "HARVEST_COMPLETED",
+                "cultivation-server",
+                "CULTIVATION",
+                3L,
+                "yesterday",
+                new HarvestCompletedPayload("광주", BigDecimal.TEN));
+
+        assertThatThrownBy(() -> cultivationProcessor.processHarvestCompleted(envelope))
+                .isInstanceOf(java.time.format.DateTimeParseException.class);
+    }
+
+    @Test
+    void 수확_Envelope에_targetId가_없으면_예외를_던진다() {
+        NotificationEnvelope<HarvestCompletedPayload> envelope = new NotificationEnvelope<>(
+                "7a5bc0a0-b4a7-4c50-b2e2-4d238c234487",
+                "HARVEST_COMPLETED",
+                "cultivation-server",
+                "CULTIVATION",
+                null,
+                "2026-08-27T14:15:30+09:00",
+                new HarvestCompletedPayload("광주", BigDecimal.TEN));
+
+        assertThatThrownBy(() -> cultivationProcessor.processHarvestCompleted(envelope))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("targetId");
+    }
+
+    @Test
+    void 멤버추가_Envelope에_targetId가_없으면_예외를_던진다() {
+        NotificationEnvelope<MemberAddedPayload> envelope = new NotificationEnvelope<>(
+                "7a5bc0a0-b4a7-4c50-b2e2-4d238c234487",
+                "MEMBER_ADDED",
+                "cultivation-server",
+                "USER",
+                null,
+                "2026-08-27T14:15:30+09:00",
+                new MemberAddedPayload(3L, "광주", "MEMBER"));
+
+        assertThatThrownBy(() -> cultivationProcessor.processMemberAdded(envelope))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("targetId");
+    }
+
+    @Test
+    void 멤버추가_Envelope는_USER_targetId를_추가된_사용자로_변환한다() {
+        NotificationEnvelope<MemberAddedPayload> envelope = new NotificationEnvelope<>(
+                "7a5bc0a0-b4a7-4c50-b2e2-4d238c234487",
+                "MEMBER_ADDED",
+                "cultivation-server",
+                "USER",
+                21L,
+                "2026-08-27T14:15:30+09:00",
+                new MemberAddedPayload(3L, "광주", "MEMBER"));
+
+        RabbitMqNotificationCommand command = cultivationProcessor.processMemberAdded(envelope);
+
+        assertThat(command.eventCode()).isEqualTo("MEMBER_ADDED");
+        assertThat(command.targetType()).isEqualTo("USER");
+        assertThat(command.targetId()).isEqualTo(21L);
+        assertThat(command.payload()).isEqualTo(Map.of(
+                "cultivationId", 3L,
+                "cultivationName", "광주",
+                "role", "MEMBER"));
     }
 
     @Test

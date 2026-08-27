@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import site.yesaido.notification_server.rabbitmq.event.AiEvent;
 import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
+import site.yesaido.notification_server.rabbitmq.event.HarvestCompletedPayload;
+import site.yesaido.notification_server.rabbitmq.event.MemberAddedPayload;
+import site.yesaido.notification_server.rabbitmq.event.NotificationEnvelope;
 import site.yesaido.notification_server.rabbitmq.event.RuleEngineEvent;
 import site.yesaido.notification_server.rabbitmq.event.UserEvent;
 import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
@@ -50,6 +53,14 @@ public class RabbitMqNotificationFacade {
     }
 
     // Cultivation
+    public void handleHarvestCompleted(NotificationEnvelope<HarvestCompletedPayload> event) {
+        persist(cultivationProcessor.processHarvestCompleted(event));
+    }
+
+    public void handleMemberAdded(NotificationEnvelope<MemberAddedPayload> event) {
+        persist(cultivationProcessor.processMemberAdded(event));
+    }
+
     public void handle(CultivationEvent.HarvestCompletedEvent event) {
         RabbitMqNotificationCommand process = cultivationProcessor.process(event);
         persist(process);
