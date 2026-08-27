@@ -18,6 +18,7 @@ import java.util.UUID;
 public class CultivationNotificationProcessor {
 
     private static final String UNAVAILABLE = "미제공";
+    private static final String CULTIVATION_NAME = "cultivationName";
 
     public RabbitMqNotificationCommand processHarvestCompleted(
             NotificationEnvelope<HarvestCompletedPayload> envelope) {
@@ -28,7 +29,7 @@ public class CultivationNotificationProcessor {
         }
         return command(envelope.eventUuid(), NotificationEventDefinition.HARVEST_COMPLETED,
                 envelope.targetId(), envelope.occurredAtOffsetDateTime(), Map.of(
-                        "cultivationName", valueOrUnavailable(payload.cultivationName()),
+                        CULTIVATION_NAME, valueOrUnavailable(payload.cultivationName()),
                         "harvestWeight", payload.harvestWeight()));
     }
 
@@ -41,7 +42,7 @@ public class CultivationNotificationProcessor {
         Map<String, Object> templatePayload = new LinkedHashMap<>();
         templatePayload.put("cultivationId",
                 payload.cultivationId() == null ? UNAVAILABLE : payload.cultivationId());
-        templatePayload.put("cultivationName", valueOrUnavailable(payload.cultivationName()));
+        templatePayload.put(CULTIVATION_NAME, valueOrUnavailable(payload.cultivationName()));
         templatePayload.put("role", valueOrUnavailable(payload.role()));
         return command(envelope.eventUuid(), NotificationEventDefinition.MEMBER_ADDED,
                 envelope.targetId(), envelope.occurredAtOffsetDateTime(), templatePayload);
@@ -53,14 +54,14 @@ public class CultivationNotificationProcessor {
         }
         return command(event.eventId(), NotificationEventDefinition.HARVEST_COMPLETED,
                 event.cultivationId(), event.harvestedAt(), Map.of(
-                        "cultivationName", valueOrUnavailable(event.cultivationName()),
+                        CULTIVATION_NAME, valueOrUnavailable(event.cultivationName()),
                         "harvestWeight", event.harvestQuantity()));
     }
 
     public RabbitMqNotificationCommand process(CultivationEvent.SensorDataUnavailableEvent event) {
         return command(event.eventId(), NotificationEventDefinition.SENSOR_OFFLINE,
                 event.cultivationId(), event.occurredAt(), Map.of(
-                        "cultivationName", UNAVAILABLE,
+                        CULTIVATION_NAME, UNAVAILABLE,
                         "deviceName", valueOrUnavailable(event.deviceName())));
     }
 
