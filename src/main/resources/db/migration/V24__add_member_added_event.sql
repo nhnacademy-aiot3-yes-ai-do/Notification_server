@@ -54,3 +54,13 @@ WHERE e.code = 'MEMBER_ADDED'
 ON CONFLICT (notification_event_type_id, channel_type_id, version) DO UPDATE
 SET body_template = EXCLUDED.body_template,
     updated_at = CURRENT_TIMESTAMP;
+
+-- V2 seed는 {{harvestAmount}}이고, Cultivation/Processor는 harvestWeight를 쓴다.
+-- V11이 이미 템플릿을 harvestWeight로 맞췄다. V2는 수정하지 않고 V24에서 한 번 더 맞춰
+-- 신규 DB와 기존 DB 모두 수확량 변수가 비지 않게 한다.
+UPDATE notification_template template
+SET body_template = '[수확 완료] {{cultivationName}}의 수확이 완료되었습니다. 수확량: {{harvestWeight}}g',
+    updated_at = CURRENT_TIMESTAMP
+FROM notification_event_type event_type
+WHERE template.notification_event_type_id = event_type.id
+  AND event_type.code = 'HARVEST_COMPLETED';

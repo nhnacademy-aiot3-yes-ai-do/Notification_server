@@ -21,6 +21,7 @@ public class CultivationNotificationProcessor {
 
     public RabbitMqNotificationCommand processHarvestCompleted(
             NotificationEnvelope<HarvestCompletedPayload> envelope) {
+        requireTargetId(envelope);
         HarvestCompletedPayload payload = envelope.payload();
         if (payload == null || payload.harvestWeight() == null) {
             throw new RabbitMqHarvestQuantityMissingException(envelope.targetId());
@@ -33,6 +34,7 @@ public class CultivationNotificationProcessor {
 
     public RabbitMqNotificationCommand processMemberAdded(
             NotificationEnvelope<MemberAddedPayload> envelope) {
+        requireTargetId(envelope);
         MemberAddedPayload payload = envelope.payload() == null
                 ? new MemberAddedPayload(null, null, null)
                 : envelope.payload();
@@ -77,5 +79,11 @@ public class CultivationNotificationProcessor {
 
     private String valueOrUnavailable(String value) {
         return value == null || value.isBlank() ? UNAVAILABLE : value;
+    }
+
+    private void requireTargetId(NotificationEnvelope<?> envelope) {
+        if (envelope.targetId() == null) {
+            throw new IllegalArgumentException("targetId");
+        }
     }
 }
