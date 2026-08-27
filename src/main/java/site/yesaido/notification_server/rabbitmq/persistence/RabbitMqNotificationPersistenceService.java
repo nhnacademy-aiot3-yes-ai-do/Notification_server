@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import site.yesaido.notification_server.config.NotificationProperties;
+import site.yesaido.notification_server.config.property.NotificationProperties;
 import site.yesaido.notification_server.entity.NotificationDelivery;
 import site.yesaido.notification_server.entity.NotificationEventType;
 import site.yesaido.notification_server.entity.NotificationSubscription;

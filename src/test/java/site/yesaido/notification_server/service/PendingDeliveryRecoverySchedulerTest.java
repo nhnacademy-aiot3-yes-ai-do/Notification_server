@@ -1,6 +1,7 @@
 package site.yesaido.notification_server.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -9,28 +10,29 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Pageable;
+import site.yesaido.notification_server.config.property.NotificationRecoveryProperties;
 import site.yesaido.notification_server.messaging.DeadLetterPublisher;
 import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
 
 class PendingDeliveryRecoverySchedulerTest {
 
     private final NotificationDeliveryRepository deliveryRepository =
-            org.mockito.Mockito.mock(NotificationDeliveryRepository.class);
+            mock(NotificationDeliveryRepository.class);
     private final DeliveryDispatchService dispatchService =
-            org.mockito.Mockito.mock(DeliveryDispatchService.class);
+            mock(DeliveryDispatchService.class);
     private final DeliveryStateService deliveryStateService =
-            org.mockito.Mockito.mock(DeliveryStateService.class);
+            mock(DeliveryStateService.class);
     private final DeadLetterPublisher deadLetterPublisher =
-            org.mockito.Mockito.mock(DeadLetterPublisher.class);
+            mock(DeadLetterPublisher.class);
+    private final NotificationRecoveryProperties recoveryProperties = new NotificationRecoveryProperties(
+            Duration.ofSeconds(30), Duration.ofMinutes(5), 100);
 
     @Test
     void dispatchesOnlyStalePendingDeliveries() {
         when(deliveryRepository.findRecoverablePendingIds(any(), org.mockito.ArgumentMatchers.anyShort(), any(Pageable.class)))
                 .thenReturn(List.of(11L, 12L));
         when(deliveryRepository.findStaleSendingIds(any(), any(Pageable.class))).thenReturn(List.of());
-        PendingDeliveryRecoveryScheduler scheduler = new PendingDeliveryRecoveryScheduler(
-                deliveryRepository, dispatchService, deliveryStateService, deadLetterPublisher,
-                Duration.ofSeconds(30), Duration.ofMinutes(5), 100);
+        PendingDeliveryRecoveryScheduler scheduler = scheduler();
 
         scheduler.recoverPendingDeliveries();
 
@@ -43,9 +45,7 @@ class PendingDeliveryRecoverySchedulerTest {
         when(deliveryRepository.findRecoverablePendingIds(any(), org.mockito.ArgumentMatchers.anyShort(), any(Pageable.class)))
                 .thenReturn(List.of());
         when(deliveryRepository.findStaleSendingIds(any(), any(Pageable.class))).thenReturn(List.of());
-        PendingDeliveryRecoveryScheduler scheduler = new PendingDeliveryRecoveryScheduler(
-                deliveryRepository, dispatchService, deliveryStateService, deadLetterPublisher,
-                Duration.ofSeconds(30), Duration.ofMinutes(5), 100);
+        PendingDeliveryRecoveryScheduler scheduler = scheduler();
 
         scheduler.recoverPendingDeliveries();
 
@@ -57,11 +57,9 @@ class PendingDeliveryRecoverySchedulerTest {
         when(deliveryRepository.findRecoverablePendingIds(any(), org.mockito.ArgumentMatchers.anyShort(), any(Pageable.class)))
                 .thenReturn(List.of(11L, 12L));
         when(deliveryRepository.findStaleSendingIds(any(), any(Pageable.class))).thenReturn(List.of());
-        org.mockito.Mockito.doThrow(new IllegalStateException("temporary"))
+        doThrow(new IllegalStateException("temporary"))
                 .when(dispatchService).dispatch(11L);
-        PendingDeliveryRecoveryScheduler scheduler = new PendingDeliveryRecoveryScheduler(
-                deliveryRepository, dispatchService, deliveryStateService, deadLetterPublisher,
-                Duration.ofSeconds(30), Duration.ofMinutes(5), 100);
+        PendingDeliveryRecoveryScheduler scheduler = scheduler();
 
         scheduler.recoverPendingDeliveries();
 
@@ -76,9 +74,7 @@ class PendingDeliveryRecoverySchedulerTest {
         when(deliveryRepository.findStaleSendingIds(any(), any(Pageable.class))).thenReturn(List.of(15L));
         when(deliveryStateService.releaseStaleClaim(org.mockito.ArgumentMatchers.eq(15L), any()))
                 .thenReturn(true);
-        PendingDeliveryRecoveryScheduler scheduler = new PendingDeliveryRecoveryScheduler(
-                deliveryRepository, dispatchService, deliveryStateService, deadLetterPublisher,
-                Duration.ofSeconds(30), Duration.ofMinutes(5), 100);
+        PendingDeliveryRecoveryScheduler scheduler = scheduler();
 
         scheduler.recoverPendingDeliveries();
 
@@ -93,9 +89,7 @@ class PendingDeliveryRecoverySchedulerTest {
         when(deliveryStateService.failStaleClaimWhenAttemptsExhausted(
                 org.mockito.ArgumentMatchers.eq(16L), any(), any()))
                 .thenReturn(true);
-        PendingDeliveryRecoveryScheduler scheduler = new PendingDeliveryRecoveryScheduler(
-                deliveryRepository, dispatchService, deliveryStateService, deadLetterPublisher,
-                Duration.ofSeconds(30), Duration.ofMinutes(5), 100);
+        PendingDeliveryRecoveryScheduler scheduler = scheduler();
 
         scheduler.recoverPendingDeliveries();
 
@@ -112,16 +106,19 @@ class PendingDeliveryRecoverySchedulerTest {
         when(deliveryStateService.failStaleClaimWhenAttemptsExhausted(
                 org.mockito.ArgumentMatchers.eq(16L), any(), any()))
                 .thenReturn(true);
-        org.mockito.Mockito.doThrow(new IllegalStateException("dlq unavailable"))
+        doThrow(new IllegalStateException("dlq unavailable"))
                 .when(deadLetterPublisher).publish(org.mockito.ArgumentMatchers.eq(16L), any());
         when(deliveryStateService.releaseStaleClaim(org.mockito.ArgumentMatchers.eq(17L), any()))
                 .thenReturn(true);
-        PendingDeliveryRecoveryScheduler scheduler = new PendingDeliveryRecoveryScheduler(
-                deliveryRepository, dispatchService, deliveryStateService, deadLetterPublisher,
-                Duration.ofSeconds(30), Duration.ofMinutes(5), 100);
+        PendingDeliveryRecoveryScheduler scheduler = scheduler();
 
         scheduler.recoverPendingDeliveries();
 
         verify(dispatchService).dispatch(17L);
+    }
+
+    private PendingDeliveryRecoveryScheduler scheduler() {
+        return new PendingDeliveryRecoveryScheduler(
+                deliveryRepository, dispatchService, deliveryStateService, deadLetterPublisher, recoveryProperties);
     }
 }

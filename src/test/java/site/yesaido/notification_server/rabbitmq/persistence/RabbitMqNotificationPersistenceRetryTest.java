@@ -22,7 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import site.yesaido.notification_server.config.NotificationProperties;
+import site.yesaido.notification_server.config.property.NotificationProperties;
 import site.yesaido.notification_server.entity.ChannelType;
 import site.yesaido.notification_server.entity.DeliveryStatus;
 import site.yesaido.notification_server.entity.NotificationDelivery;

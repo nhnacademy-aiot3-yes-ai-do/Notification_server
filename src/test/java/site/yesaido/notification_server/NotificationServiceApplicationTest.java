@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import site.yesaido.notification_server.config.NotificationProperties;
+import site.yesaido.notification_server.config.property.NotificationProperties;
+import site.yesaido.notification_server.config.property.NotificationRecoveryProperties;
+import site.yesaido.notification_server.config.property.TelegramLinkProperties;
 
 class NotificationServiceApplicationTest {
 
@@ -15,6 +17,9 @@ class NotificationServiceApplicationTest {
                 .getAnnotation(EnableConfigurationProperties.class);
 
         assertThat(annotation).isNotNull();
-        assertThat(Arrays.asList(annotation.value())).contains(NotificationProperties.class);
+        assertThat(Arrays.asList(annotation.value())).containsExactlyInAnyOrder(
+                NotificationProperties.class,
+                NotificationRecoveryProperties.class,
+                TelegramLinkProperties.class);
     }
 }

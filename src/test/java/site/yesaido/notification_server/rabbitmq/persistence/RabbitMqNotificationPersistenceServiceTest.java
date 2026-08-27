@@ -3,9 +3,7 @@ package site.yesaido.notification_server.rabbitmq.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -14,7 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import site.yesaido.notification_server.config.NotificationProperties;
+import site.yesaido.notification_server.config.property.NotificationProperties;
 import site.yesaido.notification_server.entity.ChannelType;
 import site.yesaido.notification_server.entity.NotificationEventType;
 import site.yesaido.notification_server.entity.NotificationSubscription;
@@ -65,7 +63,7 @@ class RabbitMqNotificationPersistenceServiceTest {
         assertThat(service.persist(command)).isEqualTo(RabbitMqPersistenceResult.PERSISTED);
 
         verify(deliveryService).persist(99L, 1L, 101L, "rendered");
-        verify(deliveryService, org.mockito.Mockito.never()).persist(
+        verify(deliveryService, never()).persist(
                 eq(99L), eq(2L), any(), any());
     }
 
@@ -97,7 +95,7 @@ class RabbitMqNotificationPersistenceServiceTest {
 
         verify(subscriptionRepository).findActiveSubscriptionsForRecipientUserIds(
                 "INQUIRY_ANSWERED", "INQUIRY", 9L, List.of(101L, 202L));
-        verify(subscriptionRepository, org.mockito.Mockito.never())
+        verify(subscriptionRepository, never())
                 .findActiveSubscriptions(any(), any(), any());
     }
 

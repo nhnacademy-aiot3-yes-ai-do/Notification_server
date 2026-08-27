@@ -11,7 +11,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import site.yesaido.notification_server.config.NotificationProperties;
+import site.yesaido.notification_server.config.property.NotificationProperties;
 import site.yesaido.notification_server.exception.provider.DiscordNotificationProviderException;
 import site.yesaido.notification_server.exception.provider.TelegramNotificationProviderException;
 import site.yesaido.notification_server.messaging.DeadLetterPublisher;
