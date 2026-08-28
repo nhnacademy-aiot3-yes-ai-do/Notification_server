@@ -28,6 +28,9 @@ runs:
         echo "RABBITMQ_USERNAME=test" >> "$GITHUB_ENV"
         echo "RABBITMQ_PASSWORD=test1234" >> "$GITHUB_ENV"
 
+        echo "CULTIVATION_SERVER_URL=http://localhost:8083" >> "$GITHUB_ENV"
+        echo "USER_SERVER_URL=http://localhost:8081" >> "$GITHUB_ENV"
+
         # Disable external service discovery in CI.
         echo "K8S_DISCOVERY_ENABLED=false" >> "$GITHUB_ENV"
         echo "EUREKA_ENABLED=false" >> "$GITHUB_ENV"

@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.scheduling.annotation.EnableScheduling;
 import site.yesaido.notification_server.config.property.NotificationProperties;
 import site.yesaido.notification_server.config.property.NotificationRecoveryProperties;
+import site.yesaido.notification_server.config.property.SubscriptionAccessProperties;
 import site.yesaido.notification_server.config.property.TelegramLinkProperties;
 
 @SpringBootApplication
@@ -13,7 +14,8 @@ import site.yesaido.notification_server.config.property.TelegramLinkProperties;
 @EnableConfigurationProperties({
         NotificationProperties.class,
         NotificationRecoveryProperties.class,
-        TelegramLinkProperties.class
+        TelegramLinkProperties.class,
+        SubscriptionAccessProperties.class
 })
 public class NotificationServiceApplication {
 

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,9 +18,12 @@ import site.yesaido.notification_server.entity.NotificationEventType;
 import site.yesaido.notification_server.entity.NotificationSubscription;
 import site.yesaido.notification_server.entity.NotificationSubscriptionType;
 import site.yesaido.notification_server.entity.SubscriptionTargetType;
+import site.yesaido.notification_server.client.SubscriptionTargetAccessClient;
 import site.yesaido.notification_server.dto.subscription.SubscriptionCreateRequest;
 import site.yesaido.notification_server.exception.subscription.NotificationSubscriptionNotFoundException;
 import site.yesaido.notification_server.exception.subscription.SubscriptionCreationEndpointNotFoundException;
+import site.yesaido.notification_server.exception.subscription.SubscriptionTargetAccessDeniedException;
+import site.yesaido.notification_server.exception.subscription.SubscriptionTargetAccessUnverifiedException;
 import site.yesaido.notification_server.exception.subscription.SubscriptionTargetNotFoundException;
 import site.yesaido.notification_server.exception.subscription.SubscriptionTypeNotFoundException;
 import site.yesaido.notification_server.exception.subscription.UnsupportedSubscriptionChannelException;
@@ -37,12 +41,15 @@ class NotificationSubscriptionServiceTest {
             mock(NotificationEndpointRepository.class);
     private final SubscriptionChannelRepository channelRepository =
             mock(SubscriptionChannelRepository.class);
+    private final SubscriptionTargetAccessClient targetAccessClient =
+            mock(SubscriptionTargetAccessClient.class);
     private NotificationSubscriptionService service;
 
     @BeforeEach
     void setUp() {
         service = new NotificationSubscriptionService(
-                subscriptionRepository, typeRepository, endpointRepository, channelRepository);
+                subscriptionRepository, typeRepository, endpointRepository, channelRepository,
+                targetAccessClient);
     }
 
     @Test
@@ -68,6 +75,7 @@ class NotificationSubscriptionServiceTest {
 
         assertThat(response.targetId()).isEqualTo(101L);
         verify(subscription).changeEnabled(true);
+        verify(targetAccessClient).requireCultivationAccess(7L, 101L);
     }
 
     @Test
@@ -96,6 +104,10 @@ class NotificationSubscriptionServiceTest {
         assertThatThrownBy(() -> service.create(
                 7L, request))
                 .isInstanceOf(SubscriptionTargetNotFoundException.class);
+        verify(targetAccessClient, never()).requireCultivationAccess(org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyLong());
+        verify(targetAccessClient, never()).requireInquiryAccess(org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyLong());
     }
 
     @Test
@@ -143,6 +155,89 @@ class NotificationSubscriptionServiceTest {
         assertThat(response.subscriptionTypeId()).isEqualTo(22L);
         assertThat(response.targetId()).isEqualTo(101L);
         assertThat(response.enabled()).isTrue();
+        verify(targetAccessClient).requireCultivationAccess(7L, 101L);
+    }
+
+    @Test
+    void 재배지_권한이_없으면_구독을_만들수_없다() {
+        NotificationEndpoint endpoint = endpoint(11L, 1L, "TELEGRAM");
+        NotificationSubscriptionType type = subscriptionType(22L, "CULTIVATION");
+        when(endpointRepository.findByIdAndUserIdAndDeletedFalse(11L, 7L))
+                .thenReturn(Optional.of(endpoint));
+        when(typeRepository.findById(22L)).thenReturn(Optional.of(type));
+        doThrow(new SubscriptionTargetAccessDeniedException("cultivation id:101"))
+                .when(targetAccessClient).requireCultivationAccess(7L, 101L);
+
+        assertThatThrownBy(() -> service.create(7L, new SubscriptionCreateRequest(22L, 11L, 101L)))
+                .isInstanceOf(SubscriptionTargetAccessDeniedException.class);
+        verify(subscriptionRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void 재배지_권한확인이_실패하면_구독을_만들지_않는다() {
+        NotificationEndpoint endpoint = endpoint(11L, 1L, "TELEGRAM");
+        NotificationSubscriptionType type = subscriptionType(22L, "CULTIVATION");
+        when(endpointRepository.findByIdAndUserIdAndDeletedFalse(11L, 7L))
+                .thenReturn(Optional.of(endpoint));
+        when(typeRepository.findById(22L)).thenReturn(Optional.of(type));
+        doThrow(new SubscriptionTargetAccessUnverifiedException("timeout"))
+                .when(targetAccessClient).requireCultivationAccess(7L, 101L);
+
+        assertThatThrownBy(() -> service.create(7L, new SubscriptionCreateRequest(22L, 11L, 101L)))
+                .isInstanceOf(SubscriptionTargetAccessUnverifiedException.class);
+        verify(subscriptionRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void 문의_권한이_있으면_구독을_만들수_있다() {
+        NotificationEndpoint endpoint = endpoint(11L, 1L, "TELEGRAM");
+        NotificationSubscriptionType type = subscriptionType(22L, "INQUIRY");
+        when(endpointRepository.findByIdAndUserIdAndDeletedFalse(11L, 7L))
+                .thenReturn(Optional.of(endpoint));
+        when(typeRepository.findById(22L)).thenReturn(Optional.of(type));
+        when(channelRepository.existsBySubscriptionType_IdAndChannelType_Id(22L, 1L))
+                .thenReturn(true);
+        when(subscriptionRepository.findBySubscriptionType_IdAndEndpoint_IdAndTargetIdAndDeletedFalse(
+                22L, 11L, 55L)).thenReturn(Optional.empty());
+        when(subscriptionRepository.save(org.mockito.ArgumentMatchers.any(NotificationSubscription.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.create(7L, new SubscriptionCreateRequest(22L, 11L, 55L));
+
+        assertThat(response.targetId()).isEqualTo(55L);
+        verify(targetAccessClient).requireInquiryAccess(7L, 55L);
+    }
+
+    @Test
+    void 삭제된_구독은_활성상태를_바꾸거나_다시_삭제할수_없다() {
+        when(subscriptionRepository.findByIdAndEndpoint_UserIdAndDeletedFalse(31L, 7L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.changeEnabled(7L, 31L, true))
+                .isInstanceOf(NotificationSubscriptionNotFoundException.class);
+        assertThatThrownBy(() -> service.delete(7L, 31L))
+                .isInstanceOf(NotificationSubscriptionNotFoundException.class);
+        verify(subscriptionRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void 삭제된_구독과_같은_요청이면_재활성화하지_않고_새로_저장한다() {
+        NotificationEndpoint endpoint = endpoint(11L, 1L, "TELEGRAM");
+        NotificationSubscriptionType type = subscriptionType(22L, "CULTIVATION");
+        when(endpointRepository.findByIdAndUserIdAndDeletedFalse(11L, 7L))
+                .thenReturn(Optional.of(endpoint));
+        when(typeRepository.findById(22L)).thenReturn(Optional.of(type));
+        when(channelRepository.existsBySubscriptionType_IdAndChannelType_Id(22L, 1L))
+                .thenReturn(true);
+        when(subscriptionRepository.findBySubscriptionType_IdAndEndpoint_IdAndTargetIdAndDeletedFalse(
+                22L, 11L, 101L)).thenReturn(Optional.empty());
+        when(subscriptionRepository.save(org.mockito.ArgumentMatchers.any(NotificationSubscription.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.create(7L, new SubscriptionCreateRequest(22L, 11L, 101L));
+
+        assertThat(response.targetId()).isEqualTo(101L);
+        verify(subscriptionRepository).save(org.mockito.ArgumentMatchers.any(NotificationSubscription.class));
     }
 
     @Test
@@ -160,6 +255,8 @@ class NotificationSubscriptionServiceTest {
 
         assertThat(service.create(7L, new SubscriptionCreateRequest(22L, 11L, 7L)).targetId())
                 .isEqualTo(7L);
+        verify(targetAccessClient, never()).requireInquiryAccess(org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyLong());
     }
 
     @Test
