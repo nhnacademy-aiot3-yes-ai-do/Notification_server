@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import site.yesaido.notification_server.entity.NotificationEndpoint;
 import site.yesaido.notification_server.entity.NotificationSubscription;
 import site.yesaido.notification_server.entity.NotificationSubscriptionType;
+import site.yesaido.notification_server.client.SubscriptionTargetAccessClient;
 import site.yesaido.notification_server.dto.subscription.SubscriptionCreateRequest;
 import site.yesaido.notification_server.dto.subscription.SubscriptionResponse;
 import site.yesaido.notification_server.dto.subscription.SubscriptionTypeResponse;
@@ -29,6 +30,7 @@ public class NotificationSubscriptionService {
     private final NotificationSubscriptionTypeRepository subscriptionTypeRepository;
     private final NotificationEndpointRepository endpointRepository;
     private final SubscriptionChannelRepository subscriptionChannelRepository;
+    private final SubscriptionTargetAccessClient targetAccessClient;
 
     @Transactional
     public SubscriptionResponse create(Long userId, SubscriptionCreateRequest request) {
@@ -101,14 +103,20 @@ public class NotificationSubscriptionService {
             Long targetId,
             NotificationSubscriptionType type
     ) {
-        /*
-         * USER 대상은 Notification이 자체적으로 본인 여부를 검증할 수 있다.
-         * CULTIVATION·INQUIRY 대상의 소유권은 해당 서비스의 API 계약이 확정되기 전까지
-         * 임의 호출이나 DB 직접 조회를 하지 않는다.
-         */
-        if ("USER".equals(type.getTargetType().getTargetType()) && !userId.equals(targetId)) {
-            throw new SubscriptionTargetNotFoundException(
-                    "user id:%d, target id:%d".formatted(userId, targetId));
+        String targetType = type.getTargetType().getTargetType();
+        if ("USER".equals(targetType)) {
+            if (!userId.equals(targetId)) {
+                throw new SubscriptionTargetNotFoundException(
+                        "user id:%d, target id:%d".formatted(userId, targetId));
+            }
+            return;
+        }
+        if ("CULTIVATION".equals(targetType)) {
+            targetAccessClient.requireCultivationAccess(userId, targetId);
+            return;
+        }
+        if ("INQUIRY".equals(targetType)) {
+            targetAccessClient.requireInquiryAccess(userId, targetId);
         }
     }
 }

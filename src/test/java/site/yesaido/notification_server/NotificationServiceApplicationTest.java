@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import site.yesaido.notification_server.config.property.NotificationProperties;
 import site.yesaido.notification_server.config.property.NotificationRecoveryProperties;
+import site.yesaido.notification_server.config.property.SubscriptionAccessProperties;
 import site.yesaido.notification_server.config.property.TelegramLinkProperties;
 
 class NotificationServiceApplicationTest {
@@ -20,6 +21,7 @@ class NotificationServiceApplicationTest {
         assertThat(Arrays.asList(annotation.value())).containsExactlyInAnyOrder(
                 NotificationProperties.class,
                 NotificationRecoveryProperties.class,
-                TelegramLinkProperties.class);
+                TelegramLinkProperties.class,
+                SubscriptionAccessProperties.class);
     }
 }
