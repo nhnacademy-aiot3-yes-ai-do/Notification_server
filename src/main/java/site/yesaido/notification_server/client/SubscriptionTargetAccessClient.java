@@ -45,8 +45,6 @@ public class SubscriptionTargetAccessClient {
                                 "cultivation id:%d status:%d".formatted(cultivationId, response.getStatusCode().value()));
                     })
                     .toBodilessEntity();
-        } catch (SubscriptionTargetAccessDeniedException | SubscriptionTargetAccessUnverifiedException exception) {
-            throw exception;
         } catch (RestClientException exception) {
             throw new SubscriptionTargetAccessUnverifiedException(
                     "cultivation id:%d".formatted(cultivationId), exception);
@@ -65,8 +63,6 @@ public class SubscriptionTargetAccessClient {
                                 "inquiry id:%d status:%d".formatted(inquiryId, response.getStatusCode().value()));
                     })
                     .body(INQUIRY_ACCESS_TYPE);
-        } catch (SubscriptionTargetAccessUnverifiedException exception) {
-            throw exception;
         } catch (RestClientException exception) {
             throw new SubscriptionTargetAccessUnverifiedException(
                     "inquiry id:%d".formatted(inquiryId), exception);
