@@ -96,6 +96,17 @@ class SubscriptionTargetAccessClientTest {
     }
 
     @Test
+    void 문의_응답필드가_없으면_확인실패로_막는다() {
+        userServer.expect(requestTo("http://user.test/api/v1/inquiries/55/access"))
+                .andRespond(withSuccess(
+                        "{\"message\":\"ok\",\"data\":{}}",
+                        MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> client.requireInquiryAccess(7L, 55L))
+                .isInstanceOf(SubscriptionTargetAccessUnverifiedException.class);
+    }
+
+    @Test
     void 문의_5xx이면_확인실패로_막는다() {
         userServer.expect(requestTo("http://user.test/api/v1/inquiries/55/access"))
                 .andRespond(withServerError());

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record UserApiResponse<T>(
-        boolean success,
+        Boolean success,
         String message,
         T data
 ) {

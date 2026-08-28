@@ -209,6 +209,38 @@ class NotificationSubscriptionServiceTest {
     }
 
     @Test
+    void 삭제된_구독은_활성상태를_바꾸거나_다시_삭제할수_없다() {
+        when(subscriptionRepository.findByIdAndEndpoint_UserIdAndDeletedFalse(31L, 7L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.changeEnabled(7L, 31L, true))
+                .isInstanceOf(NotificationSubscriptionNotFoundException.class);
+        assertThatThrownBy(() -> service.delete(7L, 31L))
+                .isInstanceOf(NotificationSubscriptionNotFoundException.class);
+        verify(subscriptionRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void 삭제된_구독과_같은_요청이면_재활성화하지_않고_새로_저장한다() {
+        NotificationEndpoint endpoint = endpoint(11L, 1L, "TELEGRAM");
+        NotificationSubscriptionType type = subscriptionType(22L, "CULTIVATION");
+        when(endpointRepository.findByIdAndUserIdAndDeletedFalse(11L, 7L))
+                .thenReturn(Optional.of(endpoint));
+        when(typeRepository.findById(22L)).thenReturn(Optional.of(type));
+        when(channelRepository.existsBySubscriptionType_IdAndChannelType_Id(22L, 1L))
+                .thenReturn(true);
+        when(subscriptionRepository.findBySubscriptionType_IdAndEndpoint_IdAndTargetIdAndDeletedFalse(
+                22L, 11L, 101L)).thenReturn(Optional.empty());
+        when(subscriptionRepository.save(org.mockito.ArgumentMatchers.any(NotificationSubscription.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.create(7L, new SubscriptionCreateRequest(22L, 11L, 101L));
+
+        assertThat(response.targetId()).isEqualTo(101L);
+        verify(subscriptionRepository).save(org.mockito.ArgumentMatchers.any(NotificationSubscription.class));
+    }
+
+    @Test
     void USER_대상은_본인_ID일때_구독할수_있다() {
         NotificationEndpoint endpoint = endpoint(11L, 1L, "TELEGRAM");
         NotificationSubscriptionType type = subscriptionType(22L, "USER");

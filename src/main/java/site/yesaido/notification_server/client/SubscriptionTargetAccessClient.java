@@ -71,7 +71,8 @@ public class SubscriptionTargetAccessClient {
             throw new SubscriptionTargetAccessUnverifiedException(
                     "inquiry id:%d".formatted(inquiryId), exception);
         }
-        if (body == null || body.data() == null) {
+        if (body == null || body.data() == null
+                || body.success() == null || body.data().allowed() == null) {
             throw new SubscriptionTargetAccessUnverifiedException("inquiry id:%d empty body".formatted(inquiryId));
         }
         if (!body.success() || !body.data().allowed()) {
