@@ -1,9 +1,10 @@
 package site.yesaido.notification_server.client;
 
 import java.time.Duration;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -20,6 +21,7 @@ public class SubscriptionTargetAccessClient {
     private final RestClient cultivationClient;
     private final RestClient userClient;
 
+    @Autowired
     public SubscriptionTargetAccessClient(SubscriptionAccessProperties properties) {
         this.cultivationClient = restClient(properties.cultivationUrl(), properties);
         this.userClient = restClient(properties.userUrl(), properties);
@@ -71,7 +73,7 @@ public class SubscriptionTargetAccessClient {
                 || body.success() == null || body.data().allowed() == null) {
             throw new SubscriptionTargetAccessUnverifiedException("inquiry id:%d empty body".formatted(inquiryId));
         }
-        if (!body.success() || !body.data().allowed()) {
+        if (!Boolean.TRUE.equals(body.success()) || !Boolean.TRUE.equals(body.data().allowed())) {
             throw new SubscriptionTargetAccessDeniedException("inquiry id:%d".formatted(inquiryId));
         }
     }

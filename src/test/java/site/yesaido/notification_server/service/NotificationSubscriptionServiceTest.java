@@ -167,8 +167,9 @@ class NotificationSubscriptionServiceTest {
         when(typeRepository.findById(22L)).thenReturn(Optional.of(type));
         doThrow(new SubscriptionTargetAccessDeniedException("cultivation id:101"))
                 .when(targetAccessClient).requireCultivationAccess(7L, 101L);
+        SubscriptionCreateRequest request = new SubscriptionCreateRequest(22L, 11L, 101L);
 
-        assertThatThrownBy(() -> service.create(7L, new SubscriptionCreateRequest(22L, 11L, 101L)))
+        assertThatThrownBy(() -> service.create(7L, request))
                 .isInstanceOf(SubscriptionTargetAccessDeniedException.class);
         verify(subscriptionRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
@@ -182,8 +183,9 @@ class NotificationSubscriptionServiceTest {
         when(typeRepository.findById(22L)).thenReturn(Optional.of(type));
         doThrow(new SubscriptionTargetAccessUnverifiedException("timeout"))
                 .when(targetAccessClient).requireCultivationAccess(7L, 101L);
+        SubscriptionCreateRequest request = new SubscriptionCreateRequest(22L, 11L, 101L);
 
-        assertThatThrownBy(() -> service.create(7L, new SubscriptionCreateRequest(22L, 11L, 101L)))
+        assertThatThrownBy(() -> service.create(7L, request))
                 .isInstanceOf(SubscriptionTargetAccessUnverifiedException.class);
         verify(subscriptionRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
