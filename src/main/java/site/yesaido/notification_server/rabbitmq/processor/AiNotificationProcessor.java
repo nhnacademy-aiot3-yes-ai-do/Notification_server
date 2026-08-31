@@ -50,7 +50,8 @@ public class AiNotificationProcessor {
             return UNAVAILABLE;
         }
         String trimmed = value.trim();
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        if (trimmed.regionMatches(true, 0, "http://", 0, 7)
+                || trimmed.regionMatches(true, 0, "https://", 0, 8)) {
             return trimmed;
         }
         if (trimmed.startsWith("/")) {

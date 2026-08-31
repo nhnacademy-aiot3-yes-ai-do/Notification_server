@@ -285,6 +285,11 @@ class RabbitMqNotificationPayloadProcessorTest {
                         UUID.randomUUID(), 2L, 7L, "토마토 A동",
                         "https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31",
                         "성장 중", OCCURRED_AT));
+        RabbitMqNotificationCommand mixedCase = aiProcessor.process(
+                new AiEvent.DailyFeedbackGeneratedEvent(
+                        UUID.randomUUID(), 2L, 7L, "토마토 A동",
+                        "HTTPS://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31",
+                        "성장 중", OCCURRED_AT));
         AiNotificationProcessor localOrigin = new AiNotificationProcessor("http://localhost:8080/");
         RabbitMqNotificationCommand local = localOrigin.process(
                 new AiEvent.DailyFeedbackGeneratedEvent(
@@ -296,6 +301,8 @@ class RabbitMqNotificationPayloadProcessorTest {
         assertThat(((Map<?, ?>) withoutUrl.payload()).get("feedbackUrl")).isEqualTo("미제공");
         assertThat(((Map<?, ?>) absolute.payload()).get("feedbackUrl"))
                 .isEqualTo("https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31");
+        assertThat(((Map<?, ?>) mixedCase.payload()).get("feedbackUrl"))
+                .isEqualTo("HTTPS://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31");
         assertThat(((Map<?, ?>) local.payload()).get("feedbackUrl"))
                 .isEqualTo("http://localhost:8080/cultivations/10/daily-feedbacks/2026-08-31");
     }
