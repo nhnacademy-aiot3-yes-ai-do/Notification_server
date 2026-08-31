@@ -296,14 +296,15 @@ class RabbitMqNotificationPayloadProcessorTest {
                         UUID.randomUUID(), 2L, 7L, "토마토 A동",
                         "/cultivations/10/daily-feedbacks/2026-08-31", "성장 중", OCCURRED_AT));
 
-        assertThat(((Map<?, ?>) withUrl.payload()).get("feedbackUrl"))
-                .isEqualTo("https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31");
-        assertThat(((Map<?, ?>) withoutUrl.payload()).get("feedbackUrl")).isEqualTo("미제공");
-        assertThat(((Map<?, ?>) absolute.payload()).get("feedbackUrl"))
-                .isEqualTo("https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31");
-        assertThat(((Map<?, ?>) mixedCase.payload()).get("feedbackUrl"))
-                .isEqualTo("HTTPS://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31");
-        assertThat(((Map<?, ?>) local.payload()).get("feedbackUrl"))
-                .isEqualTo("http://localhost:8080/cultivations/10/daily-feedbacks/2026-08-31");
+        assertThat((Map<String, Object>) withUrl.payload())
+                .containsEntry("feedbackUrl", "https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31");
+        assertThat((Map<String, Object>) withoutUrl.payload())
+                .containsEntry("feedbackUrl", "미제공");
+        assertThat((Map<String, Object>) absolute.payload())
+                .containsEntry("feedbackUrl", "https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31");
+        assertThat((Map<String, Object>) mixedCase.payload())
+                .containsEntry("feedbackUrl", "HTTPS://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31");
+        assertThat((Map<String, Object>) local.payload())
+                .containsEntry("feedbackUrl", "http://localhost:8080/cultivations/10/daily-feedbacks/2026-08-31");
     }
 }
