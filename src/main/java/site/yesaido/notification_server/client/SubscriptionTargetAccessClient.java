@@ -1,73 +1,45 @@
 package site.yesaido.notification_server.client;
 
-import java.time.Duration;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import feign.FeignException;
+import feign.RetryableException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
-import site.yesaido.notification_server.config.property.SubscriptionAccessProperties;
 import site.yesaido.notification_server.exception.subscription.SubscriptionTargetAccessDeniedException;
 import site.yesaido.notification_server.exception.subscription.SubscriptionTargetAccessUnverifiedException;
 
 @Component
+@RequiredArgsConstructor
 public class SubscriptionTargetAccessClient {
 
-    private static final ParameterizedTypeReference<UserApiResponse<InquiryAccessResponse>> INQUIRY_ACCESS_TYPE =
-            new ParameterizedTypeReference<>() { };
-
-    private final RestClient cultivationClient;
-    private final RestClient userClient;
-
-    @Autowired
-    public SubscriptionTargetAccessClient(SubscriptionAccessProperties properties) {
-        this.cultivationClient = restClient(properties.cultivationUrl(), properties);
-        this.userClient = restClient(properties.userUrl(), properties);
-    }
-
-    SubscriptionTargetAccessClient(RestClient cultivationClient, RestClient userClient) {
-        this.cultivationClient = cultivationClient;
-        this.userClient = userClient;
-    }
+    private final CultivationAccessFeignClient cultivationAccessClient;
+    private final UserInquiryAccessFeignClient userInquiryAccessClient;
 
     public void requireCultivationAccess(Long userId, Long cultivationId) {
         try {
-            cultivationClient.get()
-                    .uri("/api/v1/cultivations/{id}", cultivationId)
-                    .header("X-User-Id", String.valueOf(userId))
-                    .retrieve()
-                    .onStatus(this::isDenied, (request, response) -> {
-                        throw new SubscriptionTargetAccessDeniedException(
-                                "cultivation id:%d".formatted(cultivationId));
-                    })
-                    .onStatus(HttpStatusCode::isError, (request, response) -> {
-                        throw new SubscriptionTargetAccessUnverifiedException(
-                                "cultivation id:%d status:%d".formatted(cultivationId, response.getStatusCode().value()));
-                    })
-                    .toBodilessEntity();
-        } catch (RestClientException exception) {
+            cultivationAccessClient.getCultivation(cultivationId, String.valueOf(userId));
+        } catch (RetryableException exception) {
             throw new SubscriptionTargetAccessUnverifiedException(
                     "cultivation id:%d".formatted(cultivationId), exception);
+        } catch (FeignException exception) {
+            if (isDenied(exception.status())) {
+                throw new SubscriptionTargetAccessDeniedException(
+                        "cultivation id:%d".formatted(cultivationId));
+            }
+            throw new SubscriptionTargetAccessUnverifiedException(
+                    "cultivation id:%d status:%d".formatted(cultivationId, exception.status()), exception);
         }
     }
 
     public void requireInquiryAccess(Long userId, Long inquiryId) {
         UserApiResponse<InquiryAccessResponse> body;
         try {
-            body = userClient.get()
-                    .uri("/api/v1/inquiries/{id}/access", inquiryId)
-                    .header("X-User-Id", String.valueOf(userId))
-                    .retrieve()
-                    .onStatus(HttpStatusCode::isError, (request, response) -> {
-                        throw new SubscriptionTargetAccessUnverifiedException(
-                                "inquiry id:%d status:%d".formatted(inquiryId, response.getStatusCode().value()));
-                    })
-                    .body(INQUIRY_ACCESS_TYPE);
-        } catch (RestClientException exception) {
+            body = userInquiryAccessClient.getInquiryAccess(inquiryId, String.valueOf(userId));
+        } catch (RetryableException exception) {
             throw new SubscriptionTargetAccessUnverifiedException(
                     "inquiry id:%d".formatted(inquiryId), exception);
+        } catch (FeignException exception) {
+            throw new SubscriptionTargetAccessUnverifiedException(
+                    "inquiry id:%d status:%d".formatted(inquiryId, exception.status()), exception);
         }
         if (body == null || body.data() == null
                 || body.success() == null || body.data().allowed() == null) {
@@ -78,24 +50,7 @@ public class SubscriptionTargetAccessClient {
         }
     }
 
-    private boolean isDenied(HttpStatusCode status) {
-        return status.value() == 403 || status.value() == 404;
-    }
-
-    private static RestClient restClient(String baseUrl, SubscriptionAccessProperties properties) {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(durationMillis(properties.connectTimeout(), 2_000));
-        factory.setReadTimeout(durationMillis(properties.readTimeout(), 3_000));
-        return RestClient.builder()
-                .baseUrl(baseUrl == null ? "" : baseUrl)
-                .requestFactory(factory)
-                .build();
-    }
-
-    private static int durationMillis(Duration duration, int fallback) {
-        if (duration == null || duration.isNegative() || duration.isZero()) {
-            return fallback;
-        }
-        return Math.toIntExact(duration.toMillis());
+    private boolean isDenied(int status) {
+        return status == 403 || status == 404;
     }
 }
