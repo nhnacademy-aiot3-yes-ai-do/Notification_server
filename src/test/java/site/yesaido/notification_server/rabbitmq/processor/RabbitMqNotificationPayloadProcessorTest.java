@@ -22,7 +22,7 @@ class RabbitMqNotificationPayloadProcessorTest {
     private static final OffsetDateTime OCCURRED_AT = OffsetDateTime.parse("2026-08-12T10:15:30+09:00");
 
     private final RuleEngineNotificationProcessor ruleEngineProcessor = new RuleEngineNotificationProcessor();
-    private final AiNotificationProcessor aiProcessor = new AiNotificationProcessor();
+    private final AiNotificationProcessor aiProcessor = new AiNotificationProcessor("https://yes-nhn.site");
     private final CultivationNotificationProcessor cultivationProcessor = new CultivationNotificationProcessor();
     private final UserNotificationProcessor userProcessor = new UserNotificationProcessor();
 
@@ -251,18 +251,52 @@ class RabbitMqNotificationPayloadProcessorTest {
     }
 
     @Test
-    void AI와_문의와_로그인이_기존템플릿변수만_포함한_payload로_변환된다() {
+    void 일일피드백은_요약과_공개URL을_넣고_문의와_로그인은_기존변수를_유지한다() {
         RabbitMqNotificationCommand feedback = aiProcessor.process(
-                new AiEvent.DailyFeedbackGeneratedEvent(UUID.randomUUID(), 2L, 7L, "토마토 A동", "url", "성장 중", OCCURRED_AT));
+                new AiEvent.DailyFeedbackGeneratedEvent(
+                        UUID.randomUUID(), 2L, 7L, "토마토 A동",
+                        "/cultivations/10/daily-feedbacks/2026-08-31", "성장 중", OCCURRED_AT));
         RabbitMqNotificationCommand inquiry = userProcessor.process(
                 new UserEvent.InquirySubmittedEvent(UUID.randomUUID(), 2L, java.util.List.of(1L), 9L,
                         "문의 제목", "GENERAL", "url", UserEvent.InquiryType.ANSWER, OCCURRED_AT));
         RabbitMqNotificationCommand login = userProcessor.process(
                 new UserEvent.UserLoginAttemptedEvent(UUID.randomUUID(), 2L, "tester", true, "Seoul", OCCURRED_AT));
 
-        assertThat(feedback.payload()).isEqualTo(Map.of("cultivationName", "토마토 A동", "feedbackSummary", "성장 중"));
+        assertThat(feedback.payload()).isEqualTo(Map.of(
+                "cultivationName", "토마토 A동",
+                "feedbackSummary", "성장 중",
+                "feedbackUrl", "https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31"));
         assertThat(inquiry.payload()).isEqualTo(Map.of("inquiryTitle", "문의 제목"));
         assertThat(inquiry.recipientUserIds()).containsExactly(1L);
         assertThat(login.payload()).isEqualTo(Map.of("provider", "미제공"));
+    }
+
+    @Test
+    void 일일피드백_URL은_상대경로에_origin을_붙이고_공백은_미제공_절대경로는_유지한다() {
+        RabbitMqNotificationCommand withUrl = aiProcessor.process(
+                new AiEvent.DailyFeedbackGeneratedEvent(
+                        UUID.randomUUID(), 2L, 7L, "토마토 A동",
+                        "/cultivations/10/daily-feedbacks/2026-08-31", "성장 중", OCCURRED_AT));
+        RabbitMqNotificationCommand withoutUrl = aiProcessor.process(
+                new AiEvent.DailyFeedbackGeneratedEvent(
+                        UUID.randomUUID(), 2L, 7L, "토마토 A동", " ", "성장 중", OCCURRED_AT));
+        RabbitMqNotificationCommand absolute = aiProcessor.process(
+                new AiEvent.DailyFeedbackGeneratedEvent(
+                        UUID.randomUUID(), 2L, 7L, "토마토 A동",
+                        "https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31",
+                        "성장 중", OCCURRED_AT));
+        AiNotificationProcessor localOrigin = new AiNotificationProcessor("http://localhost:8080/");
+        RabbitMqNotificationCommand local = localOrigin.process(
+                new AiEvent.DailyFeedbackGeneratedEvent(
+                        UUID.randomUUID(), 2L, 7L, "토마토 A동",
+                        "/cultivations/10/daily-feedbacks/2026-08-31", "성장 중", OCCURRED_AT));
+
+        assertThat(((Map<?, ?>) withUrl.payload()).get("feedbackUrl"))
+                .isEqualTo("https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31");
+        assertThat(((Map<?, ?>) withoutUrl.payload()).get("feedbackUrl")).isEqualTo("미제공");
+        assertThat(((Map<?, ?>) absolute.payload()).get("feedbackUrl"))
+                .isEqualTo("https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31");
+        assertThat(((Map<?, ?>) local.payload()).get("feedbackUrl"))
+                .isEqualTo("http://localhost:8080/cultivations/10/daily-feedbacks/2026-08-31");
     }
 }
