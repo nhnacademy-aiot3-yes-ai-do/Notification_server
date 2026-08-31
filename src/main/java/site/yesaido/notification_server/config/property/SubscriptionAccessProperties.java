@@ -11,11 +11,14 @@ public record SubscriptionAccessProperties(
         Duration readTimeout
 ) {
     public SubscriptionAccessProperties {
-        if (connectTimeout == null) {
-            connectTimeout = Duration.ofSeconds(2);
+        connectTimeout = orDefault(connectTimeout, Duration.ofSeconds(2));
+        readTimeout = orDefault(readTimeout, Duration.ofSeconds(3));
+    }
+
+    private static Duration orDefault(Duration duration, Duration fallback) {
+        if (duration == null || duration.isNegative() || duration.isZero()) {
+            return fallback;
         }
-        if (readTimeout == null) {
-            readTimeout = Duration.ofSeconds(3);
-        }
+        return duration;
     }
 }

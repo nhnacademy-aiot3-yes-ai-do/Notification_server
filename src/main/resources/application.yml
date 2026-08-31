@@ -46,6 +46,7 @@ spring:
         default-requeue-rejected: false
 
 notification:
+  public-origin: ${PUBLIC_APP_ORIGIN:https://yes-nhn.site}
   access:
     cultivation-url: ${CULTIVATION_SERVER_URL:http://localhost:8083}
     user-url: ${USER_SERVER_URL:http://localhost:8081}
