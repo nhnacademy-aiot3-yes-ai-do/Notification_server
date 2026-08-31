@@ -28,4 +28,22 @@ class RabbitMqTemplateRendererTest {
         assertThatThrownBy(() -> renderer.render("{{missing}}", payload))
                 .isInstanceOf(NotificationTemplateVariableMissingException.class);
     }
+
+    @Test
+    void 일일피드백_템플릿은_공개_feedbackUrl을_렌더링한다() {
+        String template = """
+                [AI 일일 피드백] {{cultivationName}}의 오늘 피드백이 생성되었습니다.
+                {{feedbackSummary}}
+                {{feedbackUrl}}""";
+
+        String rendered = renderer.render(template, Map.of(
+                "cultivationName", "테스트 1번",
+                "feedbackSummary", "오늘 환경유지율은 87%입니다.",
+                "feedbackUrl", "https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31"));
+
+        assertThat(rendered).isEqualTo("""
+                [AI 일일 피드백] 테스트 1번의 오늘 피드백이 생성되었습니다.
+                오늘 환경유지율은 87%입니다.
+                https://yes-nhn.site/cultivations/10/daily-feedbacks/2026-08-31""");
+    }
 }
