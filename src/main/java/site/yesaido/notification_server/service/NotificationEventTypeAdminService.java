@@ -12,10 +12,8 @@ import site.yesaido.notification_server.dto.admin.NotificationEventTypeResponse;
 import site.yesaido.notification_server.entity.NotificationEventType;
 import site.yesaido.notification_server.entity.SubscriptionTargetType;
 import site.yesaido.notification_server.repository.NotificationEventTypeRepository;
-import site.yesaido.notification_server.repository.NotificationRepository;
-import site.yesaido.notification_server.repository.NotificationSubscriptionTypeRepository;
-import site.yesaido.notification_server.repository.NotificationTemplateRepository;
 import site.yesaido.notification_server.repository.SubscriptionTargetTypeRepository;
+import site.yesaido.notification_server.repository.projection.NotificationEventTypeReferenceProjection;
 
 @Service
 @RequiredArgsConstructor
@@ -25,9 +23,7 @@ public class NotificationEventTypeAdminService {
 
     private final NotificationEventTypeRepository eventTypeRepository;
     private final SubscriptionTargetTypeRepository targetTypeRepository;
-    private final NotificationSubscriptionTypeRepository subscriptionTypeRepository;
-    private final NotificationTemplateRepository templateRepository;
-    private final NotificationRepository notificationRepository;
+
 
     public List<NotificationEventTypeResponse> findAll() {
         return eventTypeRepository.findAll(Sort.by(Sort.Direction.ASC, "code")).stream()
@@ -59,9 +55,10 @@ public class NotificationEventTypeAdminService {
     @Transactional
     public void delete(Long id) {
         NotificationEventType eventType = findEventType(id);
-        if (subscriptionTypeRepository.existsByEventType_Id(id)
-                || templateRepository.existsByEventType_Id(id)
-                || notificationRepository.existsByEventType_Id(id)) {
+        NotificationEventTypeReferenceProjection references = eventTypeRepository.findReferenceStatus(id);
+        if (references.isReferencedBySubscriptionType()
+                || references.isReferencedByTemplate()
+                || references.isReferencedByNotification()) {
             throw new ConflictException("구독·템플릿·발송 이력에서 사용 중인 이벤트는 삭제할 수 없습니다.");
         }
         eventTypeRepository.delete(eventType);

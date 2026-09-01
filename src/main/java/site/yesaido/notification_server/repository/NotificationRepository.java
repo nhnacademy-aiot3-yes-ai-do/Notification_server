@@ -15,8 +15,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     boolean existsBySourceEventId(UUID sourceEventId);
 
-    boolean existsByEventType_Id(Long eventTypeId);
-
     Optional<Notification> findBySourceEventId(UUID sourceEventId);
 
     /**

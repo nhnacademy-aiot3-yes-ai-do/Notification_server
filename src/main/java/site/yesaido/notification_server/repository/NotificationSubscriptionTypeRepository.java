@@ -17,5 +17,4 @@ public interface NotificationSubscriptionTypeRepository
             """)
     List<NotificationSubscriptionType> findAllWithEventAndTargetType();
 
-    boolean existsByEventType_Id(Long eventTypeId);
 }
