@@ -37,9 +37,9 @@ public class NotificationTemplateChannelAdminService {
     @Transactional
     public NotificationTemplateResponse createTemplate(NotificationTemplateRequest r) {
         var event = eventRepository.findById(r.eventTypeId()).orElseThrow(() -> new NotFoundException("알림 이벤트를 찾을 수 없습니다."));
-        var channel = channelRepository.findById(r.channelTypeId()).orElseThrow(() -> new NotFoundException("채널을 찾을 수 없습니다."));
+        var channel = channelRepository.findByIdAndDeletedFalse(r.channelTypeId()).orElseThrow(() -> new NotFoundException("활성 채널을 찾을 수 없습니다."));
         int version = r.version() == null ? 1 : r.version();
-        if (templateRepository.findFirstByEventType_IdAndChannelType_IdOrderByVersionDesc(event.getId(), channel.getId()).filter(t -> t.getVersion() == version).isPresent())
+        if (templateRepository.existsByEventType_IdAndChannelType_IdAndVersion(event.getId(), channel.getId(), version))
             throw new ConflictException("같은 이벤트·채널·버전의 Template이 이미 존재합니다.");
         return NotificationTemplateResponse.from(templateRepository.save(new NotificationTemplate(event, channel, r.bodyTemplate(), version)));
     }
@@ -65,7 +65,7 @@ public class NotificationTemplateChannelAdminService {
 
     @Transactional
     public ChannelTypeResponse createChannel(ChannelTypeRequest r) {
-        if (channelRepository.findByCodeAndDeletedFalse(r.code()).isPresent())
+        if (channelRepository.findByCode(r.code()).isPresent())
             throw new ConflictException("이미 등록된 채널 코드입니다.");
         return ChannelTypeResponse.from(channelRepository.save(new ChannelType(r.code(), r.displayName())));
     }
@@ -73,7 +73,7 @@ public class NotificationTemplateChannelAdminService {
     @Transactional
     public ChannelTypeResponse updateChannel(Long id, ChannelTypeRequest r) {
         var c = channelRepository.findByIdAndDeletedFalse(id).orElseThrow(() -> new NotFoundException("활성 채널을 찾을 수 없습니다."));
-        if (channelRepository.existsByCodeAndDeletedFalseAndIdNot(r.code(), id))
+        if (channelRepository.existsByCodeAndIdNot(r.code(), id))
             throw new ConflictException("이미 등록된 채널 코드입니다.");
         c.changeDetails(r.code(), r.displayName());
         return ChannelTypeResponse.from(c);

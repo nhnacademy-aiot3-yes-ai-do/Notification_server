@@ -10,5 +10,9 @@ public interface ChannelTypeRepository extends JpaRepository<ChannelType, Long> 
 
     Optional<ChannelType> findByCodeAndDeletedFalse(String code);
 
+    Optional<ChannelType> findByCode(String code);
+
+    boolean existsByCodeAndIdNot(String code, Long id);
+
     boolean existsByCodeAndDeletedFalseAndIdNot(String code, Long id);
 }

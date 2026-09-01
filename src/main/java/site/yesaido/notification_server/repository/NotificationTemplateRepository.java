@@ -14,6 +14,9 @@ public interface NotificationTemplateRepository extends JpaRepository<Notificati
 
     boolean existsByChannelType_Id(Long channelTypeId);
 
+    boolean existsByEventType_IdAndChannelType_IdAndVersion(
+            Long eventTypeId, Long channelTypeId, int version);
+
     Optional<NotificationTemplate>
             findFirstByEventType_IdAndChannelType_IdOrderByVersionDesc(
                     Long eventTypeId, Long channelTypeId);
