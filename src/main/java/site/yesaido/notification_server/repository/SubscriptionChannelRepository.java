@@ -7,4 +7,6 @@ public interface SubscriptionChannelRepository extends JpaRepository<Subscriptio
 
     boolean existsBySubscriptionType_IdAndChannelType_Id(
             Long subscriptionTypeId, Long channelTypeId);
+
+    boolean existsByChannelType_Id(Long channelTypeId);
 }

@@ -14,6 +14,8 @@ import site.yesaido.notification_server.entity.NotificationDelivery;
 
 public interface NotificationDeliveryRepository extends JpaRepository<NotificationDelivery, Long> {
 
+    boolean existsByTemplate_Id(Long templateId);
+
     @Query("""
             select d
             from NotificationDelivery d
