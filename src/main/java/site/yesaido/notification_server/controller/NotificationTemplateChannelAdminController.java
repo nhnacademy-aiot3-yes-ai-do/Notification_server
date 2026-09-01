@@ -28,10 +28,10 @@ public class NotificationTemplateChannelAdminController {
     }
 
     @PutMapping("/notification-templates/{id}")
-    public NotificationTemplateResponse updateTemplate(@RequestHeader(value = "X-User-Role", required = false) String role,
+    public ResponseEntity<NotificationTemplateResponse> updateTemplate(@RequestHeader(value = "X-User-Role", required = false) String role,
                                                        @PathVariable Long id,
                                                        @Valid @RequestBody NotificationTemplateRequest r) {
-        return service.updateTemplate(role, id, r);
+        return ResponseEntity.ok(service.updateTemplate(role, id, r));
     }
 
     @DeleteMapping("/notification-templates/{id}")
@@ -53,10 +53,10 @@ public class NotificationTemplateChannelAdminController {
     }
 
     @PutMapping("/channel-types/{id}")
-    public ChannelTypeResponse updateChannel(@RequestHeader(value = "X-User-Role", required = false) String role,
+    public ResponseEntity<ChannelTypeResponse> updateChannel(@RequestHeader(value = "X-User-Role", required = false) String role,
                                              @PathVariable Long id,
                                              @Valid @RequestBody ChannelTypeRequest r) {
-        return service.updateChannel(role, id, r);
+        return ResponseEntity.ok(service.updateChannel(role, id, r));
     }
 
     @DeleteMapping("/channel-types/{id}")
