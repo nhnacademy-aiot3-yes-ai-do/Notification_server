@@ -48,4 +48,8 @@ public class NotificationTemplate extends AuditEntity {
         this.bodyTemplate = bodyTemplate;
         this.version = version;
     }
+
+    public void changeBodyTemplate(String bodyTemplate) {
+        this.bodyTemplate = bodyTemplate;
+    }
 }

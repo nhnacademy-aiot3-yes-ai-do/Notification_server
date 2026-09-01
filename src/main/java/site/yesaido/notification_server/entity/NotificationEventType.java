@@ -43,4 +43,12 @@ public class NotificationEventType extends AuditEntity {
         this.description = description;
         this.targetType = targetType;
     }
+
+    public void changeDetails(String code, String displayName, String description,
+                              SubscriptionTargetType targetType) {
+        this.code = code;
+        this.displayName = displayName;
+        this.description = description;
+        this.targetType = targetType;
+    }
 }

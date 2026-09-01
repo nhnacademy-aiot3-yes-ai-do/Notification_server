@@ -27,6 +27,8 @@ public interface NotificationEndpointRepository extends JpaRepository<Notificati
     boolean existsByUserIdAndChannelType_IdAndDestinationAndDeletedFalse(
             Long userId, Long channelTypeId, String destination);
 
+    boolean existsByChannelType_Id(Long channelTypeId);
+
     boolean existsByUserIdAndChannelType_IdAndDestinationAndIdNotAndDeletedFalse(
             Long userId, Long channelTypeId, String destination, Long id);
 
