@@ -7,7 +7,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.yesaido.common.exception.client.ConflictException;
-import site.yesaido.common.exception.client.ForbiddenException;
 import site.yesaido.common.exception.client.NotFoundException;
 import site.yesaido.notification_server.dto.admin.ChannelTypeRequest;
 import site.yesaido.notification_server.dto.admin.ChannelTypeResponse;
@@ -31,14 +30,12 @@ public class NotificationTemplateChannelAdminService {
     private final NotificationDeliveryRepository deliveryRepository;
     private final SubscriptionChannelRepository subscriptionChannelRepository;
 
-    public List<NotificationTemplateResponse> templates(String role) {
-        admin(role);
+    public List<NotificationTemplateResponse> templates() {
         return templateRepository.findAll(Sort.by("id")).stream().map(NotificationTemplateResponse::from).toList();
     }
 
     @Transactional
-    public NotificationTemplateResponse createTemplate(String role, NotificationTemplateRequest r) {
-        admin(role);
+    public NotificationTemplateResponse createTemplate(NotificationTemplateRequest r) {
         var event = eventRepository.findById(r.eventTypeId()).orElseThrow(() -> new NotFoundException("알림 이벤트를 찾을 수 없습니다."));
         var channel = channelRepository.findById(r.channelTypeId()).orElseThrow(() -> new NotFoundException("채널을 찾을 수 없습니다."));
         int version = r.version() == null ? 1 : r.version();
@@ -48,38 +45,33 @@ public class NotificationTemplateChannelAdminService {
     }
 
     @Transactional
-    public NotificationTemplateResponse updateTemplate(String role, Long id, NotificationTemplateRequest r) {
-        admin(role);
+    public NotificationTemplateResponse updateTemplate(Long id, NotificationTemplateRequest r) {
         var t = templateRepository.findById(id).orElseThrow(() -> new NotFoundException("Template을 찾을 수 없습니다."));
         t.changeBodyTemplate(r.bodyTemplate());
         return NotificationTemplateResponse.from(t);
     }
 
     @Transactional
-    public void deleteTemplate(String role, Long id) {
-        admin(role);
+    public void deleteTemplate(Long id) {
         if (!templateRepository.existsById(id)) throw new NotFoundException("Template을 찾을 수 없습니다.");
         if (deliveryRepository.existsByTemplate_Id(id))
             throw new ConflictException("발송 이력에서 사용 중인 Template은 삭제할 수 없습니다.");
         templateRepository.deleteById(id);
     }
 
-    public List<ChannelTypeResponse> channels(String role) {
-        admin(role);
+    public List<ChannelTypeResponse> channels() {
         return channelRepository.findAll(Sort.by("id")).stream().map(ChannelTypeResponse::from).toList();
     }
 
     @Transactional
-    public ChannelTypeResponse createChannel(String role, ChannelTypeRequest r) {
-        admin(role);
+    public ChannelTypeResponse createChannel(ChannelTypeRequest r) {
         if (channelRepository.findByCodeAndDeletedFalse(r.code()).isPresent())
             throw new ConflictException("이미 등록된 채널 코드입니다.");
         return ChannelTypeResponse.from(channelRepository.save(new ChannelType(r.code(), r.displayName())));
     }
 
     @Transactional
-    public ChannelTypeResponse updateChannel(String role, Long id, ChannelTypeRequest r) {
-        admin(role);
+    public ChannelTypeResponse updateChannel(Long id, ChannelTypeRequest r) {
         var c = channelRepository.findByIdAndDeletedFalse(id).orElseThrow(() -> new NotFoundException("활성 채널을 찾을 수 없습니다."));
         if (channelRepository.existsByCodeAndDeletedFalseAndIdNot(r.code(), id))
             throw new ConflictException("이미 등록된 채널 코드입니다.");
@@ -88,22 +80,17 @@ public class NotificationTemplateChannelAdminService {
     }
 
     @Transactional
-    public void deleteChannel(String role, Long id) {
-        admin(role);
+    public void deleteChannel(Long id) {
         var c = channelRepository.findById(id).orElseThrow(() -> new NotFoundException("채널을 찾을 수 없습니다."));
         c.softDelete();
     }
 
     @Transactional
-    public void restoreChannel(String role, Long id) {
-        admin(role);
+    public void restoreChannel(Long id) {
         var c = channelRepository.findById(id).orElseThrow(() -> new NotFoundException("채널을 찾을 수 없습니다."));
         if (channelRepository.findByCodeAndDeletedFalse(c.getCode()).isPresent())
             throw new ConflictException("이미 활성화된 채널 코드입니다.");
         c.restore();
     }
 
-    private void admin(String role) {
-        if (!"ADMIN".equals(role)) throw new ForbiddenException("관리자 권한이 필요합니다.");
-    }
 }

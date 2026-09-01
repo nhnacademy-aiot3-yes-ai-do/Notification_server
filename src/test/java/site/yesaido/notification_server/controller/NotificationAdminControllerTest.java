@@ -21,7 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import site.yesaido.common.exception.client.ConflictException;
-import site.yesaido.common.exception.client.ForbiddenException;
+
 import site.yesaido.notification_server.dto.admin.ChannelTypeRequest;
 import site.yesaido.notification_server.dto.admin.ChannelTypeResponse;
 import site.yesaido.notification_server.dto.admin.NotificationEventTypeRequest;
@@ -53,7 +53,7 @@ class NotificationAdminControllerTest {
 
     @Test
     void eventListIsWrapped() throws Exception {
-        when(eventService.findAll("ADMIN")).thenReturn(List.of(
+        when(eventService.findAll()).thenReturn(List.of(
                 new NotificationEventTypeResponse(1L, "HARVEST_COMPLETED", "수확 완료", "설명", "USER")));
 
         mockMvc.perform(get("/api/v1/admin/notification-event-types").header("X-User-Role", "ADMIN"))
@@ -63,24 +63,24 @@ class NotificationAdminControllerTest {
 
     @Test
     void templateAndChannelListsAreWrapped() throws Exception {
-        when(templateChannelService.templates("ADMIN")).thenReturn(List.of(
+        when(templateChannelService.templates()).thenReturn(List.of(
                 new NotificationTemplateResponse(2L, 1L, "WELCOME", 3L, "EMAIL", "본문", 1)));
-        when(templateChannelService.channels("ADMIN")).thenReturn(List.of(
+        when(templateChannelService.channels()).thenReturn(List.of(
                 new ChannelTypeResponse(3L, "EMAIL", "이메일", false)));
 
         mockMvc.perform(get("/api/v1/admin/notification-templates").header("X-User-Role", "ADMIN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notificationTemplateResponses[0].id").value(2));
-        mockMvc.perform(get("/api/v1/admin/channel-types").header("X-User-Role", "ADMIN"))
+        mockMvc.perform(get("/api/v1/admin/channel-types"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.channelTypeResponses[0].code").value("EMAIL"));
     }
 
     @Test
     void updateResponsesAreResponseEntities() throws Exception {
-        when(templateChannelService.updateTemplate(any(), any(Long.class), any(NotificationTemplateRequest.class)))
+        when(templateChannelService.updateTemplate(any(Long.class), any(NotificationTemplateRequest.class)))
                 .thenReturn(new NotificationTemplateResponse(2L, 1L, "WELCOME", 3L, "EMAIL", "수정 본문", 1));
-        when(templateChannelService.updateChannel(any(), any(Long.class), any(ChannelTypeRequest.class)))
+        when(templateChannelService.updateChannel(any(Long.class), any(ChannelTypeRequest.class)))
                 .thenReturn(new ChannelTypeResponse(3L, "EMAIL", "새 이름", false));
 
         mockMvc.perform(put("/api/v1/admin/notification-templates/2")
@@ -97,13 +97,6 @@ class NotificationAdminControllerTest {
                 .andExpect(jsonPath("$.displayName").value("새 이름"));
     }
 
-    @Test
-    void missingAdminRoleIsForbidden() throws Exception {
-        when(templateChannelService.channels(null)).thenThrow(new ForbiddenException("관리자 권한이 필요합니다."));
-
-        mockMvc.perform(get("/api/v1/admin/channel-types"))
-                .andExpect(status().isForbidden());
-    }
 
     @Test
     void invalidTemplateIdsAreBadRequest() throws Exception {
@@ -117,7 +110,7 @@ class NotificationAdminControllerTest {
     @Test
     void serviceConflictBecomesConflictResponse() throws Exception {
         doThrow(new ConflictException("이미 등록된 채널 코드입니다."))
-                .when(templateChannelService).createChannel(any(), any(ChannelTypeRequest.class));
+                .when(templateChannelService).createChannel(any(ChannelTypeRequest.class));
 
         mockMvc.perform(post("/api/v1/admin/channel-types")
                         .header("X-User-Role", "ADMIN")
@@ -130,6 +123,6 @@ class NotificationAdminControllerTest {
     void deleteReturnsNoContentAndDelegatesToService() throws Exception {
         mockMvc.perform(delete("/api/v1/admin/channel-types/3").header("X-User-Role", "ADMIN"))
                 .andExpect(status().isNoContent());
-        verify(templateChannelService).deleteChannel("ADMIN", 3L);
+        verify(templateChannelService).deleteChannel(3L);
     }
 }
