@@ -55,9 +55,9 @@ class NotificationTemplateChannelAdminServiceTest {
         when(channelRepository.findByIdAndDeletedFalse(2L)).thenReturn(Optional.of(channel));
         when(templateRepository.existsByEventType_IdAndChannelType_IdAndVersion(1L, 2L, 2))
                 .thenReturn(true);
+        NotificationTemplateRequest request = new NotificationTemplateRequest(1L, 2L, "본문", 2);
 
-        assertThatThrownBy(() -> service.createTemplate(
-                new NotificationTemplateRequest(1L, 2L, "본문", 2)))
+        assertThatThrownBy(() -> service.createTemplate(request))
                 .isInstanceOf(ConflictException.class);
         verify(templateRepository, never()).save(any());
     }
@@ -67,9 +67,9 @@ class NotificationTemplateChannelAdminServiceTest {
         NotificationEventType event = org.mockito.Mockito.mock(NotificationEventType.class);
         when(eventRepository.findById(1L)).thenReturn(Optional.of(event));
         when(channelRepository.findByIdAndDeletedFalse(2L)).thenReturn(Optional.empty());
+        NotificationTemplateRequest request = new NotificationTemplateRequest(1L, 2L, "본문", 1);
 
-        assertThatThrownBy(() -> service.createTemplate(
-                new NotificationTemplateRequest(1L, 2L, "본문", 1)))
+        assertThatThrownBy(() -> service.createTemplate(request))
                 .hasMessage("활성 채널을 찾을 수 없습니다.");
         verify(templateRepository, never()).save(any());
     }
@@ -79,8 +79,9 @@ class NotificationTemplateChannelAdminServiceTest {
         ChannelType deletedChannel = org.mockito.Mockito.mock(ChannelType.class);
         when(deletedChannel.isDeleted()).thenReturn(true);
         when(channelRepository.findByCode("EMAIL")).thenReturn(Optional.of(deletedChannel));
+        ChannelTypeRequest request = new ChannelTypeRequest("EMAIL", "이메일");
 
-        assertThatThrownBy(() -> service.createChannel(new ChannelTypeRequest("EMAIL", "이메일")))
+        assertThatThrownBy(() -> service.createChannel(request))
                 .isInstanceOf(ConflictException.class);
         verify(channelRepository, never()).save(any());
     }
@@ -90,8 +91,9 @@ class NotificationTemplateChannelAdminServiceTest {
         ChannelType activeChannel = org.mockito.Mockito.mock(ChannelType.class);
         when(channelRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(activeChannel));
         when(channelRepository.existsByCodeAndIdNot("EMAIL", 1L)).thenReturn(true);
+        ChannelTypeRequest request = new ChannelTypeRequest("EMAIL", "이메일");
 
-        assertThatThrownBy(() -> service.updateChannel(1L, new ChannelTypeRequest("EMAIL", "이메일")))
+        assertThatThrownBy(() -> service.updateChannel(1L, request))
                 .isInstanceOf(ConflictException.class);
         verify(activeChannel, never()).changeDetails(any(), any());
     }
