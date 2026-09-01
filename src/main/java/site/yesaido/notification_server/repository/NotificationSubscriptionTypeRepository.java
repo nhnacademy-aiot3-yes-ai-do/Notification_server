@@ -16,4 +16,5 @@ public interface NotificationSubscriptionTypeRepository
             order by st.name
             """)
     List<NotificationSubscriptionType> findAllWithEventAndTargetType();
+
 }

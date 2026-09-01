@@ -33,4 +33,17 @@ public class ChannelType extends AuditEntity {
         this.code = code;
         this.displayName = displayName;
     }
+
+    public void changeDetails(String code, String displayName) {
+        this.code = code;
+        this.displayName = displayName;
+    }
+
+    public void softDelete() {
+        this.deleted = true;
+    }
+
+    public void restore() {
+        this.deleted = false;
+    }
 }

@@ -10,6 +10,11 @@ import site.yesaido.notification_server.entity.NotificationTemplate;
 
 public interface NotificationTemplateRepository extends JpaRepository<NotificationTemplate, Long> {
 
+    boolean existsByChannelType_Id(Long channelTypeId);
+
+    boolean existsByEventType_IdAndChannelType_IdAndVersion(
+            Long eventTypeId, Long channelTypeId, int version);
+
     Optional<NotificationTemplate>
             findFirstByEventType_IdAndChannelType_IdOrderByVersionDesc(
                     Long eventTypeId, Long channelTypeId);
