@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import site.yesaido.notification_server.controller.docs.NotificationEventTypeAdminControllerDocs;
 import site.yesaido.notification_server.dto.admin.NotificationEventTypeListResponse;
 import site.yesaido.notification_server.dto.admin.NotificationEventTypeRequest;
 import site.yesaido.notification_server.dto.admin.NotificationEventTypeResponse;
@@ -14,16 +15,16 @@ import java.net.URI;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/admin/notification-event-types")
-public class NotificationEventTypeAdminController {
+public class NotificationEventTypeAdminController implements NotificationEventTypeAdminControllerDocs {
 
     private final NotificationEventTypeAdminService eventTypeAdminService;
 
-    @GetMapping
+    @Override    @GetMapping
     public ResponseEntity<NotificationEventTypeListResponse> findAll() {
         return ResponseEntity.ok(new NotificationEventTypeListResponse(eventTypeAdminService.findAll()));
     }
 
-    @PostMapping
+    @Override    @PostMapping
     public ResponseEntity<NotificationEventTypeResponse> create(
             @Valid @RequestBody NotificationEventTypeRequest request) {
         NotificationEventTypeResponse response = eventTypeAdminService.create(request);
@@ -31,14 +32,14 @@ public class NotificationEventTypeAdminController {
                 .body(response);
     }
 
-    @PutMapping("/{id}")
+    @Override    @PutMapping("/{id}")
     public ResponseEntity<NotificationEventTypeResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody NotificationEventTypeRequest request) {
         return ResponseEntity.ok(eventTypeAdminService.update(id, request));
     }
 
-    @DeleteMapping("/{id}")
+    @Override    @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id) {
         eventTypeAdminService.delete(id);

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import site.yesaido.notification_server.controller.docs.NotificationEndpointControllerDocs;
 import site.yesaido.notification_server.dto.endpoint.EndpointCreateRequest;
 import site.yesaido.notification_server.dto.endpoint.EndpointEnabledRequest;
 import site.yesaido.notification_server.dto.endpoint.EndpointResponse;
@@ -27,11 +28,11 @@ import site.yesaido.notification_server.validation.ValidationMessages;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/notification-endpoints")
-public class NotificationEndpointController {
+public class NotificationEndpointController implements NotificationEndpointControllerDocs {
 
     private final NotificationEndpointService endpointService;
 
-    @PostMapping
+    @Override    @PostMapping
     public ResponseEntity<EndpointResponse> create(
             @RequestHeader("X-User-Id")
             @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
@@ -42,7 +43,7 @@ public class NotificationEndpointController {
                 URI.create("/api/v1/notification-endpoints/" + response.id())).body(response);
     }
 
-    @GetMapping
+    @Override    @GetMapping
     public ResponseEntity<List<EndpointResponse>> findAll(
             @RequestHeader("X-User-Id")
             @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId
@@ -50,7 +51,7 @@ public class NotificationEndpointController {
         return ResponseEntity.ok(endpointService.findAll(userId));
     }
 
-    @PatchMapping("/{endpointId}")
+    @Override    @PatchMapping("/{endpointId}")
     public ResponseEntity<EndpointResponse> update(
             @RequestHeader("X-User-Id")
             @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
@@ -61,7 +62,7 @@ public class NotificationEndpointController {
         return ResponseEntity.ok(endpointService.update(userId, endpointId, request));
     }
 
-    @PatchMapping("/{endpointId}/enabled")
+    @Override    @PatchMapping("/{endpointId}/enabled")
     public ResponseEntity<EndpointResponse> changeEnabled(
             @RequestHeader("X-User-Id")
             @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
@@ -73,7 +74,7 @@ public class NotificationEndpointController {
                 endpointService.changeEnabled(userId, endpointId, request.enabled()));
     }
 
-    @DeleteMapping("/{endpointId}")
+    @Override    @DeleteMapping("/{endpointId}")
     public ResponseEntity<Void> delete(
             @RequestHeader("X-User-Id")
             @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
