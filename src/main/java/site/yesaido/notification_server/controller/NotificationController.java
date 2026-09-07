@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import site.yesaido.notification_server.controller.docs.NotificationControllerDocs;
 import site.yesaido.notification_server.dto.delivery.DeliveryPageResponse;
 import site.yesaido.notification_server.service.NotificationQueryService;
 import site.yesaido.notification_server.validation.ValidationMessages;
@@ -18,10 +19,11 @@ import site.yesaido.notification_server.validation.ValidationMessages;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/notifications")
-public class NotificationController {
+public class NotificationController implements NotificationControllerDocs {
 
     private final NotificationQueryService queryService;
 
+    @Override
     @GetMapping
     public ResponseEntity<DeliveryPageResponse> findAll(
             @RequestHeader("X-User-Id")
