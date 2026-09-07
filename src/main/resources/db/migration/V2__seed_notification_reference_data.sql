@@ -1,4 +1,5 @@
--- 기준 코드 Seed. 모든 INSERT는 재실행해도 중복되지 않도록 구성한다.
+-- Notification 기준 데이터 및 기본 템플릿
+-- 신규 DB에서 필요한 INSERT를 한 곳에 모은다.
 
 INSERT INTO channel_type (code, display_name)
 VALUES
@@ -26,11 +27,20 @@ FROM (VALUES
     ('SENSOR_OFFLINE', '센서 오프라인', '센서 연결이 끊김', 'CULTIVATION'),
     ('SENSOR_ERROR', '센서 오류', '센서 측정 또는 처리 오류', 'CULTIVATION'),
     ('ACTUATOR_CONTROL_FAILED', '제어 실패', '장치 제어에 실패함', 'CULTIVATION'),
+    ('ACTUATOR_CONTROL_SUCCEEDED', '제어 성공', '장치 ON 또는 OFF 제어가 성공함', 'CULTIVATION'),
     ('HARVEST_COMPLETED', '수확 완료', '수확 기록이 완료됨', 'CULTIVATION'),
     ('CULTIVATION_FINISHED', '재배 종료', '재배가 종료됨', 'CULTIVATION'),
     ('DAILY_FEEDBACK_COMPLETED', 'AI 일일 피드백 완료', 'AI 일일 피드백이 생성됨', 'CULTIVATION'),
     ('INQUIRY_ANSWERED', '문의 답변 완료', '사용자 문의에 답변이 등록됨', 'INQUIRY'),
-    ('LOGIN_SUCCEEDED', '로그인 성공', '사용자 로그인이 완료됨', 'USER')
+    ('INQUIRY_SUBMITTED', '문의 등록', '사용자 문의가 등록됨', 'INQUIRY'),
+    ('LOGIN_SUCCEEDED', '로그인 성공', '사용자 로그인이 완료됨', 'USER'),
+    ('LOGIN_FAILED', '로그인 실패', '사용자 로그인에 실패함', 'USER'),
+    ('PASSWORD_CHANGED', '비밀번호 변경 완료', '사용자 비밀번호 변경이 완료됨', 'USER'),
+    ('PASSWORD_CHANGE_FAILED', '비밀번호 변경 실패', '사용자 비밀번호 변경에 실패함', 'USER'),
+    ('ACCOUNT_REACTIVATED', '계정 재활성화 완료', '사용자 계정 재활성화가 완료됨', 'USER'),
+    ('ACCOUNT_REACTIVATION_FAILED', '계정 재활성화 실패', '사용자 계정 재활성화에 실패함', 'USER'),
+    ('CULTIVATION_MEMBER_INVITED', '재배 멤버 초대', '재배 멤버가 초대됨', 'CULTIVATION'),
+    ('MEMBER_ADDED', '재배 멤버 추가', '재배지에 멤버가 추가됨', 'USER')
 ) AS v(code, display_name, description, target_code)
 JOIN subscription_target_type t ON t.target_type = v.target_code
 ON CONFLICT (code) DO UPDATE
@@ -49,11 +59,20 @@ FROM (VALUES
     ('SENSOR_OFFLINE', 'CULTIVATION', '센서 오프라인', '재배 센서 오프라인 알림'),
     ('SENSOR_ERROR', 'CULTIVATION', '센서 오류 알림', '재배 센서 오류 알림'),
     ('ACTUATOR_CONTROL_FAILED', 'CULTIVATION', '제어 실패 알림', '재배 장치 제어 실패 알림'),
+    ('ACTUATOR_CONTROL_SUCCEEDED', 'CULTIVATION', '제어 성공 알림', '재배 장치 제어 성공 알림'),
     ('HARVEST_COMPLETED', 'CULTIVATION', '수확 완료 알림', '재배 수확 완료 알림'),
     ('CULTIVATION_FINISHED', 'CULTIVATION', '재배 종료 알림', '재배 종료 알림'),
     ('DAILY_FEEDBACK_COMPLETED', 'CULTIVATION', '일일 피드백 알림', 'AI 일일 피드백 완료 알림'),
     ('INQUIRY_ANSWERED', 'INQUIRY', '문의 답변 알림', '문의 답변 완료 알림'),
-    ('LOGIN_SUCCEEDED', 'USER', '로그인 성공 알림', '로그인 성공 알림')
+    ('INQUIRY_SUBMITTED', 'INQUIRY', '문의 등록 알림', '문의 등록 알림'),
+    ('LOGIN_SUCCEEDED', 'USER', '로그인 성공 알림', '로그인 성공 알림'),
+    ('LOGIN_FAILED', 'USER', '로그인 실패 알림', '로그인 실패 알림'),
+    ('PASSWORD_CHANGED', 'USER', '비밀번호 변경 알림', '비밀번호 변경 완료 알림'),
+    ('PASSWORD_CHANGE_FAILED', 'USER', '비밀번호 변경 실패 알림', '비밀번호 변경 실패 알림'),
+    ('ACCOUNT_REACTIVATED', 'USER', '계정 재활성화 알림', '계정 재활성화 완료 알림'),
+    ('ACCOUNT_REACTIVATION_FAILED', 'USER', '계정 재활성화 실패 알림', '계정 재활성화 실패 알림'),
+    ('CULTIVATION_MEMBER_INVITED', 'CULTIVATION', '재배 멤버 초대 알림', '재배 멤버 초대 알림'),
+    ('MEMBER_ADDED', 'USER', '멤버 추가 알림', '재배지에 멤버가 추가됨 알림')
 ) AS v(event_code, target_code, subscription_name, description)
 JOIN notification_event_type e ON e.code = v.event_code
 JOIN subscription_target_type t ON t.target_type = v.target_code
@@ -62,6 +81,7 @@ SET notification_subscription_name = EXCLUDED.notification_subscription_name,
     description = EXCLUDED.description,
     updated_at = CURRENT_TIMESTAMP;
 
+-- 기본 이벤트는 등록된 모든 채널을 사용한다.
 INSERT INTO subscription_channel (notification_subscription_type_id, channel_type_id)
 SELECT s.id, c.id
 FROM notification_subscription_type s
@@ -77,11 +97,20 @@ FROM (VALUES
     ('SENSOR_OFFLINE', '[센서 오프라인] {{cultivationName}}의 {{deviceName}} 센서가 오프라인 상태입니다.'),
     ('SENSOR_ERROR', '[센서 오류] {{cultivationName}}의 {{deviceName}} 센서 오류가 발생했습니다. 오류: {{errorMessage}}'),
     ('ACTUATOR_CONTROL_FAILED', '[제어 실패] {{cultivationName}}의 {{deviceName}} 제어에 실패했습니다. 제어 종류: {{controlType}}'),
-    ('HARVEST_COMPLETED', '[수확 완료] {{cultivationName}}의 수확이 완료되었습니다. 수확량: {{harvestAmount}}g'),
+    ('ACTUATOR_CONTROL_SUCCEEDED', '[제어 성공] {{cultivationName}}의 {{deviceName}} 장치가 {{controlType}} 상태로 변경되었습니다.'),
+    ('HARVEST_COMPLETED', '[수확 완료] {{cultivationName}}의 수확이 완료되었습니다. 수확량: {{harvestWeight}}g'),
     ('CULTIVATION_FINISHED', '[재배 종료] {{cultivationName}} 재배가 종료되었습니다.'),
-    ('DAILY_FEEDBACK_COMPLETED', '[AI 일일 피드백] {{cultivationName}}의 오늘 피드백이 생성되었습니다. {{feedbackSummary}}'),
+    ('DAILY_FEEDBACK_COMPLETED', '[AI 일일 피드백] {{cultivationName}}의 오늘 피드백이 생성되었습니다.\n{{feedbackSummary}}\n{{feedbackUrl}}'),
     ('INQUIRY_ANSWERED', '[문의 답변] 문의 {{inquiryTitle}}에 답변이 등록되었습니다.'),
-    ('LOGIN_SUCCEEDED', '[로그인 알림] 계정 로그인이 완료되었습니다. 로그인 방식: {{provider}}')
+    ('INQUIRY_SUBMITTED', '[문의 등록] 새로운 문의가 등록되었습니다.'),
+    ('LOGIN_SUCCEEDED', '[로그인 알림] 계정 로그인이 완료되었습니다. 로그인 방식: {{provider}}'),
+    ('LOGIN_FAILED', '[로그인 실패] 계정 로그인에 실패했습니다. 로그인 방식: {{provider}}'),
+    ('PASSWORD_CHANGED', '[비밀번호 변경] 비밀번호가 변경되었습니다.'),
+    ('PASSWORD_CHANGE_FAILED', '[비밀번호 변경 실패] 비밀번호 변경에 실패했습니다.'),
+    ('ACCOUNT_REACTIVATED', '[계정 재활성화] 계정이 재활성화되었습니다.'),
+    ('ACCOUNT_REACTIVATION_FAILED', '[계정 재활성화 실패] 계정 재활성화에 실패했습니다.'),
+    ('CULTIVATION_MEMBER_INVITED', '[재배 멤버 초대] {{cultivationName}}에 초대되었습니다.'),
+    ('MEMBER_ADDED', '[재배지 멤버 추가] {{cultivationName}}에 멤버로 추가되었습니다. 역할: {{role}}')
 ) AS v(event_code, body_template)
 JOIN notification_event_type e ON e.code = v.event_code
 CROSS JOIN channel_type c
