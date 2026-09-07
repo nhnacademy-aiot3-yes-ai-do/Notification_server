@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import site.yesaido.notification_server.controller.docs.TelegramLinkControllerDocs;
 import site.yesaido.notification_server.dto.telegram.TelegramLinkSessionResponse;
 import site.yesaido.notification_server.dto.telegram.TelegramLinkStatusResponse;
 import site.yesaido.notification_server.service.TelegramLinkService;
@@ -21,11 +22,11 @@ import site.yesaido.notification_server.validation.ValidationMessages;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/telegram-link-sessions")
-public class TelegramLinkController {
+public class TelegramLinkController implements TelegramLinkControllerDocs {
 
     private final TelegramLinkService telegramLinkService;
 
-    @GetMapping("/{session-id}")
+    @Override    @GetMapping("/{session-id}")
     public ResponseEntity<TelegramLinkStatusResponse> status(
             @RequestHeader("X-User-Id")
             @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
@@ -34,7 +35,7 @@ public class TelegramLinkController {
         return ResponseEntity.ok(telegramLinkService.status(userId, sessionId));
     }
 
-    @PostMapping
+    @Override    @PostMapping
     public ResponseEntity<TelegramLinkSessionResponse> create(
             @RequestHeader("X-User-Id")
             @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId
