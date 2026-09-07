@@ -1,5 +1,6 @@
--- subscription type은 자신이 가리키는 event type과 동일한 target type만 사용할 수 있다.
--- cross-table 제약은 CHECK로 표현할 수 없으므로, 기존 데이터 검증 후 양쪽 변경을 trigger로 강제한다.
+-- Notification 참조 데이터 무결성 및 채널별 소유권 제약
+
+-- event type과 subscription type의 target type이 항상 일치하도록 강제한다.
 DO $$
 BEGIN
     IF EXISTS (
@@ -45,7 +46,6 @@ ON notification_subscription_type
 FOR EACH ROW
 EXECUTE FUNCTION validate_notification_subscription_type_target_type();
 
--- event type의 target type 변경도 연결된 모든 subscription type과의 정합성을 보장해야 한다.
 CREATE OR REPLACE FUNCTION validate_notification_event_type_target_type()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -70,3 +70,25 @@ ON notification_event_type
 FOR EACH ROW
 WHEN (OLD.target_type IS DISTINCT FROM NEW.target_type)
 EXECUTE FUNCTION validate_notification_event_type_target_type();
+
+-- Telegram private destination은 active endpoint 기준으로 한 사용자만 소유한다.
+DO $$
+DECLARE
+    telegram_channel_type_id BIGINT;
+BEGIN
+    SELECT id
+      INTO telegram_channel_type_id
+      FROM channel_type
+     WHERE code = 'TELEGRAM'
+       AND is_deleted = FALSE;
+
+    IF telegram_channel_type_id IS NULL THEN
+        RAISE EXCEPTION 'Active TELEGRAM channel type is required before enforcing endpoint ownership';
+    END IF;
+
+    EXECUTE format(
+        'CREATE UNIQUE INDEX uq_active_telegram_notification_endpoint_destination
+           ON notification_endpoint (destination)
+         WHERE is_deleted = FALSE AND channel_type_id = %s',
+        telegram_channel_type_id);
+END $$;
