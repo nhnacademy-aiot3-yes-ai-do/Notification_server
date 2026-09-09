@@ -2,10 +2,12 @@ package site.yesaido.notification_server.controller.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Positive;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import site.yesaido.notification_server.dto.delivery.DeliveryPageResponse;
+import site.yesaido.notification_server.validation.ValidationMessages;
 
 /**
  * {@code NotificationController}의 OpenAPI 문서 정의.
@@ -14,5 +16,7 @@ import site.yesaido.notification_server.dto.delivery.DeliveryPageResponse;
 public interface NotificationControllerDocs {
 
     @Operation(summary = "내 알림 내역 조회", description = "요청자에게 발송된 알림 내역을 페이지 단위로 반환합니다.")
-    ResponseEntity<DeliveryPageResponse> findAll(Long userId, @ParameterObject Pageable pageable);
+    ResponseEntity<DeliveryPageResponse> findAll(
+            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
+            @ParameterObject Pageable pageable);
 }

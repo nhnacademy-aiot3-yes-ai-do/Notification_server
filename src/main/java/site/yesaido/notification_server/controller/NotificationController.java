@@ -1,6 +1,5 @@
 package site.yesaido.notification_server.controller;
 
-import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 import site.yesaido.notification_server.controller.docs.NotificationControllerDocs;
 import site.yesaido.notification_server.dto.delivery.DeliveryPageResponse;
 import site.yesaido.notification_server.service.NotificationQueryService;
-import site.yesaido.notification_server.validation.ValidationMessages;
 
 @Validated
 @RestController
@@ -26,8 +24,7 @@ public class NotificationController implements NotificationControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<DeliveryPageResponse> findAll(
-            @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
+            @RequestHeader("X-User-Id") Long userId,
             @PageableDefault(size = 20) Pageable pageable
     ) {
         return ResponseEntity.ok(queryService.findDeliveries(userId, pageable));
