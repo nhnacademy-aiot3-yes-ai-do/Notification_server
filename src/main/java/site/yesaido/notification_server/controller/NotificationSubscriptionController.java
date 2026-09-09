@@ -1,7 +1,5 @@
 package site.yesaido.notification_server.controller;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
 import java.net.URI;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +19,6 @@ import site.yesaido.notification_server.dto.subscription.SubscriptionCreateReque
 import site.yesaido.notification_server.dto.subscription.SubscriptionEnabledRequest;
 import site.yesaido.notification_server.dto.subscription.SubscriptionResponse;
 import site.yesaido.notification_server.service.NotificationSubscriptionService;
-import site.yesaido.notification_server.validation.ValidationMessages;
 
 @Validated
 @RestController
@@ -34,8 +31,8 @@ public class NotificationSubscriptionController implements NotificationSubscript
     @Override    @PostMapping
     public ResponseEntity<SubscriptionResponse> create(
             @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
-            @Valid @RequestBody SubscriptionCreateRequest request
+            Long userId,
+            @RequestBody SubscriptionCreateRequest request
     ) {
         SubscriptionResponse response = subscriptionService.create(userId, request);
         return ResponseEntity.created(
@@ -45,7 +42,7 @@ public class NotificationSubscriptionController implements NotificationSubscript
     @Override    @GetMapping
     public ResponseEntity<List<SubscriptionResponse>> findAll(
             @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId
+            Long userId
     ) {
         return ResponseEntity.ok(subscriptionService.findAll(userId));
     }
@@ -53,10 +50,10 @@ public class NotificationSubscriptionController implements NotificationSubscript
     @Override    @PatchMapping("/{subscriptionId}/enabled")
     public ResponseEntity<SubscriptionResponse> changeEnabled(
             @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
+            Long userId,
             @PathVariable
-            @Positive(message = ValidationMessages.SUBSCRIPTION_ID_POSITIVE) Long subscriptionId,
-            @Valid @RequestBody SubscriptionEnabledRequest request
+            Long subscriptionId,
+            @RequestBody SubscriptionEnabledRequest request
     ) {
         return ResponseEntity.ok(subscriptionService.changeEnabled(
                 userId, subscriptionId, request.enabled()));
@@ -65,9 +62,9 @@ public class NotificationSubscriptionController implements NotificationSubscript
     @Override    @DeleteMapping("/{subscriptionId}")
     public ResponseEntity<Void> delete(
             @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
+            Long userId,
             @PathVariable
-            @Positive(message = ValidationMessages.SUBSCRIPTION_ID_POSITIVE) Long subscriptionId
+            Long subscriptionId
     ) {
         subscriptionService.delete(userId, subscriptionId);
         return ResponseEntity.noContent().build();

@@ -1,7 +1,5 @@
 package site.yesaido.notification_server.controller;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
 import java.net.URI;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +20,6 @@ import site.yesaido.notification_server.dto.endpoint.EndpointEnabledRequest;
 import site.yesaido.notification_server.dto.endpoint.EndpointResponse;
 import site.yesaido.notification_server.dto.endpoint.EndpointUpdateRequest;
 import site.yesaido.notification_server.service.NotificationEndpointService;
-import site.yesaido.notification_server.validation.ValidationMessages;
 
 @Validated
 @RestController
@@ -35,8 +32,8 @@ public class NotificationEndpointController implements NotificationEndpointContr
     @Override    @PostMapping
     public ResponseEntity<EndpointResponse> create(
             @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
-            @Valid @RequestBody EndpointCreateRequest request
+            Long userId,
+            @RequestBody EndpointCreateRequest request
     ) {
         EndpointResponse response = endpointService.create(userId, request);
         return ResponseEntity.created(
@@ -46,7 +43,7 @@ public class NotificationEndpointController implements NotificationEndpointContr
     @Override    @GetMapping
     public ResponseEntity<List<EndpointResponse>> findAll(
             @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId
+            Long userId
     ) {
         return ResponseEntity.ok(endpointService.findAll(userId));
     }
@@ -54,10 +51,10 @@ public class NotificationEndpointController implements NotificationEndpointContr
     @Override    @PatchMapping("/{endpointId}")
     public ResponseEntity<EndpointResponse> update(
             @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
+            Long userId,
             @PathVariable
-            @Positive(message = ValidationMessages.ENDPOINT_ID_POSITIVE) Long endpointId,
-            @Valid @RequestBody EndpointUpdateRequest request
+            Long endpointId,
+            @RequestBody EndpointUpdateRequest request
     ) {
         return ResponseEntity.ok(endpointService.update(userId, endpointId, request));
     }
@@ -65,10 +62,10 @@ public class NotificationEndpointController implements NotificationEndpointContr
     @Override    @PatchMapping("/{endpointId}/enabled")
     public ResponseEntity<EndpointResponse> changeEnabled(
             @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
+            Long userId,
             @PathVariable
-            @Positive(message = ValidationMessages.ENDPOINT_ID_POSITIVE) Long endpointId,
-            @Valid @RequestBody EndpointEnabledRequest request
+            Long endpointId,
+            @RequestBody EndpointEnabledRequest request
     ) {
         return ResponseEntity.ok(
                 endpointService.changeEnabled(userId, endpointId, request.enabled()));
@@ -77,9 +74,9 @@ public class NotificationEndpointController implements NotificationEndpointContr
     @Override    @DeleteMapping("/{endpointId}")
     public ResponseEntity<Void> delete(
             @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
+            Long userId,
             @PathVariable
-            @Positive(message = ValidationMessages.ENDPOINT_ID_POSITIVE) Long endpointId
+            Long endpointId
     ) {
         endpointService.delete(userId, endpointId);
         return ResponseEntity.noContent().build();

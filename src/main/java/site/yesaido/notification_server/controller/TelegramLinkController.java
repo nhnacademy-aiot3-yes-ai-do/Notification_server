@@ -1,6 +1,5 @@
 package site.yesaido.notification_server.controller;
 
-import jakarta.validation.constraints.Positive;
 import java.net.URI;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +15,6 @@ import site.yesaido.notification_server.controller.docs.TelegramLinkControllerDo
 import site.yesaido.notification_server.dto.telegram.TelegramLinkSessionResponse;
 import site.yesaido.notification_server.dto.telegram.TelegramLinkStatusResponse;
 import site.yesaido.notification_server.service.TelegramLinkService;
-import site.yesaido.notification_server.validation.ValidationMessages;
 
 @Validated
 @RestController
@@ -29,7 +27,7 @@ public class TelegramLinkController implements TelegramLinkControllerDocs {
     @Override    @GetMapping("/{session-id}")
     public ResponseEntity<TelegramLinkStatusResponse> status(
             @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId,
+            Long userId,
             @PathVariable("session-id") UUID sessionId
     ) {
         return ResponseEntity.ok(telegramLinkService.status(userId, sessionId));
@@ -38,7 +36,7 @@ public class TelegramLinkController implements TelegramLinkControllerDocs {
     @Override    @PostMapping
     public ResponseEntity<TelegramLinkSessionResponse> create(
             @RequestHeader("X-User-Id")
-            @Positive(message = ValidationMessages.USER_ID_POSITIVE) Long userId
+            Long userId
     ) {
         TelegramLinkSessionResponse response = telegramLinkService.create(userId);
         return ResponseEntity.created(URI.create("/api/v1/telegram-link-sessions/" + response.sessionId()))
