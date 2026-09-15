@@ -1,9 +1,6 @@
 package site.yesaido.notification_server.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.DLQ_QUEUE;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.DLQ_ROUTING_KEY;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.DLX_NAME;
 import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_ACTION_QUEUE;
 import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_AUTH_QUEUE;
 import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_CULTIVATION_COMPLETE_QUEUE;
@@ -19,28 +16,32 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
+import site.yesaido.common.rabbitmq.DeadLetterTopologyConfiguration;
+import site.yesaido.common.rabbitmq.RabbitDeadLetterProperties;
 
 class RabbitMQConfigTopologyTest {
 
     private final RabbitMQConfig config = new RabbitMQConfig();
+    private final RabbitDeadLetterProperties dlProps = new RabbitDeadLetterProperties();
 
     @Test
     void fanoutDlx를선언한다() {
-        FanoutExchange dlx = config.deadLetterExchange();
-        Queue dlq = config.deadLetterQueue();
+        DeadLetterTopologyConfiguration dlTopology = new DeadLetterTopologyConfiguration();
 
-        assertThat(dlx.getName()).isEqualTo(DLX_NAME);
+        FanoutExchange dlx = dlTopology.deadLetterExchange(dlProps);
+        Queue dlq = dlTopology.deadLetterQueue(dlProps);
+        Binding binding = dlTopology.deadLetterBinding(dlq, dlx);
+
+        assertThat(dlx.getName()).isEqualTo(dlProps.getExchangeName());
         assertThat(dlx.getType()).isEqualTo("fanout");
-        assertThat(dlq.getName()).isEqualTo(DLQ_QUEUE);
-        assertThat(config.deadLetterTopology().getDeclarables())
-                .anyMatch(declarable -> declarable instanceof Binding binding
-                        && binding.getExchange().equals(DLX_NAME)
-                        && binding.getRoutingKey().isEmpty());
+        assertThat(dlq.getName()).isEqualTo(dlProps.getQueueName());
+        assertThat(binding.getExchange()).isEqualTo(dlProps.getExchangeName());
+        assertThat(binding.getRoutingKey()).isEmpty();
     }
 
     @Test
-    void 새Consumer의모든Queue를Dlx와DlqRoutingKey로선언한다() {
-        List<Queue> queues = config.notificationQueues().getDeclarables().stream()
+    void 새Consumer의모든Queue를Dlx로선언한다() {
+        List<Queue> queues = config.notificationQueues(dlProps).getDeclarables().stream()
                 .filter(Queue.class::isInstance)
                 .map(Queue.class::cast)
                 .toList();
@@ -58,7 +59,6 @@ class RabbitMQConfigTopologyTest {
                         NOTIFICATION_SENSOR_QUEUE,
                         NOTIFICATION_MEMBER_QUEUE);
         assertThat(queues).allMatch(queue ->
-                DLX_NAME.equals(queue.getArguments().get("x-dead-letter-exchange"))
-                        && DLQ_ROUTING_KEY.equals(queue.getArguments().get("x-dead-letter-routing-key")));
+                dlProps.getExchangeName().equals(queue.getArguments().get("x-dead-letter-exchange")));
     }
 }
