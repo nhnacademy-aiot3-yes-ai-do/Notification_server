@@ -1,12 +1,13 @@
 package site.yesaido.notification_server.config;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import feign.Request;
 import feign.Retryer;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import site.yesaido.notification_server.config.property.SubscriptionAccessProperties;
+
+import java.time.Duration;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class SubscriptionAccessFeignConfigTest {
 

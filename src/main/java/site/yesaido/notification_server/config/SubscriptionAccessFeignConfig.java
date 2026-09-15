@@ -2,10 +2,11 @@ package site.yesaido.notification_server.config;
 
 import feign.Request;
 import feign.Retryer;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import org.springframework.context.annotation.Bean;
 import site.yesaido.notification_server.config.property.SubscriptionAccessProperties;
+
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class SubscriptionAccessFeignConfig {
 

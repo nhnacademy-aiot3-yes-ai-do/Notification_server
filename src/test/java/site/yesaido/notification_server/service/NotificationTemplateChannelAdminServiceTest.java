@@ -1,12 +1,5 @@
 package site.yesaido.notification_server.service;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -16,11 +9,13 @@ import site.yesaido.notification_server.dto.admin.ChannelTypeRequest;
 import site.yesaido.notification_server.dto.admin.NotificationTemplateRequest;
 import site.yesaido.notification_server.entity.ChannelType;
 import site.yesaido.notification_server.entity.NotificationEventType;
-import site.yesaido.notification_server.repository.ChannelTypeRepository;
-import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
-import site.yesaido.notification_server.repository.NotificationEventTypeRepository;
-import site.yesaido.notification_server.repository.NotificationTemplateRepository;
-import site.yesaido.notification_server.repository.SubscriptionChannelRepository;
+import site.yesaido.notification_server.repository.*;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class NotificationTemplateChannelAdminServiceTest {
 

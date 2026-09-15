@@ -1,12 +1,13 @@
 package site.yesaido.notification_server.provider;
 
+import org.springframework.stereotype.Component;
+import site.yesaido.notification_server.exception.provider.UnsupportedNotificationSenderException;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Component;
-import site.yesaido.notification_server.exception.provider.UnsupportedNotificationSenderException;
 
 @Component
 public class NotificationSenderRegistry {

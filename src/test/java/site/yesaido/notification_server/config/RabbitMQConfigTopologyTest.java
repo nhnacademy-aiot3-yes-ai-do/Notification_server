@@ -1,23 +1,16 @@
 package site.yesaido.notification_server.config;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_ACTION_QUEUE;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_AUTH_QUEUE;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_CULTIVATION_COMPLETE_QUEUE;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_DAILY_QUEUE;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_HARVEST_QUEUE;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_INQUIRY_QUEUE;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_MEMBER_QUEUE;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_SENSOR_QUEUE;
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_THRESHOLD_QUEUE;
-
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Queue;
 import site.yesaido.common.rabbitmq.DeadLetterTopologyConfiguration;
 import site.yesaido.common.rabbitmq.RabbitDeadLetterProperties;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.*;
 
 class RabbitMQConfigTopologyTest {
 

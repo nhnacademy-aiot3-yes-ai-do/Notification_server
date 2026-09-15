@@ -1,22 +1,12 @@
 package site.yesaido.notification_server.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.Optional;
-import java.util.UUID;
-import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import site.yesaido.notification_server.config.property.TelegramLinkProperties;
+import site.yesaido.notification_server.dto.telegram.TelegramLinkSessionResponse;
 import site.yesaido.notification_server.entity.ChannelType;
 import site.yesaido.notification_server.entity.NotificationEndpoint;
 import site.yesaido.notification_server.provider.NotificationSender;
@@ -25,7 +15,18 @@ import site.yesaido.notification_server.repository.ChannelTypeRepository;
 import site.yesaido.notification_server.repository.NotificationEndpointRepository;
 import site.yesaido.notification_server.repository.TelegramLinkRedisRepository;
 import site.yesaido.notification_server.repository.TelegramLinkRedisRepository.PendingLink;
-import site.yesaido.notification_server.dto.telegram.TelegramLinkSessionResponse;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 class TelegramLinkServiceTest {
 

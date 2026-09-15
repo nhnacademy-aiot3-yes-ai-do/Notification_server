@@ -1,36 +1,22 @@
 package site.yesaido.notification_server.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.doThrow;
-
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import site.yesaido.notification_server.entity.ChannelType;
-import site.yesaido.notification_server.entity.NotificationEndpoint;
-import site.yesaido.notification_server.entity.NotificationEventType;
-import site.yesaido.notification_server.entity.NotificationSubscription;
-import site.yesaido.notification_server.entity.NotificationSubscriptionType;
-import site.yesaido.notification_server.entity.SubscriptionTargetType;
 import site.yesaido.notification_server.client.SubscriptionTargetAccessClient;
 import site.yesaido.notification_server.dto.subscription.SubscriptionCreateRequest;
-import site.yesaido.notification_server.exception.subscription.NotificationSubscriptionNotFoundException;
-import site.yesaido.notification_server.exception.subscription.SubscriptionCreationEndpointNotFoundException;
-import site.yesaido.notification_server.exception.subscription.SubscriptionTargetAccessDeniedException;
-import site.yesaido.notification_server.exception.subscription.SubscriptionTargetAccessUnverifiedException;
-import site.yesaido.notification_server.exception.subscription.SubscriptionTargetNotFoundException;
-import site.yesaido.notification_server.exception.subscription.SubscriptionTypeNotFoundException;
-import site.yesaido.notification_server.exception.subscription.UnsupportedSubscriptionChannelException;
+import site.yesaido.notification_server.entity.*;
+import site.yesaido.notification_server.exception.subscription.*;
 import site.yesaido.notification_server.repository.NotificationEndpointRepository;
 import site.yesaido.notification_server.repository.NotificationSubscriptionRepository;
 import site.yesaido.notification_server.repository.NotificationSubscriptionTypeRepository;
 import site.yesaido.notification_server.repository.SubscriptionChannelRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
 class NotificationSubscriptionServiceTest {
 
     private final NotificationSubscriptionRepository subscriptionRepository =

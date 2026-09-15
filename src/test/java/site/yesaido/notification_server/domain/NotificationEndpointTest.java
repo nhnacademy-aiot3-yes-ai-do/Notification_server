@@ -1,11 +1,11 @@
 package site.yesaido.notification_server.domain;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.Test;
 import site.yesaido.notification_server.entity.ChannelType;
 import site.yesaido.notification_server.entity.NotificationEndpoint;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NotificationEndpointTest {
 

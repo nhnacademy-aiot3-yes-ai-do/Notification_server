@@ -1,7 +1,5 @@
 package site.yesaido.notification_server.service;
 
-import java.time.Duration;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.retry.support.RetryTemplate;
@@ -12,6 +10,9 @@ import site.yesaido.notification_server.messaging.DeadLetterPublisher;
 import site.yesaido.notification_server.provider.NotificationSender;
 import site.yesaido.notification_server.provider.NotificationSenderRegistry;
 import site.yesaido.notification_server.provider.ProviderSendResult;
+
+import java.time.Duration;
+import java.util.Optional;
 
 @Service
 public class DeliveryDispatchService {

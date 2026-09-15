@@ -1,11 +1,5 @@
 package site.yesaido.notification_server.dto;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.time.LocalDateTime;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -17,6 +11,13 @@ import site.yesaido.notification_server.entity.DeliveryStatus;
 import site.yesaido.notification_server.entity.NotificationDelivery;
 import site.yesaido.notification_server.entity.NotificationEndpoint;
 import site.yesaido.notification_server.entity.NotificationSubscriptionType;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class NotificationResponseMappingTest {
 

@@ -3,9 +3,10 @@ package site.yesaido.notification_server.config.property;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
+
+import java.time.Duration;
 
 @Validated
 @ConfigurationProperties(prefix = "notification.recovery")

@@ -1,13 +1,14 @@
 package site.yesaido.notification_server.provider;
 
+import org.junit.jupiter.api.Test;
+import site.yesaido.notification_server.exception.provider.UnsupportedNotificationSenderException;
+
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import site.yesaido.notification_server.exception.provider.UnsupportedNotificationSenderException;
 
 class NotificationSenderRegistryTest {
 
