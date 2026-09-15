@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-
 import org.springframework.web.bind.annotation.RestController;
 import site.yesaido.notification_server.dto.telegram.TelegramWebhookUpdate;
 import site.yesaido.notification_server.service.TelegramWebhookService;

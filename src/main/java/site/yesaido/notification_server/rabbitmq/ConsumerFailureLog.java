@@ -1,7 +1,8 @@
 package site.yesaido.notification_server.rabbitmq;
 
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.UUID;
 
 /** RabbitMQ 소비 실패를 민감한 payload 없이 일관된 필드로 기록한다. */
 @Slf4j

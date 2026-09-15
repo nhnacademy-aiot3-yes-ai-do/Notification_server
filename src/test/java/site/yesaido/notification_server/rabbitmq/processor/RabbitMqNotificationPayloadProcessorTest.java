@@ -1,21 +1,16 @@
 package site.yesaido.notification_server.rabbitmq.processor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Test;
+import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
+import site.yesaido.notification_server.rabbitmq.event.*;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import site.yesaido.notification_server.rabbitmq.event.AiEvent;
-import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
-import site.yesaido.notification_server.rabbitmq.event.HarvestCompletedPayload;
-import site.yesaido.notification_server.rabbitmq.event.MemberAddedPayload;
-import site.yesaido.notification_server.rabbitmq.event.NotificationEnvelope;
-import site.yesaido.notification_server.rabbitmq.event.RuleEngineEvent;
-import site.yesaido.notification_server.rabbitmq.event.UserEvent;
-import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RabbitMqNotificationPayloadProcessorTest {
 

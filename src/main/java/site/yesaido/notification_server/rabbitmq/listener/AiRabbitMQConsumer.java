@@ -1,17 +1,19 @@
 package site.yesaido.notification_server.rabbitmq.listener;
 
 import com.rabbitmq.client.Channel;
-import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
+import site.yesaido.notification_server.rabbitmq.ConsumerFailureLog;
 import site.yesaido.notification_server.rabbitmq.event.AiEvent;
 import site.yesaido.notification_server.rabbitmq.facade.RabbitMqNotificationFacade;
-import site.yesaido.notification_server.rabbitmq.ConsumerFailureLog;
 
-import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.*;
+import java.io.IOException;
+
+import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_CULTIVATION_COMPLETE_QUEUE;
+import static site.yesaido.notification_server.rabbitmq.RabbitMQConstants.NOTIFICATION_DAILY_QUEUE;
 
 @Component
 @RequiredArgsConstructor

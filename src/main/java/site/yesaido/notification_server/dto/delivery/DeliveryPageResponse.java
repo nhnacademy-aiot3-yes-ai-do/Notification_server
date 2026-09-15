@@ -1,8 +1,9 @@
 package site.yesaido.notification_server.dto.delivery;
 
-import java.util.List;
 import org.springframework.data.domain.Page;
 import site.yesaido.notification_server.entity.NotificationDelivery;
+
+import java.util.List;
 
 /** 알림 목록의 페이지 단위 응답이다. Spring Data 내부 타입을 API 밖으로 노출하지 않는다. */
 public record DeliveryPageResponse(

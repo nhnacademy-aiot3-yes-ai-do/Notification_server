@@ -1,6 +1,7 @@
 package site.yesaido.notification_server.rabbitmq.event;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.time.OffsetDateTime;
 import java.util.UUID;
 

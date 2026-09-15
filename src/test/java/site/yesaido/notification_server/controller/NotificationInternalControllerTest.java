@@ -1,13 +1,5 @@
 package site.yesaido.notification_server.controller;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.time.LocalDate;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,13 +8,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import site.yesaido.notification_server.dto.summary.DailyNotificationEventCountResponse;
-import site.yesaido.notification_server.dto.summary.DailyNotificationSummariesResponse;
-import site.yesaido.notification_server.dto.summary.DailyNotificationSummaryResponse;
-import site.yesaido.notification_server.dto.summary.PeriodNotificationSummariesResponse;
-import site.yesaido.notification_server.dto.summary.PeriodNotificationSummaryResponse;
+import site.yesaido.notification_server.dto.summary.*;
 import site.yesaido.notification_server.exception.GlobalExceptionHandler;
 import site.yesaido.notification_server.service.NotificationDailySummaryService;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationInternalControllerTest {

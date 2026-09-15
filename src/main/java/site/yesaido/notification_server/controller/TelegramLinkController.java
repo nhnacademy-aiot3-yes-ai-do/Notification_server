@@ -1,20 +1,16 @@
 package site.yesaido.notification_server.controller;
 
-import java.net.URI;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import site.yesaido.notification_server.controller.docs.TelegramLinkControllerDocs;
 import site.yesaido.notification_server.dto.telegram.TelegramLinkSessionResponse;
 import site.yesaido.notification_server.dto.telegram.TelegramLinkStatusResponse;
 import site.yesaido.notification_server.service.TelegramLinkService;
+
+import java.net.URI;
+import java.util.UUID;
 
 @Validated
 @RestController

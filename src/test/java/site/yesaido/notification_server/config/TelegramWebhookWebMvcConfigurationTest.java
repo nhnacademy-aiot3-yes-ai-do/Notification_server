@@ -1,10 +1,5 @@
 package site.yesaido.notification_server.config;
 
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -17,6 +12,11 @@ import site.yesaido.notification_server.config.property.TelegramLinkProperties;
 import site.yesaido.notification_server.controller.TelegramWebhookController;
 import site.yesaido.notification_server.interceptor.TelegramWebhookAuthenticationInterceptor;
 import site.yesaido.notification_server.service.TelegramWebhookService;
+
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TelegramWebhookController.class)
 @Import({TelegramWebhookWebMvcConfiguration.class, TelegramWebhookAuthenticationInterceptor.class})

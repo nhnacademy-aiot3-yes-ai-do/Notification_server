@@ -1,12 +1,13 @@
 package site.yesaido.notification_server.repository;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import site.yesaido.notification_server.entity.NotificationTemplate;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.data.jpa.repository.JpaRepository;
-import site.yesaido.notification_server.entity.NotificationTemplate;
 
 public interface NotificationTemplateRepository extends JpaRepository<NotificationTemplate, Long> {
 

@@ -1,7 +1,8 @@
 package site.yesaido.notification_server.config.property;
 
-import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.time.Duration;
 
 @ConfigurationProperties(prefix = "notification.access")
 public record SubscriptionAccessProperties(

@@ -1,7 +1,22 @@
 package site.yesaido.notification_server.rabbitmq;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import org.junit.jupiter.api.Test;
+import org.springframework.amqp.core.AcknowledgeMode;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.test.util.ReflectionTestUtils;
+import site.yesaido.notification_server.rabbitmq.config.RabbitListenerConfig;
+import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
+import site.yesaido.notification_server.rabbitmq.listener.AiRabbitMQConsumer;
+import site.yesaido.notification_server.rabbitmq.listener.CultivationRabbitMQConsumer;
+import site.yesaido.notification_server.rabbitmq.listener.RuleEngineRabbitMQConsumer;
+import site.yesaido.notification_server.rabbitmq.listener.UserRabbitMQConsumer;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -9,23 +24,9 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
-import org.springframework.amqp.core.AcknowledgeMode;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerEndpoint;
-import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
-import org.springframework.test.util.ReflectionTestUtils;
-import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
-import site.yesaido.notification_server.rabbitmq.config.RabbitListenerConfig;
-import site.yesaido.notification_server.rabbitmq.listener.AiRabbitMQConsumer;
-import site.yesaido.notification_server.rabbitmq.listener.CultivationRabbitMQConsumer;
-import site.yesaido.notification_server.rabbitmq.listener.RuleEngineRabbitMQConsumer;
-import site.yesaido.notification_server.rabbitmq.listener.UserRabbitMQConsumer;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class RabbitListenerConfigurationTest {
 

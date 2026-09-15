@@ -1,7 +1,5 @@
 package site.yesaido.notification_server.rabbitmq.persistence;
 
-import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -9,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import site.yesaido.notification_server.entity.DeliveryStatus;
 import site.yesaido.notification_server.entity.NotificationDelivery;
 import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
+
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

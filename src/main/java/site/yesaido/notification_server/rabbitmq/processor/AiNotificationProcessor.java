@@ -1,13 +1,14 @@
 package site.yesaido.notification_server.rabbitmq.processor;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
+import site.yesaido.notification_server.rabbitmq.contract.NotificationEventDefinition;
+import site.yesaido.notification_server.rabbitmq.event.AiEvent;
+
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import site.yesaido.notification_server.rabbitmq.event.AiEvent;
-import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
-import site.yesaido.notification_server.rabbitmq.contract.NotificationEventDefinition;
 
 @Component
 public class AiNotificationProcessor {

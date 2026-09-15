@@ -1,11 +1,12 @@
 package site.yesaido.notification_server.repository;
 
-import site.yesaido.notification_server.entity.NotificationSubscription;
-import java.util.List;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import site.yesaido.notification_server.entity.NotificationSubscription;
+
+import java.util.List;
+import java.util.Optional;
 
 public interface NotificationSubscriptionRepository extends JpaRepository<NotificationSubscription, Long> {
 
