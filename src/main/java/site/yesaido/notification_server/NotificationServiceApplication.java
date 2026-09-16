@@ -4,12 +4,14 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import site.yesaido.notification_server.config.property.NotificationProperties;
 import site.yesaido.notification_server.config.property.NotificationRecoveryProperties;
 import site.yesaido.notification_server.config.property.SubscriptionAccessProperties;
 import site.yesaido.notification_server.config.property.TelegramLinkProperties;
 
+@EnableAsync
 @SpringBootApplication
 @EnableFeignClients(basePackages = "site.yesaido.notification_server.client")
 @EnableScheduling
