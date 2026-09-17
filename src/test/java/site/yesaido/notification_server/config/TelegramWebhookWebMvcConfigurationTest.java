@@ -24,7 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
         "notification.telegram-link.bot-username=yes_ai_do_farm_alert_bot",
         "notification.telegram-link.webhook-secret=test-webhook-secret",
-        "notification.telegram-link.expiration=PT10M"
+        "notification.telegram-link.expiration=PT10M",
+        "notification.access.ai-url=http://localhost:8084"
 })
 class TelegramWebhookWebMvcConfigurationTest {
 
