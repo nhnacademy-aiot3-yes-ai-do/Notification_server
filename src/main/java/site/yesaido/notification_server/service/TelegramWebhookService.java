@@ -29,6 +29,7 @@ public class TelegramWebhookService {
     private final ChannelTypeRepository channelTypeRepository;
     private final TelegramSender telegramSender;
     private final ChatbotFeignClient chatbotFeignClient;
+    private final TelegramChatLockService telegramChatLockService;
 
     @Async
     public void handle(TelegramWebhookUpdate update) {
@@ -48,15 +49,49 @@ public class TelegramWebhookService {
                 || text.isBlank()) {
             return;
         }
-        // /start 토큰이면 계정 연동 처리
-        String token = startToken(text);
 
-        if (token != null) {
-            telegramLinkService.completeStart(token, String.valueOf(chat.id()));
+        // chatId 락 획득 시도 (최대 5초 대기, 60초 TTL)
+        String lockOwner = java.util.UUID.randomUUID().toString();
+        boolean locked;
+        try {
+            locked = telegramChatLockService.tryLock(
+                    chat.id(),
+                    lockOwner,
+                    java.time.Duration.ofSeconds(5),
+                    java.time.Duration.ofSeconds(60)
+            );
+        } catch (Exception exception) {
+            log.error("텔레그램 메시지 락 처리 실패. chatId={}", chat.id(), exception);
             return;
         }
-        // 일반 텍스트면 AI 챗봇 처리
-        handleChatbot(chat.id(), text);
+
+        if (!locked) {
+            log.warn("텔레그램 메시지 처리 락 획득 실패 (이전 메시지 처리 중). chatId={}", chat.id());
+            try {
+                telegramSender.send(
+                        String.valueOf(chat.id()),
+                        "이전 메시지를 처리 중입니다. 잠시 후 다시 시도해 주세요."
+                );
+            } catch (Exception exception) {
+                log.error("텔레그램 처리 중 안내 메시지 발송 실패. chatId={}", chat.id(), exception);
+            }
+            return;
+        }
+
+        // 락 보호 하에 연동 및 챗봇 실행
+        try {
+            String token = startToken(text);
+
+            if (token != null) {
+                telegramLinkService.completeStart(token, String.valueOf(chat.id()));
+                return;
+            }
+
+            handleChatbot(chat.id(), text);
+        } finally {
+            // 정상 완료 및 예외 발생 시 모두 락 해제
+            telegramChatLockService.releaseLock(chat.id(), lockOwner);
+        }
     }
 
     private void handleChatbot(Long chatId, String userMessage) {

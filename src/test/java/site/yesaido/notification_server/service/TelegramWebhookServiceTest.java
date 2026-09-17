@@ -21,9 +21,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TelegramWebhookServiceTest {
@@ -43,8 +42,18 @@ class TelegramWebhookServiceTest {
     @Mock
     private ChatbotFeignClient chatbotFeignClient;
 
+    @Mock
+    private TelegramChatLockService telegramChatLockService;
+
     @InjectMocks
     private TelegramWebhookService telegramWebhookService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        lenient()
+                .when(telegramChatLockService.tryLock(any(), any(), any(), any()))
+                .thenReturn(true);
+    }
 
     @Test
     @DisplayName("/start <token> 명령어가 들어오면 계정 연동을 완료한다")
@@ -316,5 +325,74 @@ class TelegramWebhookServiceTest {
         telegramWebhookService.handle(update);
 
         verify(telegramSender).send("123456", "죄송합니다. AI 답변을 생성하지 못했습니다.");
+    }
+
+    @Test
+    @DisplayName("정상 처리 후 finally 블록에서 락을 해제한다")
+    void handle_whenSuccessful_releasesLock() {
+        TelegramWebhookUpdate update = new TelegramWebhookUpdate(1L,
+                new TelegramWebhookUpdate.TelegramMessage("/start valid-token",
+                        new TelegramWebhookUpdate.TelegramChat(123456L, "private")));
+
+        telegramWebhookService.handle(update);
+
+        verify(telegramChatLockService).releaseLock(eq(123456L), anyString());
+    }
+
+    @Test
+    @DisplayName("처리 도중 예외가 발생해도 finally 블록에서 락이 반드시 해제된다")
+    void handle_whenExceptionOccurs_stillReleasesLock() {
+        TelegramWebhookUpdate update = new TelegramWebhookUpdate(1L,
+                new TelegramWebhookUpdate.TelegramMessage("질문",
+                        new TelegramWebhookUpdate.TelegramChat(123456L, "private")));
+
+        ChannelType telegramChannel = new ChannelType("TELEGRAM", "Telegram");
+        ReflectionTestUtils.setField(telegramChannel, "id", 3L);
+        NotificationEndpoint endpoint = new NotificationEndpoint(100L, telegramChannel, "123456", "내 텔레그램");
+
+        when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM")).thenReturn(Optional.of(telegramChannel));
+        when(notificationEndpointRepository.findFirstByChannelType_IdAndDestinationAndDeletedFalse(3L, "123456"))
+                .thenReturn(Optional.of(endpoint));
+        when(chatbotFeignClient.chat(any(), any())).thenThrow(new RuntimeException("AI server error"));
+
+        telegramWebhookService.handle(update);
+
+        // 예외 상황에서도 락 해제 호출 검증
+        verify(telegramChatLockService).releaseLock(eq(123456L), anyString());
+    }
+
+    @Test
+    @DisplayName("락 획득 실패 시 안내 메시지를 보내며, 발송 중 예외가 나도 안전하게 종료된다")
+    void handle_whenLockFailsAndSendThrows_handlesGracefully() {
+        when(telegramChatLockService.tryLock(any(), any(), any(), any())).thenReturn(false);
+        doThrow(new RuntimeException("Telegram API timeout")).when(telegramSender).send(any(), any());
+
+        TelegramWebhookUpdate update = new TelegramWebhookUpdate(1L,
+                new TelegramWebhookUpdate.TelegramMessage("질문",
+                        new TelegramWebhookUpdate.TelegramChat(123456L, "private")));
+
+        assertDoesNotThrow(() -> telegramWebhookService.handle(update));
+
+        verify(chatbotFeignClient, never()).chat(any(), any());
+        verify(telegramChatLockService, never()).releaseLock(any(), any());
+    }
+
+    @Test
+    @DisplayName("/start 처리 중 예외가 밖으로 던져져도 finally 블록에서 락이 반드시 해제된다")
+    void handle_whenStartProcessingThrows_stillReleasesLock() {
+        when(telegramLinkService.completeStart(any(), any()))
+                .thenThrow(new RuntimeException("link failed"));
+
+        TelegramWebhookUpdate update = new TelegramWebhookUpdate(1L,
+                new TelegramWebhookUpdate.TelegramMessage("/start valid-token",
+                        new TelegramWebhookUpdate.TelegramChat(123456L, "private")));
+
+        // completeStart가 예외를 던져도 finally는 무조건 실행되어야 함
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> telegramWebhookService.handle(update)
+        );
+
+        verify(telegramChatLockService).releaseLock(eq(123456L), anyString());
     }
 }
