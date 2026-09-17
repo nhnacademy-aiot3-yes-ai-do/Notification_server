@@ -269,4 +269,52 @@ class TelegramWebhookServiceTest {
 
         assertDoesNotThrow(() -> telegramWebhookService.handle(update));
     }
+
+    @Test
+    @DisplayName("/start 뒤에 공백만 있거나 공백이 포함된 비정상 토큰이면 챗봇 처리 흐름으로 전환된다")
+    void handle_whenStartTokenInvalidFormat_proceedsToChatbot() {
+        TelegramWebhookUpdate update = new TelegramWebhookUpdate(1L,
+                new TelegramWebhookUpdate.TelegramMessage("/start token with space",
+                        new TelegramWebhookUpdate.TelegramChat(123456L, "private")));
+
+        ChannelType telegramChannel = new ChannelType("TELEGRAM", "Telegram");
+        ReflectionTestUtils.setField(telegramChannel, "id", 3L);
+
+        when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM"))
+                .thenReturn(Optional.of(telegramChannel));
+        when(notificationEndpointRepository.findFirstByChannelType_IdAndDestinationAndDeletedFalse(3L, "123456"))
+                .thenReturn(Optional.empty());
+
+        telegramWebhookService.handle(update);
+
+        verify(telegramLinkService, never()).completeStart(any(), any());
+        verify(telegramSender).send(
+                "123456",
+                "MushMush 계정과 아직 연동되지 않았습니다.\n웹 마이페이지에서 먼저 텔레그램 연동을 완료해 주세요."
+        );
+    }
+
+    @Test
+    @DisplayName("AI 응답 객체 자체가 null이거나 data 필드가 null이면 기본 안내 문구를 전송한다")
+    void handle_whenAiResponseNull_sendsDefaultFallbackMessage() {
+        TelegramWebhookUpdate update = new TelegramWebhookUpdate(1L,
+                new TelegramWebhookUpdate.TelegramMessage("질문",
+                        new TelegramWebhookUpdate.TelegramChat(123456L, "private")));
+
+        ChannelType telegramChannel = new ChannelType("TELEGRAM", "Telegram");
+        ReflectionTestUtils.setField(telegramChannel, "id", 3L);
+
+        NotificationEndpoint endpoint = new NotificationEndpoint(100L, telegramChannel, "123456", "내 텔레그램");
+
+        when(channelTypeRepository.findByCodeAndDeletedFalse("TELEGRAM"))
+                .thenReturn(Optional.of(telegramChannel));
+        when(notificationEndpointRepository.findFirstByChannelType_IdAndDestinationAndDeletedFalse(3L, "123456"))
+                .thenReturn(Optional.of(endpoint));
+
+        when(chatbotFeignClient.chat(any(), any())).thenReturn(null);
+
+        telegramWebhookService.handle(update);
+
+        verify(telegramSender).send("123456", "죄송합니다. AI 답변을 생성하지 못했습니다.");
+    }
 }
