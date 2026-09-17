@@ -30,6 +30,7 @@ runs:
 
         echo "CULTIVATION_SERVER_URL=http://localhost:8083" >> "$GITHUB_ENV"
         echo "USER_SERVER_URL=http://localhost:8081" >> "$GITHUB_ENV"
+        echo "AI_SERVER_URL=http://localhost:9003" >> "$GITHUB_ENV"
 
         # Disable external service discovery in CI.
         echo "K8S_DISCOVERY_ENABLED=false" >> "$GITHUB_ENV"
