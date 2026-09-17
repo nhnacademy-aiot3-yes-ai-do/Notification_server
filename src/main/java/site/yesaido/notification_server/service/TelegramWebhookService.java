@@ -58,7 +58,7 @@ public class TelegramWebhookService {
                     chat.id(),
                     lockOwner,
                     java.time.Duration.ofSeconds(5),
-                    java.time.Duration.ofSeconds(60)
+                    java.time.Duration.ofSeconds(75)
             );
         } catch (Exception exception) {
             log.error("텔레그램 메시지 락 처리 실패. chatId={}", chat.id(), exception);
@@ -83,7 +83,19 @@ public class TelegramWebhookService {
             String token = startToken(text);
 
             if (token != null) {
-                telegramLinkService.completeStart(token, String.valueOf(chat.id()));
+                try {
+                    telegramLinkService.completeStart(token, String.valueOf(chat.id()));
+                } catch (Exception exception) {
+                    log.error("텔레그램 연동 처리 실패. chatId={}", chat.id(), exception);
+                    try {
+                        telegramSender.send(
+                                String.valueOf(chat.id()),
+                                "계정 연동 처리 중 오류가 발생했습니다. 마이페이지에서 다시 시도해 주세요."
+                        );
+                    } catch (Exception sendException) {
+                        log.error("텔레그램 연동 실패 안내 메시지 발송 실패. chatId={}", chat.id(), sendException);
+                    }
+                }
                 return;
             }
 

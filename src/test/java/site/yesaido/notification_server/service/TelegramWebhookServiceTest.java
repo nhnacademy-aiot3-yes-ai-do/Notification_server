@@ -378,8 +378,8 @@ class TelegramWebhookServiceTest {
     }
 
     @Test
-    @DisplayName("/start 처리 중 예외가 밖으로 던져져도 finally 블록에서 락이 반드시 해제된다")
-    void handle_whenStartProcessingThrows_stillReleasesLock() {
+    @DisplayName("/start 처리 중 예외 발생 시 안내 메시지를 발송하고 finally 블록에서 락을 해제한다")
+    void handle_whenStartProcessingThrows_sendsNoticeAndReleasesLock() {
         when(telegramLinkService.completeStart(any(), any()))
                 .thenThrow(new RuntimeException("link failed"));
 
@@ -387,11 +387,28 @@ class TelegramWebhookServiceTest {
                 new TelegramWebhookUpdate.TelegramMessage("/start valid-token",
                         new TelegramWebhookUpdate.TelegramChat(123456L, "private")));
 
-        // completeStart가 예외를 던져도 finally는 무조건 실행되어야 함
-        org.junit.jupiter.api.Assertions.assertThrows(
-                RuntimeException.class,
-                () -> telegramWebhookService.handle(update)
+        assertDoesNotThrow(() -> telegramWebhookService.handle(update));
+
+        verify(telegramSender).send(
+                "123456",
+                "계정 연동 처리 중 오류가 발생했습니다. 마이페이지에서 다시 시도해 주세요."
         );
+        verify(telegramChatLockService).releaseLock(eq(123456L), anyString());
+    }
+
+    @Test
+    @DisplayName("/start 처리 중 예외 및 안내 메시지 발송 실패 시에도 안전하게 락이 해제된다")
+    void handle_whenStartThrowsAndNoticeThrows_stillReleasesLock() {
+        when(telegramLinkService.completeStart(any(), any()))
+                .thenThrow(new RuntimeException("link failed"));
+        doThrow(new RuntimeException("Telegram API error"))
+                .when(telegramSender).send(any(), any());
+
+        TelegramWebhookUpdate update = new TelegramWebhookUpdate(1L,
+                new TelegramWebhookUpdate.TelegramMessage("/start valid-token",
+                        new TelegramWebhookUpdate.TelegramChat(123456L, "private")));
+
+        assertDoesNotThrow(() -> telegramWebhookService.handle(update));
 
         verify(telegramChatLockService).releaseLock(eq(123456L), anyString());
     }
