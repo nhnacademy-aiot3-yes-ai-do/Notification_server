@@ -1,34 +1,23 @@
 package site.yesaido.notification_server.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import site.yesaido.notification_server.entity.ChannelType;
-import site.yesaido.notification_server.entity.DeliveryStatus;
-import site.yesaido.notification_server.entity.Notification;
-import site.yesaido.notification_server.entity.NotificationDelivery;
-import site.yesaido.notification_server.entity.NotificationEndpoint;
-import site.yesaido.notification_server.entity.NotificationEventType;
-import site.yesaido.notification_server.entity.NotificationSubscription;
-import site.yesaido.notification_server.entity.NotificationSubscriptionType;
-import site.yesaido.notification_server.entity.NotificationTemplate;
-import site.yesaido.notification_server.entity.SubscriptionTargetType;
+import site.yesaido.notification_server.entity.*;
 import site.yesaido.notification_server.exception.delivery.DeliveryNotFoundForDispatchException;
 import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
+
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DeliveryStateServiceTest {

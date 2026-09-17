@@ -1,6 +1,5 @@
 package site.yesaido.notification_server.controller;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 import site.yesaido.notification_server.controller.docs.NotificationSubscriptionTypeControllerDocs;
 import site.yesaido.notification_server.dto.subscription.SubscriptionTypeResponse;
 import site.yesaido.notification_server.service.NotificationSubscriptionService;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor

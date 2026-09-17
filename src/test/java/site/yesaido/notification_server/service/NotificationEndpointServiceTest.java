@@ -1,20 +1,11 @@
 package site.yesaido.notification_server.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import site.yesaido.notification_server.entity.ChannelType;
-import site.yesaido.notification_server.entity.NotificationEndpoint;
 import site.yesaido.notification_server.dto.endpoint.EndpointCreateRequest;
 import site.yesaido.notification_server.dto.endpoint.EndpointUpdateRequest;
+import site.yesaido.notification_server.entity.ChannelType;
+import site.yesaido.notification_server.entity.NotificationEndpoint;
 import site.yesaido.notification_server.entity.NotificationSubscription;
 import site.yesaido.notification_server.exception.endpoint.DuplicateNotificationEndpointException;
 import site.yesaido.notification_server.exception.endpoint.NotificationChannelNotFoundException;
@@ -24,6 +15,13 @@ import site.yesaido.notification_server.provider.NotificationSenderRegistry;
 import site.yesaido.notification_server.repository.ChannelTypeRepository;
 import site.yesaido.notification_server.repository.NotificationEndpointRepository;
 import site.yesaido.notification_server.repository.NotificationSubscriptionRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
 class NotificationEndpointServiceTest {
 
     private final NotificationEndpointRepository endpointRepository =

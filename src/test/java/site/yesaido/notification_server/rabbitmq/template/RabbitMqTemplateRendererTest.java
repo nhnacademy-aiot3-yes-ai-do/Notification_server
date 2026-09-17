@@ -1,13 +1,14 @@
 package site.yesaido.notification_server.rabbitmq.template;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.math.BigDecimal;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import site.yesaido.notification_server.exception.template.NotificationTemplateVariableMissingException;
+
+import java.math.BigDecimal;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RabbitMqTemplateRendererTest {
 

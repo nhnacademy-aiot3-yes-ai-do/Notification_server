@@ -1,12 +1,5 @@
 package site.yesaido.notification_server.repository;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import site.yesaido.notification_server.entity.ChannelType;
-import site.yesaido.notification_server.entity.NotificationEndpoint;
-import site.yesaido.notification_server.entity.NotificationSubscription;
-import site.yesaido.notification_server.entity.NotificationSubscriptionType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -15,6 +8,13 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import site.yesaido.notification_server.entity.ChannelType;
+import site.yesaido.notification_server.entity.NotificationEndpoint;
+import site.yesaido.notification_server.entity.NotificationSubscription;
+import site.yesaido.notification_server.entity.NotificationSubscriptionType;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @EnabledIfSystemProperty(named = "notification.integration.enabled", matches = "true")

@@ -1,26 +1,18 @@
 package site.yesaido.notification_server.rabbitmq;
 
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import com.rabbitmq.client.Channel;
-import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import site.yesaido.notification_server.rabbitmq.event.AiEvent;
-import site.yesaido.notification_server.rabbitmq.event.CultivationEvent;
-import site.yesaido.notification_server.rabbitmq.event.HarvestCompletedPayload;
-import site.yesaido.notification_server.rabbitmq.event.MemberAddedPayload;
-import site.yesaido.notification_server.rabbitmq.event.NotificationEnvelope;
-import site.yesaido.notification_server.rabbitmq.event.RuleEngineEvent;
-import site.yesaido.notification_server.rabbitmq.event.UserEvent;
+import site.yesaido.notification_server.rabbitmq.event.*;
 import site.yesaido.notification_server.rabbitmq.facade.RabbitMqNotificationFacade;
 import site.yesaido.notification_server.rabbitmq.listener.AiRabbitMQConsumer;
 import site.yesaido.notification_server.rabbitmq.listener.CultivationRabbitMQConsumer;
 import site.yesaido.notification_server.rabbitmq.listener.RuleEngineRabbitMQConsumer;
 import site.yesaido.notification_server.rabbitmq.listener.UserRabbitMQConsumer;
+
+import java.io.IOException;
+
+import static org.mockito.Mockito.*;
 
 class NotificationRabbitMQConsumerTest {
 

@@ -1,8 +1,9 @@
 package site.yesaido.notification_server.dto.delivery;
 
-import java.time.LocalDateTime;
 import site.yesaido.notification_server.entity.DeliveryStatus;
 import site.yesaido.notification_server.entity.NotificationDelivery;
+
+import java.time.LocalDateTime;
 
 public record DeliveryResponse(
         Long id,

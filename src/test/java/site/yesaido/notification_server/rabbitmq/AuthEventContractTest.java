@@ -1,14 +1,15 @@
 package site.yesaido.notification_server.rabbitmq;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import site.yesaido.notification_server.rabbitmq.config.AuthRabbitListenerConfig;
 import site.yesaido.notification_server.rabbitmq.event.UserEvent;
+
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class AuthEventContractTest {
 

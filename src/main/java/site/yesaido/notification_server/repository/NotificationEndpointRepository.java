@@ -1,13 +1,14 @@
 package site.yesaido.notification_server.repository;
 
 import jakarta.persistence.LockModeType;
-import java.util.List;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
-import site.yesaido.notification_server.entity.NotificationEndpoint;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import site.yesaido.notification_server.entity.NotificationEndpoint;
+
+import java.util.List;
+import java.util.Optional;
 
 public interface NotificationEndpointRepository extends JpaRepository<NotificationEndpoint, Long> {
 

@@ -1,15 +1,14 @@
 package site.yesaido.notification_server.service;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import site.yesaido.notification_server.entity.ChannelType;
-import site.yesaido.notification_server.entity.NotificationEndpoint;
-import site.yesaido.notification_server.entity.NotificationSubscription;
 import site.yesaido.notification_server.dto.endpoint.EndpointCreateRequest;
 import site.yesaido.notification_server.dto.endpoint.EndpointResponse;
 import site.yesaido.notification_server.dto.endpoint.EndpointUpdateRequest;
+import site.yesaido.notification_server.entity.ChannelType;
+import site.yesaido.notification_server.entity.NotificationEndpoint;
+import site.yesaido.notification_server.entity.NotificationSubscription;
 import site.yesaido.notification_server.exception.endpoint.DuplicateNotificationEndpointException;
 import site.yesaido.notification_server.exception.endpoint.NotificationChannelNotFoundException;
 import site.yesaido.notification_server.exception.endpoint.NotificationEndpointNotFoundException;
@@ -17,6 +16,8 @@ import site.yesaido.notification_server.provider.NotificationSenderRegistry;
 import site.yesaido.notification_server.repository.ChannelTypeRepository;
 import site.yesaido.notification_server.repository.NotificationEndpointRepository;
 import site.yesaido.notification_server.repository.NotificationSubscriptionRepository;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

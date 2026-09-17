@@ -1,7 +1,5 @@
 package site.yesaido.notification_server.service;
 
-import java.util.List;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -14,11 +12,9 @@ import site.yesaido.notification_server.dto.admin.NotificationTemplateRequest;
 import site.yesaido.notification_server.dto.admin.NotificationTemplateResponse;
 import site.yesaido.notification_server.entity.ChannelType;
 import site.yesaido.notification_server.entity.NotificationTemplate;
-import site.yesaido.notification_server.repository.ChannelTypeRepository;
-import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
-import site.yesaido.notification_server.repository.NotificationEventTypeRepository;
-import site.yesaido.notification_server.repository.NotificationTemplateRepository;
-import site.yesaido.notification_server.repository.SubscriptionChannelRepository;
+import site.yesaido.notification_server.repository.*;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

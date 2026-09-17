@@ -1,15 +1,5 @@
 package site.yesaido.notification_server.service;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import site.yesaido.notification_server.config.property.NotificationProperties;
 import site.yesaido.notification_server.exception.provider.DiscordNotificationProviderException;
@@ -18,6 +8,12 @@ import site.yesaido.notification_server.messaging.DeadLetterPublisher;
 import site.yesaido.notification_server.provider.NotificationSender;
 import site.yesaido.notification_server.provider.NotificationSenderRegistry;
 import site.yesaido.notification_server.provider.ProviderSendResult;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
+
+import static org.mockito.Mockito.*;
 
 class DeliveryDispatchServiceTest {
 

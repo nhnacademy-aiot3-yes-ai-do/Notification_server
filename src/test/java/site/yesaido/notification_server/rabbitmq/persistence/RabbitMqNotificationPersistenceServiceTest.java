@@ -1,9 +1,14 @@
 package site.yesaido.notification_server.rabbitmq.persistence;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.Test;
+import site.yesaido.notification_server.config.property.NotificationProperties;
+import site.yesaido.notification_server.entity.*;
+import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
+import site.yesaido.notification_server.rabbitmq.persistence.RabbitMqNotificationCreationService.RabbitMqNotificationCreationResult;
+import site.yesaido.notification_server.rabbitmq.template.RabbitMqTemplateRenderer;
+import site.yesaido.notification_server.repository.NotificationEventTypeRepository;
+import site.yesaido.notification_server.repository.NotificationSubscriptionRepository;
+import site.yesaido.notification_server.repository.NotificationTemplateRepository;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -11,19 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import site.yesaido.notification_server.config.property.NotificationProperties;
-import site.yesaido.notification_server.entity.ChannelType;
-import site.yesaido.notification_server.entity.NotificationEventType;
-import site.yesaido.notification_server.entity.NotificationSubscription;
-import site.yesaido.notification_server.entity.NotificationTemplate;
-import site.yesaido.notification_server.entity.SubscriptionTargetType;
-import site.yesaido.notification_server.rabbitmq.command.RabbitMqNotificationCommand;
-import site.yesaido.notification_server.rabbitmq.persistence.RabbitMqNotificationCreationService.RabbitMqNotificationCreationResult;
-import site.yesaido.notification_server.rabbitmq.template.RabbitMqTemplateRenderer;
-import site.yesaido.notification_server.repository.NotificationEventTypeRepository;
-import site.yesaido.notification_server.repository.NotificationSubscriptionRepository;
-import site.yesaido.notification_server.repository.NotificationTemplateRepository;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 class RabbitMqNotificationPersistenceServiceTest {
 

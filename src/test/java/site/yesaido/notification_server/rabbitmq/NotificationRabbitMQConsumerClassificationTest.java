@@ -1,15 +1,16 @@
 package site.yesaido.notification_server.rabbitmq;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.Arrays;
-import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import site.yesaido.notification_server.rabbitmq.listener.AiRabbitMQConsumer;
 import site.yesaido.notification_server.rabbitmq.listener.CultivationRabbitMQConsumer;
 import site.yesaido.notification_server.rabbitmq.listener.RuleEngineRabbitMQConsumer;
 import site.yesaido.notification_server.rabbitmq.listener.UserRabbitMQConsumer;
+
+import java.util.Arrays;
+import java.util.Objects;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class NotificationRabbitMQConsumerClassificationTest {
 

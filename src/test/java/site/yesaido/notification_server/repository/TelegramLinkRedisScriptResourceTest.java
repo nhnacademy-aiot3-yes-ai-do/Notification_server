@@ -1,10 +1,11 @@
 package site.yesaido.notification_server.repository;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 class TelegramLinkRedisScriptResourceTest {
 

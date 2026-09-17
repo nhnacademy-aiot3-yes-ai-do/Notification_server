@@ -1,18 +1,17 @@
 package site.yesaido.notification_server.rabbitmq.config;
 
-import static site.yesaido.notification_server.rabbitmq.AuthEventContract.ACCOUNT_REACTIVATION_ATTEMPTED_TYPE_ID;
-import static site.yesaido.notification_server.rabbitmq.AuthEventContract.LOGIN_ATTEMPTED_TYPE_ID;
-import static site.yesaido.notification_server.rabbitmq.AuthEventContract.PASSWORD_CHANGE_ATTEMPTED_TYPE_ID;
-
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import java.util.Map;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.DefaultJacksonJavaTypeMapper;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import site.yesaido.notification_server.rabbitmq.event.UserEvent;
+
+import java.util.Map;
+
+import static site.yesaido.notification_server.rabbitmq.AuthEventContract.*;
 
 @Configuration
 public class AuthRabbitListenerConfig {

@@ -1,8 +1,8 @@
 package site.yesaido.notification_server.rabbitmq.config;
 
 import org.springframework.amqp.core.AcknowledgeMode;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.DefaultJacksonJavaTypeMapper;
 import org.springframework.amqp.support.converter.JacksonJavaTypeMapper.TypePrecedence;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;

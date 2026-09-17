@@ -1,7 +1,5 @@
 package site.yesaido.notification_server.service;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -11,6 +9,9 @@ import site.yesaido.notification_server.config.property.NotificationRecoveryProp
 import site.yesaido.notification_server.entity.NotificationDelivery;
 import site.yesaido.notification_server.messaging.DeadLetterPublisher;
 import site.yesaido.notification_server.repository.NotificationDeliveryRepository;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Consumer가 DB 저장 후 프로세스 중단으로 끊긴 경우, 오래 남은 PENDING 발송을 다시 처리한다.

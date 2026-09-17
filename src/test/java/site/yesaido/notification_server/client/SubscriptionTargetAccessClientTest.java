@@ -1,22 +1,20 @@
 package site.yesaido.notification_server.client;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import feign.FeignException;
 import feign.Request;
 import feign.Response;
 import feign.RetryableException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import site.yesaido.notification_server.exception.subscription.SubscriptionTargetAccessDeniedException;
 import site.yesaido.notification_server.exception.subscription.SubscriptionTargetAccessUnverifiedException;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
 
 class SubscriptionTargetAccessClientTest {
 

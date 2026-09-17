@@ -5,12 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
-import site.yesaido.notification_server.dto.admin.ChannelTypeListResponse;
-import site.yesaido.notification_server.dto.admin.ChannelTypeRequest;
-import site.yesaido.notification_server.dto.admin.ChannelTypeResponse;
-import site.yesaido.notification_server.dto.admin.NotificationTemplateListResponse;
-import site.yesaido.notification_server.dto.admin.NotificationTemplateRequest;
-import site.yesaido.notification_server.dto.admin.NotificationTemplateResponse;
+import site.yesaido.notification_server.dto.admin.*;
 
 /**
  * {@code NotificationTemplateChannelAdminController}의 OpenAPI 문서 정의.

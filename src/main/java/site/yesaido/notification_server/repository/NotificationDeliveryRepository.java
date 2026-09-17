@@ -1,8 +1,5 @@
 package site.yesaido.notification_server.repository;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +8,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import site.yesaido.notification_server.entity.DeliveryStatus;
 import site.yesaido.notification_server.entity.NotificationDelivery;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 public interface NotificationDeliveryRepository extends JpaRepository<NotificationDelivery, Long> {
 
